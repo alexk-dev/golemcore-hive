@@ -1,0 +1,8 @@
+Golemcore Hive
+Copyright 2026 Aleksei Kuleshov
+
+This project is licensed under the Apache License 2.0.
+
+Initial repository documentation and workflow conventions in this repository
+were adapted from golemcore-bot and then modified for the Hive control-plane
+context.

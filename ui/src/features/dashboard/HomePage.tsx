@@ -9,7 +9,7 @@ const metrics = [
 const roadmapCards = [
   {
     title: 'Fleet registration',
-    text: 'Enrollment tokens, machine JWT scopes, and heartbeat-based presence move in next.',
+    text: 'Enrollment tokens, machine JWT scopes, and heartbeat-based presence are now online in the Fleet view.',
   },
   {
     title: 'Boards and cards',
@@ -29,13 +29,13 @@ export function HomePage() {
       <section className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
         <article className="panel px-6 py-6 md:px-8">
           <div className="space-y-4">
-            <span className="pill">Phase 1 foundation</span>
+            <span className="pill">Phase 1 + Phase 2</span>
             <h2 className="text-3xl font-bold tracking-[-0.04em] text-foreground">
-              The shell is live, the operator is authenticated, and Hive has a home base.
+              Hive now authenticates operators and manages a real runtime fleet instead of a static placeholder.
             </h2>
             <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-              This landing page is intentionally not the final dashboard. It is the authenticated staging area where
-              fleet, Kanban, and command surfaces will land in the next phases without reworking auth or layout.
+              The control plane can now issue one-time enrollment tokens, accept bot registration, track presence, and
+              bind free-form roles, while leaving boards and command orchestration for the next phases.
             </p>
           </div>
         </article>
@@ -49,8 +49,8 @@ export function HomePage() {
             <div className="rounded-[22px] border border-border/80 bg-muted/60 p-4">
               <p className="text-sm font-medium text-foreground">Ready for fleet bootstrap</p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                The current session proves access token rotation, cookie-based refresh, protected API access, and local
-                JSON persistence before golems start enrolling.
+                The current session now fronts a real fleet registry: JWT rotation, local JSON persistence, enrollment
+                workflows, and heartbeat-aware runtime detail are in place before boards arrive.
               </p>
             </div>
           </div>

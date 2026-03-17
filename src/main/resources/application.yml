@@ -20,9 +20,12 @@ hive:
     jwt:
       issuer: golemcore-hive
       audience: golemcore-hive-ui
+      golem-audience: golemcore-hive-golem
       secret: ${HIVE_JWT_SECRET:}
       access-expiration-minutes: 30
       refresh-expiration-days: 7
+      golem-access-expiration-minutes: 15
+      golem-refresh-expiration-days: 30
     cookie:
       refresh-name: hive_refresh_token
       secure: false
@@ -34,3 +37,10 @@ hive:
       username: admin
       password: change-me-now
       display-name: Hive Admin
+  fleet:
+    enrollment-token-ttl-minutes: 30
+    heartbeat-interval-seconds: 30
+    degraded-after-misses: 2
+    offline-after-misses: 4
+    presence-evaluation-interval-seconds: 15
+    control-channel-url: /ws/golems/control

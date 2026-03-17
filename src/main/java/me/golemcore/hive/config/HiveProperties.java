@@ -33,6 +33,7 @@ public class HiveProperties {
     private StorageProperties storage = new StorageProperties();
     private SecurityProperties security = new SecurityProperties();
     private BootstrapProperties bootstrap = new BootstrapProperties();
+    private FleetProperties fleet = new FleetProperties();
 
     @Data
     public static class StorageProperties {
@@ -53,11 +54,17 @@ public class HiveProperties {
         private String issuer = "golemcore-hive";
         @NotBlank
         private String audience = "golemcore-hive-ui";
+        @NotBlank
+        private String golemAudience = "golemcore-hive-golem";
         private String secret = "";
         @Min(1)
         private int accessExpirationMinutes = 30;
         @Min(1)
         private int refreshExpirationDays = 7;
+        @Min(1)
+        private int golemAccessExpirationMinutes = 15;
+        @Min(1)
+        private int golemRefreshExpirationDays = 30;
     }
 
     @Data
@@ -85,5 +92,21 @@ public class HiveProperties {
         private String password = "change-me-now";
         @NotBlank
         private String displayName = "Hive Admin";
+    }
+
+    @Data
+    public static class FleetProperties {
+        @Min(1)
+        private int enrollmentTokenTtlMinutes = 30;
+        @Min(1)
+        private int heartbeatIntervalSeconds = 30;
+        @Min(1)
+        private int degradedAfterMisses = 2;
+        @Min(1)
+        private int offlineAfterMisses = 4;
+        @Min(1)
+        private int presenceEvaluationIntervalSeconds = 15;
+        @NotBlank
+        private String controlChannelUrl = "/ws/golems/control";
     }
 }

@@ -16,17 +16,14 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive;
+package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import jakarta.validation.constraints.NotBlank;
+import java.util.Set;
 
-@SpringBootApplication
-@EnableScheduling
-public class HiveApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(HiveApplication.class, args);
-    }
+public record CreateGolemRoleRequest(
+        @NotBlank String slug,
+        String name,
+        String description,
+        Set<String> capabilityTags) {
 }

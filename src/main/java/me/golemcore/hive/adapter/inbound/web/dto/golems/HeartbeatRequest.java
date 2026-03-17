@@ -16,17 +16,20 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive;
+package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
-
-@SpringBootApplication
-@EnableScheduling
-public class HiveApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(HiveApplication.class, args);
-    }
+public record HeartbeatRequest(
+        String status,
+        String currentRunState,
+        String currentCardId,
+        String currentThreadId,
+        String modelTier,
+        Long inputTokens,
+        Long outputTokens,
+        Long accumulatedCostMicros,
+        Integer queueDepth,
+        String healthSummary,
+        String lastErrorSummary,
+        Long uptimeSeconds,
+        String capabilitySnapshotHash) {
 }

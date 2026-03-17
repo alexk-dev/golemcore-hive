@@ -34,6 +34,7 @@ import javax.crypto.SecretKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.golemcore.hive.config.HiveProperties;
+import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.OperatorAccount;
 import org.springframework.stereotype.Component;
 
@@ -69,12 +70,22 @@ public class JwtTokenProvider {
 
     public String generateAccessToken(OperatorAccount operator) {
         Duration expiration = Duration.ofMinutes(properties.getSecurity().getJwt().getAccessExpirationMinutes());
-        return buildToken(operator, "access", expiration, null);
+        return buildOperatorToken(operator, "access", expiration, null);
     }
 
     public String generateRefreshToken(OperatorAccount operator, String sessionId) {
         Duration expiration = Duration.ofDays(properties.getSecurity().getJwt().getRefreshExpirationDays());
-        return buildToken(operator, "refresh", expiration, sessionId);
+        return buildOperatorToken(operator, "refresh", expiration, sessionId);
+    }
+
+    public String generateGolemAccessToken(Golem golem, List<String> scopes) {
+        Duration expiration = Duration.ofMinutes(properties.getSecurity().getJwt().getGolemAccessExpirationMinutes());
+        return buildGolemToken(golem, scopes, "access", expiration, null);
+    }
+
+    public String generateGolemRefreshToken(Golem golem, List<String> scopes, String sessionId) {
+        Duration expiration = Duration.ofDays(properties.getSecurity().getJwt().getGolemRefreshExpirationDays());
+        return buildGolemToken(golem, scopes, "refresh", expiration, sessionId);
     }
 
     public boolean validateToken(String token) {
@@ -103,28 +114,77 @@ public class JwtTokenProvider {
         return parseClaims(token).get("operatorId", String.class);
     }
 
+    public String getSubjectId(String token) {
+        Claims claims = parseClaims(token);
+        String operatorId = claims.get("operatorId", String.class);
+        if (operatorId != null) {
+            return operatorId;
+        }
+        return claims.get("golemId", String.class);
+    }
+
+    public SubjectType getSubjectType(String token) {
+        String principalType = parseClaims(token).get("principalType", String.class);
+        return SubjectType.valueOf(principalType);
+    }
+
     public String getSessionId(String token) {
         return parseClaims(token).get("sid", String.class);
     }
 
     @SuppressWarnings("unchecked")
     public List<String> getRoles(String token) {
-        return parseClaims(token).get("roles", List.class);
+        List<String> roles = parseClaims(token).get("roles", List.class);
+        return roles != null ? roles : List.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<String> getScopes(String token) {
+        Claims claims = parseClaims(token);
+        List<String> scopes = claims.get("scopes", List.class);
+        return scopes != null ? scopes : List.of();
+    }
+
+    public String getAudience(String token) {
+        Claims claims = parseClaims(token);
+        return claims.getAudience().iterator().hasNext()
+                ? claims.getAudience().iterator().next()
+                : null;
     }
 
     private String getTokenType(String token) {
         return parseClaims(token).get("type", String.class);
     }
 
-    private String buildToken(OperatorAccount operator, String type, Duration expiration, String sessionId) {
+    private String buildOperatorToken(OperatorAccount operator, String type, Duration expiration, String sessionId) {
         Instant now = Instant.now();
         io.jsonwebtoken.JwtBuilder builder = Jwts.builder()
                 .subject(operator.getUsername())
                 .issuer(properties.getSecurity().getJwt().getIssuer())
                 .audience().add(properties.getSecurity().getJwt().getAudience()).and()
+                .claim("principalType", SubjectType.OPERATOR.name())
                 .claim("type", type)
                 .claim("operatorId", operator.getId())
                 .claim("roles", operator.getRoles().stream().map(Enum::name).sorted().toList())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(expiration)));
+        if (sessionId != null) {
+            builder.claim("sid", sessionId);
+        }
+        return builder.signWith(signingKey).compact();
+    }
+
+    private String buildGolemToken(Golem golem, List<String> scopes, String type, Duration expiration, String sessionId) {
+        Instant now = Instant.now();
+        io.jsonwebtoken.JwtBuilder builder = Jwts.builder()
+                .subject(golem.getId())
+                .issuer(properties.getSecurity().getJwt().getIssuer())
+                .audience().add(properties.getSecurity().getJwt().getGolemAudience()).and()
+                .claim("principalType", SubjectType.GOLEM.name())
+                .claim("type", type)
+                .claim("golemId", golem.getId())
+                .claim("displayName", golem.getDisplayName())
+                .claim("scopes", scopes.stream().sorted().toList())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(expiration)));
         if (sessionId != null) {

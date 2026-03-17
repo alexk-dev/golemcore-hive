@@ -1,0 +1,160 @@
+/*
+ * Copyright 2026 Aleksei Kuleshov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contact: alex@kuleshov.tech
+ */
+
+package me.golemcore.hive.adapter.inbound.web.controller;
+
+import jakarta.validation.Valid;
+import java.security.Principal;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import me.golemcore.hive.adapter.inbound.web.dto.boards.CreateCardRequest;
+import me.golemcore.hive.adapter.inbound.web.dto.boards.CardDetailResponse;
+import me.golemcore.hive.adapter.inbound.web.dto.boards.CardSummaryResponse;
+import me.golemcore.hive.adapter.inbound.web.dto.boards.MoveCardRequest;
+import me.golemcore.hive.adapter.inbound.web.dto.boards.UpdateCardAssigneeRequest;
+import me.golemcore.hive.adapter.inbound.web.dto.boards.UpdateCardRequest;
+import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
+import me.golemcore.hive.domain.model.Card;
+import me.golemcore.hive.domain.model.CardTransitionOrigin;
+import me.golemcore.hive.domain.service.CardService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
+@RestController
+@RequestMapping("/api/v1/cards")
+@RequiredArgsConstructor
+public class CardsController extends BoardMappingSupport {
+
+    private final CardService cardService;
+
+    @GetMapping
+    public Mono<ResponseEntity<List<CardSummaryResponse>>> listCards(
+            Principal principal,
+            @RequestParam(required = false) String boardId,
+            @RequestParam(defaultValue = "false") boolean includeArchived) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requireOperatorActor(principal);
+            List<CardSummaryResponse> response = cardService.listCards(boardId, includeArchived).stream()
+                    .map(this::toCardSummaryResponse)
+                    .toList();
+            return ResponseEntity.ok(response);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PostMapping
+    public Mono<ResponseEntity<CardDetailResponse>> createCard(
+            Principal principal,
+            @Valid @RequestBody CreateCardRequest request) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Card card = cardService.createCard(
+                    request.boardId(),
+                    request.title(),
+                    request.description(),
+                    request.columnId(),
+                    request.assigneeGolemId(),
+                    parseAssignmentPolicy(request.assignmentPolicy()),
+                    request.autoAssign(),
+                    actor.getSubjectId(),
+                    actor.getName());
+            return ResponseEntity.status(HttpStatus.CREATED).body(toCardDetailResponse(card));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/{cardId}")
+    public Mono<ResponseEntity<CardDetailResponse>> getCard(Principal principal, @PathVariable String cardId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requireOperatorActor(principal);
+            return ResponseEntity.ok(toCardDetailResponse(cardService.getCard(cardId)));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PatchMapping("/{cardId}")
+    public Mono<ResponseEntity<CardDetailResponse>> updateCard(
+            Principal principal,
+            @PathVariable String cardId,
+            @RequestBody UpdateCardRequest request) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Card card = cardService.updateCard(
+                    cardId,
+                    request != null ? request.title() : null,
+                    request != null ? request.description() : null,
+                    request != null ? parseAssignmentPolicy(request.assignmentPolicy()) : null);
+            return ResponseEntity.ok(toCardDetailResponse(card));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PostMapping("/{cardId}:move")
+    public Mono<ResponseEntity<CardDetailResponse>> moveCard(
+            Principal principal,
+            @PathVariable String cardId,
+            @Valid @RequestBody MoveCardRequest request) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Card card = cardService.moveCard(
+                    cardId,
+                    request.targetColumnId(),
+                    request.targetIndex(),
+                    CardTransitionOrigin.MANUAL,
+                    actor.getSubjectId(),
+                    actor.getName(),
+                    request.summary());
+            return ResponseEntity.ok(toCardDetailResponse(card));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PostMapping("/{cardId}:transition")
+    public Mono<ResponseEntity<CardDetailResponse>> transitionCard(
+            Principal principal,
+            @PathVariable String cardId,
+            @Valid @RequestBody MoveCardRequest request) {
+        return moveCard(principal, cardId, request);
+    }
+
+    @PostMapping("/{cardId}:assign")
+    public Mono<ResponseEntity<CardDetailResponse>> assignCard(
+            Principal principal,
+            @PathVariable String cardId,
+            @RequestBody UpdateCardAssigneeRequest request) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Card card = cardService.assignCard(cardId, request != null ? request.assigneeGolemId() : null);
+            return ResponseEntity.ok(toCardDetailResponse(card));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PostMapping("/{cardId}:archive")
+    public Mono<ResponseEntity<CardDetailResponse>> archiveCard(Principal principal, @PathVariable String cardId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Card card = cardService.archiveCard(cardId);
+            return ResponseEntity.ok(toCardDetailResponse(card));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+}

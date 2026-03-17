@@ -22,8 +22,8 @@ export function AppShell() {
                   One control plane for cards, golems, and operator judgment.
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-                  Phase 2 turns the shell into a live fleet registry with enrollment, machine auth, heartbeat presence,
-                  and operator-managed role bindings.
+                  Phase 3 adds live kanban boards, per-board team composition, and card assignment flows on top of the
+                  fleet registry and machine auth foundation.
                 </p>
               </div>
               <nav className="flex flex-wrap gap-2">

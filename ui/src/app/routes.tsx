@@ -5,6 +5,9 @@ import { AppShell } from '../features/layout/AppShell';
 import { HomePage } from '../features/dashboard/HomePage';
 import { GolemsPage } from '../features/golems/GolemsPage';
 import { GolemRolesPage } from '../features/golems/GolemRolesPage';
+import { BoardsPage } from '../features/boards/BoardsPage';
+import { KanbanBoardPage } from '../features/boards/KanbanBoardPage';
+import { BoardEditorPage } from '../features/boards/BoardEditorPage';
 
 function RequireAuth() {
   const { status } = useAuth();
@@ -28,16 +31,6 @@ function RequireAuth() {
   }
 
   return <Outlet />;
-}
-
-function ComingSoonPage({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="panel p-6 md:p-8">
-      <span className="pill">Coming next</span>
-      <h2 className="mt-4 text-3xl font-bold tracking-[-0.04em] text-foreground">{title}</h2>
-      <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">{text}</p>
-    </div>
-  );
 }
 
 export const routes = createBrowserRouter([
@@ -65,12 +58,15 @@ export const routes = createBrowserRouter([
           },
           {
             path: '/boards',
-            element: (
-              <ComingSoonPage
-                title="Boards and cards land in Phase 3"
-                text="This route will become the multi-board Kanban surface with board teams, assignment policies, and flow remapping."
-              />
-            ),
+            element: <BoardsPage />,
+          },
+          {
+            path: '/boards/:boardId',
+            element: <KanbanBoardPage />,
+          },
+          {
+            path: '/boards/:boardId/settings',
+            element: <BoardEditorPage />,
           },
         ],
       },

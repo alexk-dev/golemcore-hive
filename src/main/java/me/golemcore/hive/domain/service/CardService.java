@@ -33,7 +33,7 @@ import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardAssignmentPolicy;
 import me.golemcore.hive.domain.model.CardTransitionEvent;
 import me.golemcore.hive.domain.model.CardTransitionOrigin;
-import me.golemcore.hive.domain.model.HiveThread;
+import me.golemcore.hive.domain.model.ThreadRecord;
 import me.golemcore.hive.port.outbound.StoragePort;
 import org.springframework.stereotype.Service;
 
@@ -146,11 +146,12 @@ public class CardService {
                         .build())))
                 .build();
         saveCard(card);
-        saveThread(HiveThread.builder()
+        saveThread(ThreadRecord.builder()
                 .id(threadId)
                 .boardId(boardId)
                 .cardId(cardId)
                 .title(title)
+                .assignedGolemId(effectiveAssigneeId)
                 .createdAt(now)
                 .updatedAt(now)
                 .build());
@@ -237,6 +238,7 @@ public class CardService {
         card.setAssigneeGolemId(assigneeGolemId != null && !assigneeGolemId.isBlank() ? assigneeGolemId : null);
         card.setUpdatedAt(Instant.now());
         saveCard(card);
+        syncThread(card);
         return card;
     }
 
@@ -269,7 +271,7 @@ public class CardService {
         }
     }
 
-    private void saveThread(HiveThread thread) {
+    private void saveThread(ThreadRecord thread) {
         try {
             storagePort.putTextAtomic(THREADS_DIR, thread.getId() + ".json", objectMapper.writeValueAsString(thread));
         } catch (JsonProcessingException exception) {
@@ -283,8 +285,9 @@ public class CardService {
             return;
         }
         try {
-            HiveThread thread = objectMapper.readValue(content, HiveThread.class);
+            ThreadRecord thread = objectMapper.readValue(content, ThreadRecord.class);
             thread.setTitle(card.getTitle());
+            thread.setAssignedGolemId(card.getAssigneeGolemId());
             thread.setUpdatedAt(card.getUpdatedAt());
             saveThread(thread);
         } catch (JsonProcessingException exception) {

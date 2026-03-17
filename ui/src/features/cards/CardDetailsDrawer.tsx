@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CardAssigneeOptions, CardDetail } from '../../lib/api/cardsApi';
 import { GolemSummary } from '../../lib/api/golemsApi';
 import { AssignmentPolicyBadge } from './AssignmentPolicyBadge';
@@ -59,6 +60,12 @@ export function CardDetailsDrawer({
             <p className="mt-2 text-sm text-muted-foreground">
               {card.id} · thread {card.threadId} · column {card.columnId}
             </p>
+            <Link
+              to={`/cards/${card.id}/thread`}
+              className="mt-4 inline-flex rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white"
+            >
+              Open thread
+            </Link>
           </div>
           <button
             type="button"

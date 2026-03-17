@@ -8,6 +8,7 @@ import { GolemRolesPage } from '../features/golems/GolemRolesPage';
 import { BoardsPage } from '../features/boards/BoardsPage';
 import { KanbanBoardPage } from '../features/boards/KanbanBoardPage';
 import { BoardEditorPage } from '../features/boards/BoardEditorPage';
+import { CardThreadPage } from '../features/chat/CardThreadPage';
 
 function RequireAuth() {
   const { status } = useAuth();
@@ -67,6 +68,10 @@ export const routes = createBrowserRouter([
           {
             path: '/boards/:boardId/settings',
             element: <BoardEditorPage />,
+          },
+          {
+            path: '/cards/:cardId/thread',
+            element: <CardThreadPage />,
           },
         ],
       },

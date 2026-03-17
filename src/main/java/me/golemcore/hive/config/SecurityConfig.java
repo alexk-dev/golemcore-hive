@@ -71,6 +71,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/api/v1/golems/register").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/golems/*/auth:rotate").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/system/health").permitAll()
+                        .pathMatchers("/ws/**").permitAll()
                         .pathMatchers("/actuator/health", "/actuator/info").permitAll()
                         .anyExchange().authenticated())
                 .build();

@@ -21,6 +21,7 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 import java.security.Principal;
 import java.util.List;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
+import me.golemcore.hive.domain.model.GolemScope;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ResponseStatusException;
@@ -42,6 +43,17 @@ final class ControllerActorSupport {
         AuthenticatedActor actor = requireOperatorActor(principal);
         if (!actor.hasAnyRole(List.of("ADMIN", "OPERATOR"))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin or operator role required");
+        }
+        return actor;
+    }
+
+    static AuthenticatedActor requireGolemScope(Principal principal, String golemId, String scope) {
+        AuthenticatedActor actor = extractActor(principal);
+        if (actor == null || !actor.isGolem()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Golem token required");
+        }
+        if (!golemId.equals(actor.getSubjectId()) || !actor.hasScope(scope)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Scope denied");
         }
         return actor;
     }

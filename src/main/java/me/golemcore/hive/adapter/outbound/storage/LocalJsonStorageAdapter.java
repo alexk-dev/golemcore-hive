@@ -56,6 +56,10 @@ public class LocalJsonStorageAdapter implements StoragePort {
             fileStore.ensureDirectory("boards");
             fileStore.ensureDirectory("cards");
             fileStore.ensureDirectory("threads");
+            fileStore.ensureDirectory("thread-messages");
+            fileStore.ensureDirectory("commands");
+            fileStore.ensureDirectory("runs");
+            fileStore.ensureDirectory("lifecycle-signals");
             fileStore.ensureDirectory("meta");
             log.info("[Storage] Local JSON storage initialized at {}", basePath);
         } catch (IOException exception) {

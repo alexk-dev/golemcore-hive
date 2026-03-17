@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+hive:
+  storage:
+    base-path: /var/lib/golemcore-hive/data
+  security:
+    cors-allowed-origins:
+      - https://hive.example.com
+    jwt:
+      issuer: golemcore-hive
+      audience: golemcore-hive-ui
+      golem-audience: golemcore-hive-golem
+      secret: replace-with-a-long-random-secret
+    cookie:
+      secure: true
+      same-site: Lax
+  bootstrap:
+    admin:
+      enabled: true
+      username: admin
+      password: replace-bootstrap-password
+      display-name: Hive Admin
+  governance:
+    approvals:
+      high-cost-threshold-micros: 5000000
+    retention:
+      approvals-days: 30
+      audit-days: 90
+      notifications-days: 30
+  deployment:
+    production-mode: true

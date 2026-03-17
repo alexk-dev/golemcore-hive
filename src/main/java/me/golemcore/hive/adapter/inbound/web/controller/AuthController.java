@@ -28,8 +28,10 @@ import me.golemcore.hive.adapter.inbound.web.dto.OperatorResponse;
 import me.golemcore.hive.adapter.inbound.web.security.JwtTokenProvider;
 import me.golemcore.hive.adapter.inbound.web.security.RefreshCookieFactory;
 import me.golemcore.hive.config.HiveProperties;
+import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.OperatorAccount;
 import me.golemcore.hive.domain.service.AuthService;
+import me.golemcore.hive.domain.service.AuditService;
 import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,16 +54,34 @@ public class AuthController {
     private final RefreshCookieFactory refreshCookieFactory;
     private final HiveProperties properties;
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuditService auditService;
 
     @PostMapping("/login")
     public Mono<ResponseEntity<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         return Mono.defer(() -> {
             AuthService.TokenPair tokens = authService.authenticate(request.username(), request.password());
             if (tokens == null) {
+                auditService.record(AuditEvent.builder()
+                        .eventType("auth.login_failed")
+                        .severity("WARN")
+                        .actorType("OPERATOR")
+                        .actorName(request.username())
+                        .targetType("SESSION")
+                        .summary("Login failed")
+                        .details("Invalid credentials"));
                 return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
             }
             return Mono.fromCallable(() -> {
                 OperatorAccount operator = authService.getOperatorByUsername(request.username());
+                auditService.record(AuditEvent.builder()
+                        .eventType("auth.login")
+                        .severity("INFO")
+                        .actorType("OPERATOR")
+                        .actorId(operator.getId())
+                        .actorName(operator.getUsername())
+                        .targetType("SESSION")
+                        .targetId(operator.getId())
+                        .summary("Operator logged in"));
                 return ResponseEntity.ok()
                         .header("Set-Cookie", refreshCookieFactory.build(tokens.getRefreshToken()).toString())
                         .body(new LoginResponse(tokens.getAccessToken(), toOperatorResponse(operator)));
@@ -79,9 +99,24 @@ public class AuthController {
             }
             AuthService.TokenPair tokens = authService.refreshAccessToken(cookie.getValue());
             if (tokens == null) {
+                auditService.record(AuditEvent.builder()
+                        .eventType("auth.refresh_failed")
+                        .severity("WARN")
+                        .actorType("OPERATOR")
+                        .targetType("SESSION")
+                        .summary("Refresh token rejected"));
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
             }
             OperatorAccount operator = authService.getOperatorByUsername(jwtTokenProvider.getUsername(tokens.getAccessToken()));
+            auditService.record(AuditEvent.builder()
+                    .eventType("auth.refresh")
+                    .severity("INFO")
+                    .actorType("OPERATOR")
+                    .actorId(operator.getId())
+                    .actorName(operator.getUsername())
+                    .targetType("SESSION")
+                    .targetId(operator.getId())
+                    .summary("Access token refreshed"));
             return ResponseEntity.ok()
                     .header("Set-Cookie", refreshCookieFactory.build(tokens.getRefreshToken()).toString())
                     .body(new LoginResponse(tokens.getAccessToken(), toOperatorResponse(operator)));
@@ -94,6 +129,20 @@ public class AuthController {
             HttpCookie cookie = exchange.getRequest().getCookies()
                     .getFirst(properties.getSecurity().getCookie().getRefreshName());
             if (cookie != null) {
+                String token = cookie.getValue();
+                if (jwtTokenProvider.validateToken(token) && jwtTokenProvider.isRefreshToken(token)) {
+                    String operatorId = jwtTokenProvider.getOperatorId(token);
+                    String username = jwtTokenProvider.getUsername(token);
+                    auditService.record(AuditEvent.builder()
+                            .eventType("auth.logout")
+                            .severity("INFO")
+                            .actorType("OPERATOR")
+                            .actorId(operatorId)
+                            .actorName(username)
+                            .targetType("SESSION")
+                            .targetId(operatorId)
+                            .summary("Operator logged out"));
+                }
                 authService.logout(cookie.getValue());
             }
         }).subscribeOn(Schedulers.boundedElastic())

@@ -9,6 +9,10 @@ import { BoardsPage } from '../features/boards/BoardsPage';
 import { KanbanBoardPage } from '../features/boards/KanbanBoardPage';
 import { BoardEditorPage } from '../features/boards/BoardEditorPage';
 import { CardThreadPage } from '../features/chat/CardThreadPage';
+import { ApprovalsPage } from '../features/approvals/ApprovalsPage';
+import { AuditPage } from '../features/audit/AuditPage';
+import { BudgetsPage } from '../features/budgets/BudgetsPage';
+import { SystemSettingsPage } from '../features/settings/SystemSettingsPage';
 
 function RequireAuth() {
   const { status } = useAuth();
@@ -60,6 +64,22 @@ export const routes = createBrowserRouter([
           {
             path: '/boards',
             element: <BoardsPage />,
+          },
+          {
+            path: '/approvals',
+            element: <ApprovalsPage />,
+          },
+          {
+            path: '/audit',
+            element: <AuditPage />,
+          },
+          {
+            path: '/budgets',
+            element: <BudgetsPage />,
+          },
+          {
+            path: '/settings',
+            element: <SystemSettingsPage />,
           },
           {
             path: '/boards/:boardId',

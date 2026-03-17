@@ -19,6 +19,11 @@
 package me.golemcore.hive.adapter.inbound.web.dto.threads;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 
-public record CreateThreadCommandRequest(@NotBlank String body) {
+public record CreateThreadCommandRequest(
+        @NotBlank String body,
+        String approvalRiskLevel,
+        @PositiveOrZero Long estimatedCostMicros,
+        String approvalReason) {
 }

@@ -7,6 +7,10 @@ export type CommandRecord = {
   golemId: string;
   runId: string;
   body: string;
+  approvalRequestId: string | null;
+  approvalRiskLevel: string | null;
+  approvalReason: string | null;
+  estimatedCostMicros: number;
   status: string;
   queueReason: string | null;
   dispatchAttempts: number;
@@ -24,6 +28,7 @@ export type RunProjection = {
   cardId: string;
   commandId: string | null;
   golemId: string | null;
+  approvalRequestId: string | null;
   status: string;
   summary: string | null;
   lastRuntimeEventType: string | null;
@@ -67,10 +72,17 @@ export function listThreadCommands(threadId: string) {
   return apiRequest<CommandRecord[]>(`/api/v1/threads/${threadId}/commands`);
 }
 
-export function createThreadCommand(threadId: string, body: string) {
+export type CreateThreadCommandInput = {
+  body: string;
+  approvalRiskLevel?: string | null;
+  estimatedCostMicros?: number;
+  approvalReason?: string;
+};
+
+export function createThreadCommand(threadId: string, input: CreateThreadCommandInput) {
   return apiRequest<CommandRecord>(`/api/v1/threads/${threadId}/commands`, {
     method: 'POST',
-    body: JSON.stringify({ body }),
+    body: JSON.stringify(input),
   });
 }
 

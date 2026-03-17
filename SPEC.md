@@ -6,6 +6,14 @@ Target repo: `golemcore-hive`
 Primary runtime: Spring Boot 4.0 + Java 25 + Maven + Lombok
 Frontend: React + TypeScript + Tailwind CSS 3
 
+## 0. Implementation Status
+
+- Phase 1: foundation, operator JWT auth, JSON storage
+- Phase 2: fleet enrollment, machine JWT, golem roles, heartbeats
+- Phase 3: boards, flows, teams, cards, card assignment
+- Phase 4: card-bound threads, command dispatch, lifecycle signal ingestion
+- Phase 5: approvals, audit, budget snapshots, notifications, packaged UI/backend artifact, CI
+
 ## 1. Summary
 
 `golemcore-hive` is the orchestration and control-plane service for one or more `golemcore-bot` runtimes ("golems").

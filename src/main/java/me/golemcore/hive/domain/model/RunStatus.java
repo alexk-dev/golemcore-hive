@@ -19,10 +19,12 @@
 package me.golemcore.hive.domain.model;
 
 public enum RunStatus {
+    PENDING_APPROVAL,
     QUEUED,
     RUNNING,
     BLOCKED,
     COMPLETED,
+    REJECTED,
     FAILED,
     CANCELLED
 }

@@ -36,6 +36,14 @@ export function RunTimeline({ commands, runs, signals }: RunTimelineProps) {
                     <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.payload.status}</span>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-foreground">{item.payload.body}</p>
+                  {item.payload.approvalRiskLevel ? (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Approval {item.payload.approvalRiskLevel} · {item.payload.approvalRequestId || 'pending request'}
+                    </p>
+                  ) : null}
+                  {item.payload.approvalReason ? (
+                    <p className="mt-2 text-sm text-muted-foreground">{item.payload.approvalReason}</p>
+                  ) : null}
                   {item.payload.queueReason ? <p className="mt-2 text-sm text-amber-900">{item.payload.queueReason}</p> : null}
                   <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
                 </article>
@@ -51,6 +59,9 @@ export function RunTimeline({ commands, runs, signals }: RunTimelineProps) {
                   <p className="mt-3 text-sm text-muted-foreground">
                     {item.payload.summary || 'No run summary yet'} · events {item.payload.eventCount}
                   </p>
+                  {item.payload.approvalRequestId ? (
+                    <p className="mt-2 text-sm text-muted-foreground">Approval request {item.payload.approvalRequestId}</p>
+                  ) : null}
                   <p className="mt-2 text-sm text-muted-foreground">
                     Tokens {item.payload.inputTokens}/{item.payload.outputTokens} · cost micros {item.payload.accumulatedCostMicros}
                   </p>

@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.domain.model.AssignmentSuggestion;
+import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.Board;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardAssignmentPolicy;
@@ -49,6 +50,7 @@ public class CardService {
     private final BoardService boardService;
     private final AssignmentService assignmentService;
     private final GolemRegistryService golemRegistryService;
+    private final AuditService auditService;
 
     public List<Card> listCards(String boardId, boolean includeArchived) {
         List<Card> cards = new ArrayList<>();
@@ -155,6 +157,20 @@ public class CardService {
                 .createdAt(now)
                 .updatedAt(now)
                 .build());
+        auditService.record(AuditEvent.builder()
+                .eventType("card.created")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(actorId)
+                .actorName(actorName)
+                .targetType("CARD")
+                .targetId(card.getId())
+                .boardId(card.getBoardId())
+                .cardId(card.getId())
+                .threadId(card.getThreadId())
+                .golemId(card.getAssigneeGolemId())
+                .summary("Card created")
+                .details(card.getTitle()));
         return card;
     }
 
@@ -175,6 +191,18 @@ public class CardService {
         card.setUpdatedAt(Instant.now());
         saveCard(card);
         syncThread(card);
+        auditService.record(AuditEvent.builder()
+                .eventType("card.updated")
+                .severity("INFO")
+                .actorType("SYSTEM")
+                .targetType("CARD")
+                .targetId(card.getId())
+                .boardId(card.getBoardId())
+                .cardId(card.getId())
+                .threadId(card.getThreadId())
+                .golemId(card.getAssigneeGolemId())
+                .summary("Card updated")
+                .details(card.getTitle()));
         return card;
     }
 
@@ -226,6 +254,20 @@ public class CardService {
                     .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
             renumberAndSave(previousColumnCards);
         }
+        auditService.record(AuditEvent.builder()
+                .eventType("card.moved")
+                .severity("INFO")
+                .actorType(origin == CardTransitionOrigin.GOLEM_SIGNAL ? "GOLEM" : "OPERATOR")
+                .actorId(actorId)
+                .actorName(actorName)
+                .targetType("CARD")
+                .targetId(card.getId())
+                .boardId(card.getBoardId())
+                .cardId(card.getId())
+                .threadId(card.getThreadId())
+                .golemId(card.getAssigneeGolemId())
+                .summary(firstNonBlank(summary, "Card moved"))
+                .details(previousColumnId + " -> " + targetColumnId));
         return card;
     }
 
@@ -239,6 +281,18 @@ public class CardService {
         card.setUpdatedAt(Instant.now());
         saveCard(card);
         syncThread(card);
+        auditService.record(AuditEvent.builder()
+                .eventType("card.assignee_updated")
+                .severity("INFO")
+                .actorType("SYSTEM")
+                .targetType("CARD")
+                .targetId(card.getId())
+                .boardId(card.getBoardId())
+                .cardId(card.getId())
+                .threadId(card.getThreadId())
+                .golemId(card.getAssigneeGolemId())
+                .summary("Card assignee updated")
+                .details(card.getAssigneeGolemId()));
         return card;
     }
 
@@ -248,6 +302,18 @@ public class CardService {
         card.setArchivedAt(Instant.now());
         card.setUpdatedAt(card.getArchivedAt());
         saveCard(card);
+        auditService.record(AuditEvent.builder()
+                .eventType("card.archived")
+                .severity("INFO")
+                .actorType("SYSTEM")
+                .targetType("CARD")
+                .targetId(card.getId())
+                .boardId(card.getBoardId())
+                .cardId(card.getId())
+                .threadId(card.getThreadId())
+                .golemId(card.getAssigneeGolemId())
+                .summary("Card archived")
+                .details(card.getTitle()));
         return card;
     }
 
@@ -303,6 +369,15 @@ public class CardService {
                 .max(Integer::compareTo)
                 .map(position -> position + 1)
                 .orElse(0);
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private void renumberAndSave(List<Card> cards) {

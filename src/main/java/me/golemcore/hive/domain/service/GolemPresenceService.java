@@ -27,8 +27,11 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.golemcore.hive.config.HiveProperties;
+import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemState;
+import me.golemcore.hive.domain.model.NotificationEvent;
+import me.golemcore.hive.domain.model.NotificationSeverity;
 import me.golemcore.hive.port.outbound.StoragePort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -43,6 +46,8 @@ public class GolemPresenceService {
     private final StoragePort storagePort;
     private final ObjectMapper objectMapper;
     private final HiveProperties properties;
+    private final AuditService auditService;
+    private final NotificationService notificationService;
 
     public GolemState resolveState(Golem golem, Instant now) {
         if (golem.getState() == GolemState.REVOKED) {
@@ -94,12 +99,32 @@ public class GolemPresenceService {
             GolemState resolvedState = resolveState(golem, now);
             int missedHeartbeats = calculateMissedHeartbeats(golem, now);
             if (golem.getState() != resolvedState || golem.getMissedHeartbeatCount() != missedHeartbeats) {
+                GolemState previousState = golem.getState();
                 golem.setState(resolvedState);
                 golem.setMissedHeartbeatCount(missedHeartbeats);
                 if (golem.getLastStateChangeAt() == null || resolvedState != GolemState.PAUSED) {
                     golem.setLastStateChangeAt(now);
                 }
                 saveGolem(golem);
+                if (previousState != resolvedState) {
+                    auditService.record(AuditEvent.builder()
+                            .eventType("golem.state_changed")
+                            .severity(resolvedState == GolemState.OFFLINE ? "WARN" : "INFO")
+                            .actorType("SYSTEM")
+                            .targetType("GOLEM")
+                            .targetId(golem.getId())
+                            .golemId(golem.getId())
+                            .summary("Golem state changed to " + resolvedState)
+                            .details("Previous state " + previousState));
+                    if (resolvedState == GolemState.OFFLINE && notificationService.isGolemOfflineEnabled()) {
+                        notificationService.create(NotificationEvent.builder()
+                                .type("GOLEM_OFFLINE")
+                                .severity(NotificationSeverity.CRITICAL)
+                                .title("Golem offline")
+                                .message(golem.getDisplayName() + " is offline")
+                                .golemId(golem.getId()));
+                    }
+                }
             }
         }
     }

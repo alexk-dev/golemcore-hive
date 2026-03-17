@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.Board;
 import me.golemcore.hive.domain.model.BoardColumn;
 import me.golemcore.hive.domain.model.BoardFlowDefinition;
@@ -55,6 +56,7 @@ public class BoardService {
     private final StoragePort storagePort;
     private final ObjectMapper objectMapper;
     private final FlowRemapService flowRemapService;
+    private final AuditService auditService;
 
     public List<Board> listBoards() {
         List<Board> boards = new ArrayList<>();
@@ -104,6 +106,15 @@ public class BoardService {
                 .updatedAt(now)
                 .build();
         saveBoard(board);
+        auditService.record(AuditEvent.builder()
+                .eventType("board.created")
+                .severity("INFO")
+                .actorType("SYSTEM")
+                .targetType("BOARD")
+                .targetId(board.getId())
+                .boardId(board.getId())
+                .summary("Board created")
+                .details(board.getName()));
         return board;
     }
 
@@ -120,6 +131,15 @@ public class BoardService {
         }
         board.setUpdatedAt(Instant.now());
         saveBoard(board);
+        auditService.record(AuditEvent.builder()
+                .eventType("board.updated")
+                .severity("INFO")
+                .actorType("SYSTEM")
+                .targetType("BOARD")
+                .targetId(board.getId())
+                .boardId(board.getId())
+                .summary("Board updated")
+                .details(board.getName()));
         return board;
     }
 
@@ -134,6 +154,17 @@ public class BoardService {
         board.setFlow(flow);
         board.setUpdatedAt(Instant.now());
         saveBoard(board);
+        auditService.record(AuditEvent.builder()
+                .eventType("board.flow_updated")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(actorId)
+                .actorName(actorName)
+                .targetType("BOARD")
+                .targetId(board.getId())
+                .boardId(board.getId())
+                .summary("Board flow updated")
+                .details(board.getName()));
         return board;
     }
 
@@ -143,6 +174,15 @@ public class BoardService {
         board.setTeam(team != null ? team : BoardTeam.builder().build());
         board.setUpdatedAt(Instant.now());
         saveBoard(board);
+        auditService.record(AuditEvent.builder()
+                .eventType("board.team_updated")
+                .severity("INFO")
+                .actorType("SYSTEM")
+                .targetType("BOARD")
+                .targetId(board.getId())
+                .boardId(board.getId())
+                .summary("Board team updated")
+                .details(board.getName()));
         return board;
     }
 

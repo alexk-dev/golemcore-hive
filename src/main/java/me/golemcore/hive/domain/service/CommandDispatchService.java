@@ -28,13 +28,18 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import me.golemcore.hive.domain.model.ApprovalRequest;
+import me.golemcore.hive.domain.model.ApprovalRiskLevel;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardLifecycleSignal;
+import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.CommandRecord;
 import me.golemcore.hive.domain.model.CommandStatus;
 import me.golemcore.hive.domain.model.ControlCommandEnvelope;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.LifecycleSignalType;
+import me.golemcore.hive.domain.model.NotificationEvent;
+import me.golemcore.hive.domain.model.NotificationSeverity;
 import me.golemcore.hive.domain.model.OperatorUpdate;
 import me.golemcore.hive.domain.model.RunProjection;
 import me.golemcore.hive.domain.model.RunStatus;
@@ -44,6 +49,7 @@ import me.golemcore.hive.domain.model.ThreadMessageType;
 import me.golemcore.hive.domain.model.ThreadParticipantType;
 import me.golemcore.hive.domain.model.ThreadRecord;
 import me.golemcore.hive.port.outbound.StoragePort;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -60,8 +66,18 @@ public class CommandDispatchService {
     private final GolemRegistryService golemRegistryService;
     private final GolemControlChannelService golemControlChannelService;
     private final OperatorUpdatesService operatorUpdatesService;
+    private final ApprovalService approvalService;
+    private final AuditService auditService;
+    private final BudgetService budgetService;
+    private final NotificationService notificationService;
 
-    public DispatchResult createCommand(String threadId, String body, String operatorId, String operatorName) {
+    public DispatchResult createCommand(String threadId,
+                                        String body,
+                                        ApprovalRiskLevel requestedRiskLevel,
+                                        long estimatedCostMicros,
+                                        String approvalReason,
+                                        String operatorId,
+                                        String operatorName) {
         if (body == null || body.isBlank()) {
             throw new IllegalArgumentException("Command body is required");
         }
@@ -89,7 +105,10 @@ public class CommandDispatchService {
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
-        saveRun(run);
+        ApprovalRiskLevel approvalRiskLevel = approvalService.resolveApprovalRisk(requestedRiskLevel, estimatedCostMicros);
+        if (approvalRiskLevel != null) {
+            run.setStatus(RunStatus.PENDING_APPROVAL);
+        }
 
         CommandRecord command = CommandRecord.builder()
                 .id(commandId)
@@ -98,16 +117,52 @@ public class CommandDispatchService {
                 .golemId(golem.getId())
                 .runId(runId)
                 .body(body)
-                .status(CommandStatus.QUEUED)
+                .approvalRiskLevel(approvalRiskLevel)
+                .approvalReason(approvalReason)
+                .estimatedCostMicros(estimatedCostMicros)
+                .status(approvalRiskLevel != null ? CommandStatus.PENDING_APPROVAL : CommandStatus.QUEUED)
                 .createdAt(now)
                 .updatedAt(now)
                 .dispatchAttempts(0)
                 .build();
 
+        saveRun(run);
+        saveCommand(command);
+
         threadService.appendMessage(thread, commandId, runId, null, ThreadMessageType.COMMAND_REQUEST,
                 ThreadParticipantType.OPERATOR, operatorId, operatorName, body, now);
-        dispatchToControlChannel(command, run, now, golem);
-        saveCommand(command);
+
+        ApprovalRequest approval = null;
+        if (approvalRiskLevel != null) {
+            approval = approvalService.createApproval(command, run, card, operatorId, operatorName);
+            command.setApprovalRequestId(approval.getId());
+            run.setApprovalRequestId(approval.getId());
+            saveCommand(command);
+            saveRun(run);
+            auditService.record(AuditEvent.builder()
+                    .eventType("command.created")
+                    .severity("WARN")
+                    .actorType("OPERATOR")
+                    .actorId(operatorId)
+                    .actorName(operatorName)
+                    .targetType("COMMAND")
+                    .targetId(command.getId())
+                    .boardId(card.getBoardId())
+                    .cardId(card.getId())
+                    .threadId(thread.getId())
+                    .golemId(golem.getId())
+                    .commandId(command.getId())
+                    .runId(run.getId())
+                    .approvalId(approval.getId())
+                    .summary("Command queued for approval")
+                    .details(approvalRiskLevel + ": " + firstNonBlank(approvalReason, "Approval required")));
+        } else {
+            dispatchToControlChannel(command, run, now, golem);
+            saveCommand(command);
+            saveRun(run);
+            recordDispatchAudit(command, run, card, operatorId, operatorName);
+        }
+
         threadService.markCommandCreated(thread, golem.getId(), now);
 
         operatorUpdatesService.publish(OperatorUpdate.builder()
@@ -119,6 +174,8 @@ public class CommandDispatchService {
                 .kinds(List.of("command", "run", "thread_message"))
                 .createdAt(now)
                 .build());
+
+        budgetService.refreshSnapshots();
 
         return new DispatchResult(command, run);
     }
@@ -170,7 +227,10 @@ public class CommandDispatchService {
             if (run != null) {
                 saveRun(run);
             }
+            Card card = cardService.getCard(command.getCardId());
+            recordDispatchAudit(command, run, card, "system", "Hive");
         }
+        budgetService.refreshSnapshots();
     }
 
     public void applyRuntimeEvent(String golemId,
@@ -272,6 +332,40 @@ public class CommandDispatchService {
             saveCommand(command);
         }
 
+        if (runtimeEventType == RuntimeEventType.RUN_FAILED && notificationService.isCommandFailedEnabled()) {
+            notificationService.create(NotificationEvent.builder()
+                    .type("COMMAND_FAILED")
+                    .severity(NotificationSeverity.CRITICAL)
+                    .title("Command failed")
+                    .message(firstNonBlank(summary, details, "A command execution failed"))
+                    .cardId(card.getId())
+                    .boardId(card.getBoardId())
+                    .threadId(thread.getId())
+                    .golemId(golemId)
+                    .commandId(command != null ? command.getId() : commandId));
+        }
+
+        if (runtimeEventType == RuntimeEventType.RUN_FAILED
+                || runtimeEventType == RuntimeEventType.RUN_COMPLETED
+                || runtimeEventType == RuntimeEventType.RUN_CANCELLED) {
+            auditService.record(AuditEvent.builder()
+                    .eventType("run." + runtimeEventType.name().toLowerCase())
+                    .severity(runtimeEventType == RuntimeEventType.RUN_FAILED ? "WARN" : "INFO")
+                    .actorType("GOLEM")
+                    .actorId(golemId)
+                    .actorName(golemId)
+                    .targetType("RUN")
+                    .targetId(run.getId())
+                    .boardId(card.getBoardId())
+                    .cardId(card.getId())
+                    .threadId(thread.getId())
+                    .golemId(golemId)
+                    .commandId(command != null ? command.getId() : commandId)
+                    .runId(run.getId())
+                    .summary(firstNonBlank(summary, runtimeEventType.name()))
+                    .details(details));
+        }
+
         operatorUpdatesService.publish(OperatorUpdate.builder()
                 .eventType("thread_updated")
                 .cardId(card.getId())
@@ -281,6 +375,7 @@ public class CommandDispatchService {
                 .kinds(List.of("run", "command", "thread_message"))
                 .createdAt(eventTime)
                 .build());
+        budgetService.refreshSnapshots();
     }
 
     public void applyLifecycleSignal(CardLifecycleSignal signal) {
@@ -356,6 +451,76 @@ public class CommandDispatchService {
         if (command != null) {
             saveCommand(command);
         }
+
+        Card card = cardService.getCard(run.getCardId());
+        if (signalType == LifecycleSignalType.BLOCKER_RAISED && notificationService.isBlockerRaisedEnabled()) {
+            notificationService.create(NotificationEvent.builder()
+                    .type("BLOCKER_RAISED")
+                    .severity(NotificationSeverity.WARN)
+                    .title("Blocker raised")
+                    .message(signal.getSummary())
+                    .boardId(card.getBoardId())
+                    .cardId(card.getId())
+                    .threadId(signal.getThreadId())
+                    .golemId(signal.getGolemId())
+                    .commandId(signal.getCommandId()));
+        }
+        if (signalType == LifecycleSignalType.WORK_FAILED && notificationService.isCommandFailedEnabled()) {
+            notificationService.create(NotificationEvent.builder()
+                    .type("COMMAND_FAILED")
+                    .severity(NotificationSeverity.CRITICAL)
+                    .title("Work failed")
+                    .message(signal.getSummary())
+                    .boardId(card.getBoardId())
+                    .cardId(card.getId())
+                    .threadId(signal.getThreadId())
+                    .golemId(signal.getGolemId())
+                    .commandId(signal.getCommandId()));
+        }
+
+        auditService.record(AuditEvent.builder()
+                .eventType("signal." + signalType.name().toLowerCase())
+                .severity(signalType == LifecycleSignalType.BLOCKER_RAISED || signalType == LifecycleSignalType.WORK_FAILED
+                        ? "WARN"
+                        : "INFO")
+                .actorType("GOLEM")
+                .actorId(signal.getGolemId())
+                .actorName(signal.getGolemId())
+                .targetType("RUN")
+                .targetId(run.getId())
+                .boardId(card.getBoardId())
+                .cardId(card.getId())
+                .threadId(signal.getThreadId())
+                .golemId(signal.getGolemId())
+                .commandId(signal.getCommandId())
+                .runId(run.getId())
+                .summary(signal.getSummary())
+                .details(signal.getDetails()));
+        budgetService.refreshSnapshots();
+    }
+
+    @EventListener
+    public void onApprovalApproved(ApprovalApprovedEvent event) {
+        dispatchApprovedCommand(event.commandId());
+    }
+
+    public void dispatchApprovedCommand(String commandId) {
+        CommandRecord command = findCommand(commandId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown command: " + commandId));
+        if (command.getStatus() != CommandStatus.QUEUED) {
+            return;
+        }
+        RunProjection run = findRun(command.getRunId()).orElse(null);
+        Card card = cardService.getCard(command.getCardId());
+        Golem golem = golemRegistryService.findGolem(command.getGolemId())
+                .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + command.getGolemId()));
+        dispatchToControlChannel(command, run, Instant.now(), golem);
+        saveCommand(command);
+        if (run != null) {
+            saveRun(run);
+        }
+        recordDispatchAudit(command, run, card, "system", "Hive");
+        budgetService.refreshSnapshots();
     }
 
     private List<CommandRecord> listCommandsForGolem(String golemId) {
@@ -400,10 +565,37 @@ public class CommandDispatchService {
             return;
         }
 
-        command.setStatus(CommandStatus.QUEUED);
+            command.setStatus(CommandStatus.QUEUED);
         command.setQueueReason(golemControlChannelService.isConnected(golem.getId())
                 ? "Command delivery failed"
                 : "Control channel unavailable");
+    }
+
+    private void recordDispatchAudit(CommandRecord command,
+                                     RunProjection run,
+                                     Card card,
+                                     String actorId,
+                                     String actorName) {
+        String summary = command.getStatus() == CommandStatus.DELIVERED
+                ? "Command dispatched"
+                : "Command queued for delivery";
+        auditService.record(AuditEvent.builder()
+                .eventType("command.dispatch")
+                .severity(command.getStatus() == CommandStatus.DELIVERED ? "INFO" : "WARN")
+                .actorType("SYSTEM")
+                .actorId(actorId)
+                .actorName(actorName)
+                .targetType("COMMAND")
+                .targetId(command.getId())
+                .boardId(card.getBoardId())
+                .cardId(card.getId())
+                .threadId(command.getThreadId())
+                .golemId(command.getGolemId())
+                .commandId(command.getId())
+                .runId(run != null ? run.getId() : command.getRunId())
+                .approvalId(command.getApprovalRequestId())
+                .summary(summary)
+                .details(command.getQueueReason()));
     }
 
     private Optional<CommandRecord> findCommand(String commandId) {

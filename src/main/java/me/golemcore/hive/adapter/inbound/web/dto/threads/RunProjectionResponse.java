@@ -26,6 +26,7 @@ public record RunProjectionResponse(
         String cardId,
         String commandId,
         String golemId,
+        String approvalRequestId,
         String status,
         String summary,
         String lastRuntimeEventType,

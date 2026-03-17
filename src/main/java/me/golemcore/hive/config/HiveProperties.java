@@ -34,6 +34,8 @@ public class HiveProperties {
     private SecurityProperties security = new SecurityProperties();
     private BootstrapProperties bootstrap = new BootstrapProperties();
     private FleetProperties fleet = new FleetProperties();
+    private GovernanceProperties governance = new GovernanceProperties();
+    private DeploymentProperties deployment = new DeploymentProperties();
 
     @Data
     public static class StorageProperties {
@@ -108,5 +110,41 @@ public class HiveProperties {
         private int presenceEvaluationIntervalSeconds = 15;
         @NotBlank
         private String controlChannelUrl = "/ws/golems/control";
+    }
+
+    @Data
+    public static class GovernanceProperties {
+        private ApprovalProperties approvals = new ApprovalProperties();
+        private NotificationProperties notifications = new NotificationProperties();
+        private RetentionProperties retention = new RetentionProperties();
+    }
+
+    @Data
+    public static class ApprovalProperties {
+        @Min(0)
+        private long highCostThresholdMicros = 5_000_000L;
+    }
+
+    @Data
+    public static class NotificationProperties {
+        private boolean approvalRequested = true;
+        private boolean blockerRaised = true;
+        private boolean golemOffline = true;
+        private boolean commandFailed = true;
+    }
+
+    @Data
+    public static class RetentionProperties {
+        @Min(1)
+        private int approvalsDays = 30;
+        @Min(1)
+        private int auditDays = 90;
+        @Min(1)
+        private int notificationsDays = 30;
+    }
+
+    @Data
+    public static class DeploymentProperties {
+        private boolean productionMode;
     }
 }

@@ -44,3 +44,17 @@ hive:
     offline-after-misses: 4
     presence-evaluation-interval-seconds: 15
     control-channel-url: /ws/golems/control
+  governance:
+    approvals:
+      high-cost-threshold-micros: 5000000
+    notifications:
+      approval-requested: true
+      blocker-raised: true
+      golem-offline: true
+      command-failed: true
+    retention:
+      approvals-days: 30
+      audit-days: 90
+      notifications-days: 30
+  deployment:
+    production-mode: false

@@ -38,6 +38,7 @@ public class RunProjection {
     private String cardId;
     private String commandId;
     private String golemId;
+    private String approvalRequestId;
     private RunStatus status;
     private String summary;
     private String lastRuntimeEventType;

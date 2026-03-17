@@ -5,6 +5,10 @@ const navigationItems = [
   { to: '/', label: 'Overview' },
   { to: '/fleet', label: 'Fleet' },
   { to: '/boards', label: 'Boards' },
+  { to: '/approvals', label: 'Approvals' },
+  { to: '/audit', label: 'Audit' },
+  { to: '/budgets', label: 'Budgets' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 export function AppShell() {
@@ -19,11 +23,11 @@ export function AppShell() {
               <span className="pill">Golemcore Hive</span>
               <div className="space-y-2">
                 <h1 className="max-w-3xl text-4xl font-bold tracking-[-0.04em] text-foreground md:text-5xl">
-                  One control plane for cards, golems, and operator judgment.
+                  One control plane for cards, golems, and operator governance.
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-                  Phase 4 layers card-bound threads, command routing, and lifecycle-driven board updates on top of the
-                  fleet registry, board flows, and machine auth foundation.
+                  Phase 5 adds approval gates, audit history, budget snapshots, and operational settings on top of the
+                  fleet, boards, and card-thread control loop.
                 </p>
               </div>
               <nav className="flex flex-wrap gap-2">

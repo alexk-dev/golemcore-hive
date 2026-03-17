@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { createThreadCommand, listThreadCommands, listThreadRuns, listThreadSignals } from '../../lib/api/commandsApi';
+import {
+  CreateThreadCommandInput,
+  createThreadCommand,
+  listThreadCommands,
+  listThreadRuns,
+  listThreadSignals,
+} from '../../lib/api/commandsApi';
 import { getCard } from '../../lib/api/cardsApi';
 import { buildOperatorUpdatesUrl, OperatorUpdateEvent } from '../../lib/api/eventsApi';
 import { getCardThread, listThreadMessages } from '../../lib/api/threadsApi';
@@ -50,7 +56,8 @@ export function CardThreadPage() {
   });
 
   const createCommandMutation = useMutation({
-    mutationFn: ({ threadId, body }: { threadId: string; body: string }) => createThreadCommand(threadId, body),
+    mutationFn: ({ threadId, input }: { threadId: string; input: CreateThreadCommandInput }) =>
+      createThreadCommand(threadId, input),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['thread-commands', threadQuery.data?.threadId] }),
@@ -157,8 +164,8 @@ export function CardThreadPage() {
           <ThreadComposer
             targetGolem={threadQuery.data.targetGolem}
             isPending={createCommandMutation.isPending}
-            onSubmit={async (body) => {
-              await createCommandMutation.mutateAsync({ threadId: threadQuery.data.threadId, body });
+            onSubmit={async (input) => {
+              await createCommandMutation.mutateAsync({ threadId: threadQuery.data.threadId, input });
             }}
           />
         </div>

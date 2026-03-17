@@ -21,6 +21,7 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
+import me.golemcore.hive.domain.model.ApprovalRiskLevel;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.threads.CardLifecycleSignalResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.threads.CommandRecordResponse;
@@ -69,8 +70,17 @@ public class CommandsController {
             @Valid @RequestBody CreateThreadCommandRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            CommandDispatchService.DispatchResult result = commandDispatchService.createCommand(threadId, request.body(),
-                    actor.getSubjectId(), actor.getName());
+            ApprovalRiskLevel riskLevel = request.approvalRiskLevel() != null && !request.approvalRiskLevel().isBlank()
+                    ? ApprovalRiskLevel.valueOf(request.approvalRiskLevel())
+                    : null;
+            CommandDispatchService.DispatchResult result = commandDispatchService.createCommand(
+                    threadId,
+                    request.body(),
+                    riskLevel,
+                    request.estimatedCostMicros() != null ? request.estimatedCostMicros() : 0L,
+                    request.approvalReason(),
+                    actor.getSubjectId(),
+                    actor.getName());
             return ResponseEntity.ok(toCommandResponse(result.getCommand()));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -105,6 +115,10 @@ public class CommandsController {
                 command.getGolemId(),
                 command.getRunId(),
                 command.getBody(),
+                command.getApprovalRequestId(),
+                command.getApprovalRiskLevel() != null ? command.getApprovalRiskLevel().name() : null,
+                command.getApprovalReason(),
+                command.getEstimatedCostMicros(),
                 command.getStatus().name(),
                 command.getQueueReason(),
                 command.getDispatchAttempts(),
@@ -123,6 +137,7 @@ public class CommandsController {
                 run.getCardId(),
                 run.getCommandId(),
                 run.getGolemId(),
+                run.getApprovalRequestId(),
                 run.getStatus().name(),
                 run.getSummary(),
                 run.getLastRuntimeEventType(),

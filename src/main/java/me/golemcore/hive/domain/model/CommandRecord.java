@@ -39,6 +39,10 @@ public class CommandRecord {
     private String golemId;
     private String runId;
     private String body;
+    private String approvalRequestId;
+    private ApprovalRiskLevel approvalRiskLevel;
+    private String approvalReason;
+    private long estimatedCostMicros;
     private CommandStatus status;
     private String queueReason;
     private int dispatchAttempts;

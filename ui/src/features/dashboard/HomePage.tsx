@@ -3,21 +3,21 @@ import { useAuth } from '../../app/providers/AuthProvider';
 const metrics = [
   { label: 'Storage', value: 'JSON-first', hint: 'No DB for v1' },
   { label: 'Auth', value: 'JWT + refresh', hint: 'Browser cookie rotation' },
-  { label: 'Runtime', value: 'Spring Boot 4', hint: 'Java 25 / Maven' },
+  { label: 'Governance', value: 'Approvals live', hint: 'Audit and budget views online' },
 ];
 
 const roadmapCards = [
   {
-    title: 'Fleet registration',
-    text: 'Enrollment tokens, machine JWT scopes, and heartbeat-based presence are already online in the Fleet view.',
+    title: 'Approvals and audit',
+    text: 'Risky commands can now pause for approval, and every auth, dispatch, and lifecycle decision lands in the audit stream.',
   },
   {
-    title: 'Boards and cards',
-    text: 'Multiple board flows, board teams, card drawers, and Team/All assignee selection are now live in the Boards view.',
+    title: 'Budget snapshots',
+    text: 'System, board, card, and golem scopes now aggregate token and cost projections from the same local JSON runtime.',
   },
   {
-    title: 'Card-bound threads',
-    text: 'Operator command threads, run timelines, and lifecycle signal ingestion now close the control loop.',
+    title: 'Self-hosted defaults',
+    text: 'Settings now expose notification hooks, retention windows, and production deployment guardrails for packaged releases.',
   },
 ];
 
@@ -28,14 +28,14 @@ export function HomePage() {
     <div className="grid gap-6">
       <section className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
         <article className="panel px-6 py-6 md:px-8">
-          <div className="space-y-4">
-            <span className="pill">Phase 4</span>
+            <div className="space-y-4">
+            <span className="pill">Phase 5</span>
             <h2 className="text-3xl font-bold tracking-[-0.04em] text-foreground">
-              Hive now drives real card threads and command routing, not just boards and fleet plumbing.
+              Hive now governs risky work, not just routing it.
             </h2>
             <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-              Operators can open a card thread, dispatch commands to the assigned golem, and inspect lifecycle-driven
-              board updates without leaving the control plane.
+              Operators can gate destructive or high-cost commands, inspect audit history, and watch budget pressure
+              without leaving the same control plane that owns boards and golem threads.
             </p>
           </div>
         </article>
@@ -49,8 +49,8 @@ export function HomePage() {
             <div className="rounded-[22px] border border-border/80 bg-muted/60 p-4">
               <p className="text-sm font-medium text-foreground">Ready for thread orchestration</p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                The current session now fronts a thread-aware control plane: JWT rotation, local JSON persistence,
-                fleet routing, kanban state, and golem event ingestion all share the same local-first runtime.
+                The current session now fronts a governed control plane: JWT rotation, local JSON persistence, fleet
+                routing, kanban state, approvals, and budget snapshots all share the same local-first runtime.
               </p>
             </div>
           </div>

@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.config.HiveProperties;
+import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemCapabilitySnapshot;
 import me.golemcore.hive.domain.model.GolemRole;
@@ -54,6 +55,7 @@ public class GolemRegistryService {
     private final ObjectMapper objectMapper;
     private final HiveProperties properties;
     private final GolemPresenceService presenceService;
+    private final AuditService auditService;
 
     public Golem registerGolem(String displayName,
                                String hostLabel,
@@ -83,6 +85,17 @@ public class GolemRegistryService {
                 .capabilitySnapshot(capabilitySnapshot)
                 .build();
         saveGolem(golem);
+        auditService.record(AuditEvent.builder()
+                .eventType("golem.registered")
+                .severity("INFO")
+                .actorType("GOLEM")
+                .actorId(golem.getId())
+                .actorName(golem.getDisplayName())
+                .targetType("GOLEM")
+                .targetId(golem.getId())
+                .golemId(golem.getId())
+                .summary("Golem registered")
+                .details("Enrollment token " + enrollmentTokenId));
         return golem;
     }
 
@@ -160,6 +173,15 @@ public class GolemRegistryService {
         golem.setUpdatedAt(now);
         golem.setLastStateChangeAt(now);
         saveGolem(golem);
+        auditService.record(AuditEvent.builder()
+                .eventType("golem.paused")
+                .severity("WARN")
+                .actorType("SYSTEM")
+                .targetType("GOLEM")
+                .targetId(golem.getId())
+                .golemId(golem.getId())
+                .summary("Golem paused")
+                .details(reason));
         return golem;
     }
 
@@ -175,6 +197,14 @@ public class GolemRegistryService {
         golem.setUpdatedAt(now);
         golem.setLastStateChangeAt(now);
         saveGolem(golem);
+        auditService.record(AuditEvent.builder()
+                .eventType("golem.resumed")
+                .severity("INFO")
+                .actorType("SYSTEM")
+                .targetType("GOLEM")
+                .targetId(golem.getId())
+                .golemId(golem.getId())
+                .summary("Golem resumed"));
         return golem;
     }
 
@@ -186,6 +216,15 @@ public class GolemRegistryService {
         golem.setUpdatedAt(now);
         golem.setLastStateChangeAt(now);
         saveGolem(golem);
+        auditService.record(AuditEvent.builder()
+                .eventType("golem.revoked")
+                .severity("WARN")
+                .actorType("SYSTEM")
+                .targetType("GOLEM")
+                .targetId(golem.getId())
+                .golemId(golem.getId())
+                .summary("Golem revoked")
+                .details(reason));
         return golem;
     }
 
@@ -219,6 +258,14 @@ public class GolemRegistryService {
                 .updatedAt(now)
                 .build();
         saveRole(role);
+        auditService.record(AuditEvent.builder()
+                .eventType("golem_role.created")
+                .severity("INFO")
+                .actorType("SYSTEM")
+                .targetType("ROLE")
+                .targetId(role.getSlug())
+                .summary("Golem role created")
+                .details(role.getName()));
         return role;
     }
 
@@ -229,6 +276,14 @@ public class GolemRegistryService {
         existing.setCapabilityTags(capabilityTags != null ? new LinkedHashSet<>(capabilityTags) : new LinkedHashSet<>());
         existing.setUpdatedAt(Instant.now());
         saveRole(existing);
+        auditService.record(AuditEvent.builder()
+                .eventType("golem_role.updated")
+                .severity("INFO")
+                .actorType("SYSTEM")
+                .targetType("ROLE")
+                .targetId(existing.getSlug())
+                .summary("Golem role updated")
+                .details(existing.getName()));
         return existing;
     }
 
@@ -251,6 +306,17 @@ public class GolemRegistryService {
         golem.setRoleBindings(bindings);
         golem.setUpdatedAt(now);
         saveGolem(golem);
+        auditService.record(AuditEvent.builder()
+                .eventType("golem.roles_assigned")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(actor.getSubjectId())
+                .actorName(actor.getName())
+                .targetType("GOLEM")
+                .targetId(golem.getId())
+                .golemId(golem.getId())
+                .summary("Roles assigned to golem")
+                .details(String.join(", ", roleSlugs)));
         return golem;
     }
 
@@ -262,6 +328,15 @@ public class GolemRegistryService {
         golem.setRoleBindings(new ArrayList<>(bindings));
         golem.setUpdatedAt(Instant.now());
         saveGolem(golem);
+        auditService.record(AuditEvent.builder()
+                .eventType("golem.roles_unassigned")
+                .severity("INFO")
+                .actorType("SYSTEM")
+                .targetType("GOLEM")
+                .targetId(golem.getId())
+                .golemId(golem.getId())
+                .summary("Roles unassigned from golem")
+                .details(String.join(", ", roleSlugs)));
         return golem;
     }
 

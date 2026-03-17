@@ -66,6 +66,9 @@ public class SecurityConfig {
                         }))
                 .addFilterBefore(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers(HttpMethod.GET, "/", "/index.html", "/assets/**", "/vite.svg", "/login",
+                                "/fleet", "/fleet/**", "/boards", "/boards/**", "/cards/**", "/approvals",
+                                "/audit", "/budgets", "/settings").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh",
                                 "/api/v1/auth/logout").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/golems/register").permitAll()

@@ -47,13 +47,18 @@ public class JwtAuthenticationFilter implements WebFilter {
             return chain.filter(exchange);
         }
 
-        List<SimpleGrantedAuthority> authorities = jwtTokenProvider.getRoles(token).stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                .toList();
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
+        SubjectType subjectType = jwtTokenProvider.getSubjectType(token);
+        List<SimpleGrantedAuthority> authorities = subjectType == SubjectType.OPERATOR
+                ? jwtTokenProvider.getRoles(token).stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role)).toList()
+                : jwtTokenProvider.getScopes(token).stream().map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope)).toList();
+        AuthenticatedActor actor = new AuthenticatedActor(
+                subjectType,
+                jwtTokenProvider.getSubjectId(token),
                 jwtTokenProvider.getUsername(token),
-                null,
-                authorities);
+                jwtTokenProvider.getRoles(token),
+                jwtTokenProvider.getScopes(token),
+                jwtTokenProvider.getSessionId(token));
+        Authentication authentication = new UsernamePasswordAuthenticationToken(actor, null, authorities);
         return chain.filter(exchange)
                 .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
     }

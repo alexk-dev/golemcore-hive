@@ -16,17 +16,20 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive;
+package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import java.time.Instant;
 
-@SpringBootApplication
-@EnableScheduling
-public class HiveApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(HiveApplication.class, args);
-    }
+public record EnrollmentTokenResponse(
+        String id,
+        String preview,
+        String note,
+        String createdByUsername,
+        Instant createdAt,
+        Instant expiresAt,
+        Instant usedAt,
+        Instant revokedAt,
+        String registeredGolemId,
+        String revokeReason,
+        boolean revoked) {
 }

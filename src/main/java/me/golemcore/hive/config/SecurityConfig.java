@@ -68,6 +68,8 @@ public class SecurityConfig {
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh",
                                 "/api/v1/auth/logout").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/golems/register").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/golems/*/auth:rotate").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/system/health").permitAll()
                         .pathMatchers("/actuator/health", "/actuator/info").permitAll()
                         .anyExchange().authenticated())

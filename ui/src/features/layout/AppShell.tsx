@@ -22,8 +22,8 @@ export function AppShell() {
                   One control plane for cards, golems, and operator judgment.
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-                  Phase 1 wires authentication, local persistence, and the supervision shell that later phases will
-                  turn into the real fleet and Kanban workspace.
+                  Phase 2 turns the shell into a live fleet registry with enrollment, machine auth, heartbeat presence,
+                  and operator-managed role bindings.
                 </p>
               </div>
               <nav className="flex flex-wrap gap-2">

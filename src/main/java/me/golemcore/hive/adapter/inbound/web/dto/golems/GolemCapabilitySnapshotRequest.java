@@ -16,17 +16,17 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive;
+package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import java.util.Set;
 
-@SpringBootApplication
-@EnableScheduling
-public class HiveApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(HiveApplication.class, args);
-    }
+public record GolemCapabilitySnapshotRequest(
+        Set<String> providers,
+        Set<String> modelFamilies,
+        Set<String> enabledTools,
+        Set<String> enabledAutonomyFeatures,
+        Set<String> capabilityTags,
+        Set<String> supportedChannels,
+        String snapshotHash,
+        String defaultModel) {
 }

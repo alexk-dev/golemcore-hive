@@ -16,17 +16,22 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive;
+package me.golemcore.hive.domain.model;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import java.time.Instant;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@SpringBootApplication
-@EnableScheduling
-public class HiveApplication {
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class GolemRoleBinding {
 
-    public static void main(String[] args) {
-        SpringApplication.run(HiveApplication.class, args);
-    }
+    private String roleSlug;
+    private Instant assignedAt;
+    private String assignedByOperatorId;
+    private String assignedByOperatorUsername;
 }

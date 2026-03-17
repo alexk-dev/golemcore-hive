@@ -16,17 +16,31 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive;
+package me.golemcore.hive.domain.model;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@SpringBootApplication
-@EnableScheduling
-public class HiveApplication {
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class GolemRole {
 
-    public static void main(String[] args) {
-        SpringApplication.run(HiveApplication.class, args);
-    }
+    @Builder.Default
+    private int schemaVersion = 1;
+
+    private String slug;
+    private String name;
+    private String description;
+    private Instant createdAt;
+    private Instant updatedAt;
+
+    @Builder.Default
+    private Set<String> capabilityTags = new LinkedHashSet<>();
 }

@@ -16,17 +16,20 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive;
+package me.golemcore.hive.domain.model;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
+public enum GolemScope {
+    HEARTBEAT("golems:heartbeat"),
+    EVENTS_WRITE("golems:events:write"),
+    CONTROL_CONNECT("golems:control:connect");
 
-@SpringBootApplication
-@EnableScheduling
-public class HiveApplication {
+    private final String value;
 
-    public static void main(String[] args) {
-        SpringApplication.run(HiveApplication.class, args);
+    GolemScope(String value) {
+        this.value = value;
+    }
+
+    public String value() {
+        return value;
     }
 }

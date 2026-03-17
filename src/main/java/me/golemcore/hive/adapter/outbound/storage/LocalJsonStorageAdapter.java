@@ -48,6 +48,11 @@ public class LocalJsonStorageAdapter implements StoragePort {
             fileStore.ensureDirectory("");
             fileStore.ensureDirectory("operators");
             fileStore.ensureDirectory("auth/refresh-sessions");
+            fileStore.ensureDirectory("auth/golem-refresh-sessions");
+            fileStore.ensureDirectory("golems");
+            fileStore.ensureDirectory("golem-roles");
+            fileStore.ensureDirectory("enrollment-tokens");
+            fileStore.ensureDirectory("heartbeats");
             fileStore.ensureDirectory("meta");
             log.info("[Storage] Local JSON storage initialized at {}", basePath);
         } catch (IOException exception) {

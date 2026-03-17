@@ -3,6 +3,8 @@ import { useAuth } from './providers/AuthProvider';
 import { LoginPage } from '../features/auth/LoginPage';
 import { AppShell } from '../features/layout/AppShell';
 import { HomePage } from '../features/dashboard/HomePage';
+import { GolemsPage } from '../features/golems/GolemsPage';
+import { GolemRolesPage } from '../features/golems/GolemRolesPage';
 
 function RequireAuth() {
   const { status } = useAuth();
@@ -55,12 +57,11 @@ export const routes = createBrowserRouter([
           },
           {
             path: '/fleet',
-            element: (
-              <ComingSoonPage
-                title="Fleet registration lands in Phase 2"
-                text="This route is reserved for golem enrollment, role binding, and heartbeat-based presence once the fleet domain is implemented."
-              />
-            ),
+            element: <GolemsPage />,
+          },
+          {
+            path: '/fleet/roles',
+            element: <GolemRolesPage />,
           },
           {
             path: '/boards',

@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: golemcore-hive
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+hive:
+  storage:
+    base-path: ./data/hive
+  security:
+    cors-allowed-origins:
+      - http://localhost:5173
+    jwt:
+      issuer: golemcore-hive
+      audience: golemcore-hive-ui
+      secret: ${HIVE_JWT_SECRET:}
+      access-expiration-minutes: 30
+      refresh-expiration-days: 7
+    cookie:
+      refresh-name: hive_refresh_token
+      secure: false
+      same-site: Lax
+      path: /api/v1/auth
+  bootstrap:
+    admin:
+      enabled: true
+      username: admin
+      password: change-me-now
+      display-name: Hive Admin

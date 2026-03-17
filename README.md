@@ -91,6 +91,14 @@ If you need a backend-only package during local debugging:
 ./mvnw -Dskip.frontend=true package
 ```
 
+## Releases
+
+Pushes to `main` run the conventional release workflow. When releasable commits are present, Hive:
+
+- creates the next `v*` tag with `cocogitto`,
+- builds the packaged Spring Boot jar,
+- publishes `hive-*.jar` and `sha256sums.txt` to the GitHub Release for that tag.
+
 ## Production checklist
 
 1. Copy `application-prod.example.yml` into your deployment config and replace secrets.

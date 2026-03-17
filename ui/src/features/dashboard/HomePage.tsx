@@ -9,11 +9,11 @@ const metrics = [
 const roadmapCards = [
   {
     title: 'Fleet registration',
-    text: 'Enrollment tokens, machine JWT scopes, and heartbeat-based presence are now online in the Fleet view.',
+    text: 'Enrollment tokens, machine JWT scopes, and heartbeat-based presence are already online in the Fleet view.',
   },
   {
     title: 'Boards and cards',
-    text: 'Multiple board flows, board teams, and Team/All assignee selection follow after fleet.',
+    text: 'Multiple board flows, board teams, card drawers, and Team/All assignee selection are now landing in the Boards view.',
   },
   {
     title: 'Card-bound threads',
@@ -29,13 +29,13 @@ export function HomePage() {
       <section className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
         <article className="panel px-6 py-6 md:px-8">
           <div className="space-y-4">
-            <span className="pill">Phase 1 + Phase 2</span>
+            <span className="pill">Phase 3</span>
             <h2 className="text-3xl font-bold tracking-[-0.04em] text-foreground">
-              Hive now authenticates operators and manages a real runtime fleet instead of a static placeholder.
+              Hive now runs real boards and cards, not just authentication and fleet plumbing.
             </h2>
             <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-              The control plane can now issue one-time enrollment tokens, accept bot registration, track presence, and
-              bind free-form roles, while leaving boards and command orchestration for the next phases.
+              Operators can keep separate kanban flows, assign cards from board-local teams or the full fleet, and
+              prepare every card as the canonical shell around a future bot thread.
             </p>
           </div>
         </article>
@@ -47,10 +47,10 @@ export function HomePage() {
               <h3 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-foreground">{user?.displayName}</h3>
             </div>
             <div className="rounded-[22px] border border-border/80 bg-muted/60 p-4">
-              <p className="text-sm font-medium text-foreground">Ready for fleet bootstrap</p>
+              <p className="text-sm font-medium text-foreground">Ready for board operations</p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                The current session now fronts a real fleet registry: JWT rotation, local JSON persistence, enrollment
-                workflows, and heartbeat-aware runtime detail are in place before boards arrive.
+                The current session now fronts a board-aware control plane: JWT rotation, local JSON persistence,
+                fleet routing, and kanban state all share the same local-first runtime.
               </p>
             </div>
           </div>

@@ -19,6 +19,7 @@
 package me.golemcore.hive.adapter.inbound.web.controller;
 
 import jakarta.validation.Valid;
+import java.net.URI;
 import java.security.Principal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +28,12 @@ import me.golemcore.hive.adapter.inbound.web.dto.golems.EnrollmentTokenCreateReq
 import me.golemcore.hive.adapter.inbound.web.dto.golems.EnrollmentTokenCreatedResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.EnrollmentTokenResponse;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
+import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.EnrollmentToken;
 import me.golemcore.hive.domain.service.EnrollmentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,21 +51,24 @@ import reactor.core.scheduler.Schedulers;
 public class EnrollmentController {
 
     private final EnrollmentService enrollmentService;
+    private final HiveProperties properties;
 
     @PostMapping
     public Mono<ResponseEntity<EnrollmentTokenCreatedResponse>> createEnrollmentToken(
             Principal principal,
-            @Valid @RequestBody(required = false) EnrollmentTokenCreateRequest request) {
+            ServerHttpRequest request,
+            @Valid @RequestBody(required = false) EnrollmentTokenCreateRequest requestBody) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = requireOperatorActor(principal);
             EnrollmentService.CreatedEnrollmentToken created = enrollmentService.createEnrollmentToken(
                     actor,
-                    request != null ? request.note() : null,
-                    request != null ? request.expiresInMinutes() : null);
+                    requestBody != null ? requestBody.note() : null,
+                    requestBody != null ? requestBody.expiresInMinutes() : null);
             EnrollmentToken token = created.getToken();
             return ResponseEntity.status(HttpStatus.CREATED).body(new EnrollmentTokenCreatedResponse(
                     token.getId(),
                     created.getRevealedToken(),
+                    created.getRevealedToken() + ":" + resolveJoinBaseUrl(request),
                     token.getTokenPreview(),
                     token.getNote(),
                     token.getCreatedAt(),
@@ -101,11 +107,42 @@ public class EnrollmentController {
                 token.getCreatedByOperatorUsername(),
                 token.getCreatedAt(),
                 token.getExpiresAt(),
-                token.getUsedAt(),
+                token.getLastUsedAt(),
+                token.getRegistrationCount(),
                 token.getRevokedAt(),
-                token.getRegisteredGolemId(),
+                token.getLastRegisteredGolemId(),
                 token.getRevokeReason(),
                 token.isRevoked());
+    }
+
+    private String resolveJoinBaseUrl(ServerHttpRequest request) {
+        String configuredBaseUrl = properties.getFleet().getPublicBaseUrl();
+        if (configuredBaseUrl != null && !configuredBaseUrl.isBlank()) {
+            return trimTrailingSlash(configuredBaseUrl);
+        }
+        URI requestUri = request.getURI();
+        String scheme = requestUri.getScheme() != null ? requestUri.getScheme() : "http";
+        String host = requestUri.getHost() != null ? requestUri.getHost() : "localhost";
+        int port = requestUri.getPort();
+        String portSuffix = shouldIncludePort(scheme, port) ? ":" + port : "";
+        return scheme + "://" + host + portSuffix;
+    }
+
+    private boolean shouldIncludePort(String scheme, int port) {
+        if (port < 0) {
+            return false;
+        }
+        if ("http".equalsIgnoreCase(scheme) && port == 80) {
+            return false;
+        }
+        return !"https".equalsIgnoreCase(scheme) || port != 443;
+    }
+
+    private String trimTrailingSlash(String value) {
+        if (value.endsWith("/")) {
+            return value.substring(0, value.length() - 1);
+        }
+        return value;
     }
 
     private AuthenticatedActor requireOperatorActor(Principal principal) {

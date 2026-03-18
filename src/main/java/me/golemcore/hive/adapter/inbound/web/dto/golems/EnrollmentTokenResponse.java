@@ -27,9 +27,10 @@ public record EnrollmentTokenResponse(
         String createdByUsername,
         Instant createdAt,
         Instant expiresAt,
-        Instant usedAt,
+        Instant lastUsedAt,
+        long registrationCount,
         Instant revokedAt,
-        String registeredGolemId,
+        String lastRegisteredGolemId,
         String revokeReason,
         boolean revoked) {
 }

@@ -70,9 +70,10 @@ export type EnrollmentToken = {
   createdByUsername: string | null;
   createdAt: string;
   expiresAt: string;
-  usedAt: string | null;
+  lastUsedAt: string | null;
+  registrationCount: number;
   revokedAt: string | null;
-  registeredGolemId: string | null;
+  lastRegisteredGolemId: string | null;
   revokeReason: string | null;
   revoked: boolean;
 };
@@ -80,6 +81,7 @@ export type EnrollmentToken = {
 export type EnrollmentTokenCreated = {
   id: string;
   token: string;
+  joinCode: string;
   preview: string;
   note: string | null;
   createdAt: string;

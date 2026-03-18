@@ -85,7 +85,7 @@ Hive fills that gap.
 
 How it works:
 
-- Bot starts with `HIVE_URL` and an enrollment secret.
+- Bot starts with a Hive join code or a managed bootstrap configuration.
 - Bot registers itself in Hive.
 - Bot opens an outbound authenticated WebSocket control channel to Hive.
 - Hive pushes commands; bot streams events, heartbeats, chat chunks, and run state back.
@@ -209,7 +209,7 @@ Rule:
 
 Hive must support:
 
-- creating short-lived enrollment tokens,
+- creating reusable enrollment tokens with configurable TTL and revoke support,
 - registering a new golem from the bot side,
 - approving or rejecting a registration,
 - creating and managing golem roles,
@@ -247,12 +247,9 @@ Golem role model:
 
 Minimum acceptable v1 flow:
 
-1. Operator creates an enrollment token in Hive.
-2. Bot starts with:
-   - `HIVE_URL`
-   - `HIVE_ENROLLMENT_TOKEN`
-   - optional `GOLEM_DISPLAY_NAME`
-3. Bot calls `POST /api/v1/golems/register` with:
+1. Operator creates an enrollment token in Hive and copies a join code in the form `<TOKEN>:<URL>`.
+2. Bot receives the join code through its UI or through managed bootstrap properties.
+3. Bot parses the join code, stores the effective Hive server URL in UI/runtime config, and calls `POST /api/v1/golems/register` with:
    - enrollment token,
    - bot metadata/capabilities,
    - bot version/build info.
@@ -265,13 +262,14 @@ Minimum acceptable v1 flow:
    - control-channel URL,
    - heartbeat interval,
    - allowed scopes/claims.
-5. Bot stores tokens locally.
+5. Bot stores machine session state locally, separate from UI-editable runtime config.
 6. Bot opens the outbound control channel using the JWT access token.
 7. Bot refreshes expired access tokens through a refresh endpoint, similar to `golemcore-bot` dashboard auth.
 
 Important note:
 
-- The bootstrap secret is the short-lived enrollment token.
+- The bootstrap secret is a reusable enrollment token.
+- Revoking an enrollment token blocks future joins only; it must not retroactively invalidate already enrolled golems.
 - Persistent auth after enrollment should be JWT-based, not long-lived static access keys.
 - Match the existing `golemcore-bot` model:
   - short-lived access JWT,
@@ -282,7 +280,9 @@ Important note:
   - access token in `Authorization: Bearer`,
   - refresh token in `HttpOnly` secure cookie.
 - Bot auth should also use JWT, but refresh token storage remains bot-local and never appears in the UI.
+- If managed bootstrap properties are present in the bot, the Hive settings section must be rendered read-only and write-protected in the backend.
 - v1.1 can add mTLS if stronger machine-to-machine trust is needed.
+- Detailed cross-repo contract: [docs/bot-integration-contract.md](docs/bot-integration-contract.md)
 
 ### 7.3 Heartbeats, presence, and telemetry
 
@@ -741,14 +741,12 @@ Required local responsibilities in the bot:
   - current model tier
   - current card binding
 
-Recommended bot configuration:
+Recommended bot integration model:
 
-- `HIVE_ENABLED`
-- `HIVE_URL`
-- `HIVE_ENROLLMENT_TOKEN`
-- `HIVE_HEARTBEAT_INTERVAL`
-- `HIVE_CONTROL_CHANNEL_RECONNECT_BACKOFF`
-- `HIVE_JWT_REFRESH_SKEW_SECONDS`
+- effective runtime/UI config in `RuntimeConfig.HiveConfig`,
+- optional managed bootstrap override via `bot.hive.*`,
+- separate bot-local `HiveSessionState` for machine JWTs and connection state,
+- one join code per enrollment action in the form `<TOKEN>:<URL>`.
 
 ## 11. Frontend Specification
 
@@ -843,7 +841,7 @@ Why not add a DB immediately:
 ## 13. Security Requirements
 
 - TLS only.
-- Enrollment tokens must be one-time or short TTL.
+- Enrollment tokens must be revocable, reusable, and bounded by TTL.
 - Bot auth tokens must be scoped and rotatable.
 - Hive commands must be signed or nonce-protected.
 - Heartbeat/event ingestion must reject replayed or stale envelopes.

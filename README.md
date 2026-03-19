@@ -97,7 +97,20 @@ Pushes to `main` run the conventional release workflow. When releasable commits 
 
 - creates the next `v*` tag with `cocogitto`,
 - builds the packaged Spring Boot jar,
-- publishes `hive-*.jar` and `sha256sums.txt` to the GitHub Release for that tag.
+- publishes `hive-*.jar` and `sha256sums.txt` to the GitHub Release for that tag,
+- triggers container publication to `ghcr.io`.
+
+Published image tags:
+
+- branch pushes outside `main`: short SHA only
+- `main`: `latest` and short SHA
+- release tags `v*`: `<version>`, `latest`, and short SHA
+
+Example:
+
+```bash
+docker pull ghcr.io/<owner>/golemcore-hive:latest
+```
 
 ## Production checklist
 

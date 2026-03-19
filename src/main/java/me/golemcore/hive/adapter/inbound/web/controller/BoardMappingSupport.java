@@ -102,6 +102,7 @@ abstract class BoardMappingSupport {
                 card.getThreadId(),
                 card.getTitle(),
                 card.getDescription(),
+                card.getPrompt(),
                 card.getColumnId(),
                 card.getAssigneeGolemId(),
                 card.getAssignmentPolicy().name(),

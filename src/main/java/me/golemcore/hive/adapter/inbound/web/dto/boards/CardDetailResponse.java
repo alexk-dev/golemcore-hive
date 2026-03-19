@@ -27,6 +27,7 @@ public record CardDetailResponse(
         String threadId,
         String title,
         String description,
+        String prompt,
         String columnId,
         String assigneeGolemId,
         String assignmentPolicy,

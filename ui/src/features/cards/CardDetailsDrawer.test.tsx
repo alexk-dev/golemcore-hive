@@ -11,6 +11,7 @@ function createCard(overrides: Partial<CardDetail> = {}): CardDetail {
     threadId: 'thread_123',
     title: 'Check Sosua Weather',
     description: 'Get the weather report for Sosua today.',
+    prompt: 'Start with the saved card prompt before sending manual follow-ups.',
     columnId: 'ready',
     assigneeGolemId: 'golem_123',
     assignmentPolicy: 'AUTOMATIC',
@@ -61,5 +62,7 @@ describe('CardDetailsDrawer', () => {
     expect(screen.getByRole('heading', { name: /dispatch to assignee/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /dispatch command/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/ask the assigned golem/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/assignee routing/i)).toHaveLength(2);
+    expect(screen.getByLabelText(/prompt/i)).toHaveDisplayValue('Start with the saved card prompt before sending manual follow-ups.');
   });
 });

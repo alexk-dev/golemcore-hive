@@ -40,6 +40,7 @@ public class Card {
     private String threadId;
     private String title;
     private String description;
+    private String prompt;
     private String columnId;
     private String assigneeGolemId;
     private CardAssignmentPolicy assignmentPolicy;

@@ -14,6 +14,7 @@ type CardComposerDialogProps = {
   onClose: () => void;
   onSubmit: (input: {
     title: string;
+    prompt: string;
     description: string;
     columnId: string;
     assigneeGolemId: string | null;
@@ -32,6 +33,7 @@ export function CardComposerDialog({
   onSubmit,
 }: CardComposerDialogProps) {
   const [title, setTitle] = useState('');
+  const [prompt, setPrompt] = useState('');
   const [description, setDescription] = useState('');
   const [columnId, setColumnId] = useState('');
   const [assigneeGolemId, setAssigneeGolemId] = useState<string | null>(null);
@@ -43,6 +45,7 @@ export function CardComposerDialog({
       return;
     }
     setTitle('');
+    setPrompt('');
     setDescription('');
     setColumnId(board.flow.defaultColumnId);
     setAssigneeGolemId(null);
@@ -58,6 +61,7 @@ export function CardComposerDialog({
     event.preventDefault();
     await onSubmit({
       title,
+      prompt,
       description,
       columnId,
       assigneeGolemId,
@@ -74,7 +78,8 @@ export function CardComposerDialog({
             <span className="pill">New card</span>
             <h2 className="mt-4 text-3xl font-bold tracking-[-0.04em] text-foreground">Create card in {board.name}</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Every card creates a canonical Hive thread immediately and can be assigned from the board team or the full fleet.
+              Every card creates a canonical Hive thread immediately. The saved prompt is auto-dispatched the first time you
+              move the card into In Progress.
             </p>
           </div>
           <button
@@ -95,6 +100,16 @@ export function CardComposerDialog({
                 onChange={(event) => setTitle(event.target.value)}
                 className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
                 placeholder="Implement board filters"
+              />
+            </label>
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-foreground">Prompt</span>
+              <textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                rows={6}
+                className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+                placeholder="The exact starting instruction Hive should dispatch the first time you move this card into In Progress."
               />
             </label>
             <label className="grid gap-2">
@@ -123,7 +138,7 @@ export function CardComposerDialog({
                 </select>
               </label>
               <label className="grid gap-2">
-                <span className="text-sm font-semibold text-foreground">Assignment policy</span>
+                <span className="text-sm font-semibold text-foreground">Assignee routing</span>
                 <select
                   value={assignmentPolicy}
                   onChange={(event) => setAssignmentPolicy(event.target.value)}
@@ -138,9 +153,9 @@ export function CardComposerDialog({
             <div className="soft-card p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Selected policy</p>
+                  <p className="text-sm font-semibold text-foreground">Selected routing</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    `AUTOMATIC` can apply the top suggestion during create when you explicitly opt in below.
+                    Routing controls who gets the work. Card status still follows lifecycle signals and board flow.
                   </p>
                 </div>
                 <AssignmentPolicyBadge policy={assignmentPolicy} />
@@ -158,7 +173,7 @@ export function CardComposerDialog({
             </div>
             <button
               type="submit"
-              disabled={isPending || !title.trim()}
+              disabled={isPending || !title.trim() || !prompt.trim()}
               className="rounded-[20px] bg-foreground px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending ? 'Creating card...' : 'Create card'}
@@ -167,7 +182,7 @@ export function CardComposerDialog({
 
           <div className="grid gap-3">
             <div>
-              <p className="text-sm font-semibold text-foreground">Assignee</p>
+              <p className="text-sm font-semibold text-foreground">Assignee routing</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Two tabs mirror the Hive assignment model: quick team-local routing and full-fleet fallback.
               </p>

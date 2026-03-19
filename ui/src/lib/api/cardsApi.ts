@@ -44,6 +44,7 @@ export type CardDetail = {
   threadId: string;
   title: string;
   description: string | null;
+  prompt: string;
   columnId: string;
   assigneeGolemId: string | null;
   assignmentPolicy: string;
@@ -75,6 +76,7 @@ export function getCard(cardId: string) {
 export function createCard(input: {
   boardId: string;
   title: string;
+  prompt: string;
   description?: string;
   columnId?: string;
   assigneeGolemId?: string | null;
@@ -87,7 +89,7 @@ export function createCard(input: {
   });
 }
 
-export function updateCard(cardId: string, input: { title?: string; description?: string; assignmentPolicy?: string }) {
+export function updateCard(cardId: string, input: { title?: string; description?: string; prompt?: string; assignmentPolicy?: string }) {
   return apiRequest<CardDetail>(`/api/v1/cards/${cardId}`, {
     method: 'PATCH',
     body: JSON.stringify(input),

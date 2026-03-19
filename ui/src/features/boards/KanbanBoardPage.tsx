@@ -10,6 +10,8 @@ import { CardComposerDialog } from '../cards/CardComposerDialog';
 import { CardDetailsDrawer } from '../cards/CardDetailsDrawer';
 import { KanbanColumn } from './KanbanColumn';
 
+const KANBAN_BACKGROUND_REFRESH_MS = 10_000;
+
 export function KanbanBoardPage() {
   const { boardId = '' } = useParams();
   const queryClient = useQueryClient();
@@ -21,11 +23,16 @@ export function KanbanBoardPage() {
   const boardQuery = useQuery({
     queryKey: ['board', boardId],
     queryFn: () => getBoard(boardId),
+    enabled: Boolean(boardId),
+    refetchInterval: KANBAN_BACKGROUND_REFRESH_MS,
+    refetchIntervalInBackground: true,
   });
   const cardsQuery = useQuery({
     queryKey: ['cards', boardId],
     queryFn: () => listCards(boardId),
     enabled: Boolean(boardId),
+    refetchInterval: KANBAN_BACKGROUND_REFRESH_MS,
+    refetchIntervalInBackground: true,
   });
   const golemsQuery = useQuery({
     queryKey: ['golems', 'kanban'],
@@ -40,11 +47,15 @@ export function KanbanBoardPage() {
     queryKey: ['card', selectedCardId],
     queryFn: () => getCard(selectedCardId ?? ''),
     enabled: Boolean(selectedCardId),
+    refetchInterval: selectedCardId ? KANBAN_BACKGROUND_REFRESH_MS : false,
+    refetchIntervalInBackground: true,
   });
   const assigneeOptionsQuery = useQuery({
     queryKey: ['card-assignees', selectedCardId],
     queryFn: () => getCardAssignees(selectedCardId ?? ''),
     enabled: Boolean(selectedCardId),
+    refetchInterval: selectedCardId ? KANBAN_BACKGROUND_REFRESH_MS : false,
+    refetchIntervalInBackground: true,
   });
 
   const createCardMutation = useMutation({
@@ -71,7 +82,7 @@ export function KanbanBoardPage() {
   });
 
   const updateCardMutation = useMutation({
-    mutationFn: ({ cardId, input }: { cardId: string; input: { title?: string; description?: string; assignmentPolicy?: string } }) =>
+    mutationFn: ({ cardId, input }: { cardId: string; input: { title?: string; description?: string; prompt?: string; assignmentPolicy?: string } }) =>
       updateCard(cardId, input),
     onSuccess: async () => {
       await Promise.all([
@@ -297,6 +308,7 @@ export function KanbanBoardPage() {
           await createCardMutation.mutateAsync({
             boardId,
             title: input.title,
+            prompt: input.prompt,
             description: input.description,
             columnId: input.columnId,
             assigneeGolemId: input.assigneeGolemId,

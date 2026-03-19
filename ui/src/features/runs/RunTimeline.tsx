@@ -20,20 +20,20 @@ export function RunTimeline({ commands, runs, signals }: RunTimelineProps) {
   ].sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
 
   return (
-    <section className="panel p-6 md:p-8">
+    <section className="panel p-4">
       <div>
         <span className="pill">Run timeline</span>
-        <h3 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">Commands, runs, and signals in one place</h3>
+        <h3 className="mt-3 text-lg font-bold tracking-[-0.03em] text-foreground">Commands, runs, and signals</h3>
       </div>
-      <div className="mt-6 grid gap-3">
+      <div className="mt-4 grid gap-3">
         {items.length ? (
           items.map((item) => {
             if (item.kind === 'command') {
               return (
-                <article key={`${item.kind}-${item.id}`} className="rounded-[20px] border border-border bg-white/70 p-4">
+                <article key={`${item.kind}-${item.id}`} className="rounded-[16px] border border-border bg-white/70 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="pill">Command</span>
-                    <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.payload.status}</span>
+                    <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{item.payload.status}</span>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-foreground">{item.payload.body}</p>
                   {item.payload.approvalRiskLevel ? (
@@ -53,16 +53,16 @@ export function RunTimeline({ commands, runs, signals }: RunTimelineProps) {
                       {new Date(item.payload.cancelRequestedAt).toLocaleString()}
                     </p>
                   ) : null}
-                  <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
+                  <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
                 </article>
               );
             }
             if (item.kind === 'run') {
               return (
-                <article key={`${item.kind}-${item.id}`} className="rounded-[20px] border border-border bg-white/70 p-4">
+                <article key={`${item.kind}-${item.id}`} className="rounded-[16px] border border-border bg-white/70 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="pill">Run</span>
-                    <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.payload.status}</span>
+                    <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{item.payload.status}</span>
                   </div>
                   <p className="mt-3 text-sm text-muted-foreground">
                     {item.payload.summary || 'No run summary yet'} · events {item.payload.eventCount}
@@ -81,15 +81,15 @@ export function RunTimeline({ commands, runs, signals }: RunTimelineProps) {
                   <p className="mt-2 text-sm text-muted-foreground">
                     Tokens {item.payload.inputTokens}/{item.payload.outputTokens} · cost micros {item.payload.accumulatedCostMicros}
                   </p>
-                  <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
+                  <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
                 </article>
               );
             }
             return (
-              <article key={`${item.kind}-${item.id}`} className="rounded-[20px] border border-border bg-white/70 p-4">
+              <article key={`${item.kind}-${item.id}`} className="rounded-[16px] border border-border bg-white/70 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <SignalBadge signalType={item.payload.signalType} />
-                  <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                     {item.payload.resolutionOutcome || 'RECORDED'}
                   </span>
                 </div>
@@ -103,7 +103,7 @@ export function RunTimeline({ commands, runs, signals }: RunTimelineProps) {
                     {item.payload.evidenceRefs.map((ref) => (
                       <span
                         key={`${item.payload.id}-${ref.kind}-${ref.ref}`}
-                        className="rounded-full border border-border bg-white/90 px-3 py-1 text-xs font-semibold text-muted-foreground"
+                        className="rounded-full border border-border bg-white/90 px-3 py-1 text-[11px] font-semibold text-muted-foreground"
                       >
                         {ref.kind}: {ref.ref}
                       </span>
@@ -111,12 +111,12 @@ export function RunTimeline({ commands, runs, signals }: RunTimelineProps) {
                   </div>
                 ) : null}
                 {item.payload.resolutionSummary ? <p className="mt-2 text-sm text-muted-foreground">{item.payload.resolutionSummary}</p> : null}
-                <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
+                <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
               </article>
             );
           })
         ) : (
-          <div className="rounded-[20px] border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
+          <div className="rounded-[16px] border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
             No run or signal activity yet.
           </div>
         )}

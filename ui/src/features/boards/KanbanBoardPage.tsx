@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getBoard, getBoardTeam } from '../../lib/api/boardsApi';
 import { archiveCard, assignCard, createCard, getCard, getCardAssignees, listCards, moveCard, updateCard } from '../../lib/api/cardsApi';
-import { cancelThreadRun } from '../../lib/api/commandsApi';
+import { cancelThreadRun, createThreadCommand, CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import { listGolems } from '../../lib/api/golemsApi';
 import { CardComposerDialog } from '../cards/CardComposerDialog';
 import { CardDetailsDrawer } from '../cards/CardDetailsDrawer';
@@ -100,6 +100,26 @@ export function KanbanBoardPage() {
         queryClient.invalidateQueries({ queryKey: ['board', boardId] }),
       ]);
       setSelectedCardId(null);
+    },
+  });
+  const createCommandMutation = useMutation({
+    mutationFn: ({ threadId, input }: { threadId: string; input: CreateThreadCommandInput }) => createThreadCommand(threadId, input),
+    onMutate: () => {
+      setControlError(null);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
+        queryClient.invalidateQueries({ queryKey: ['card', selectedCardId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-runs', cardDetailsQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-commands', cardDetailsQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-messages', cardDetailsQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-signals', cardDetailsQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['card-thread', selectedCardId] }),
+      ]);
+    },
+    onError: (error) => {
+      setControlError(readErrorMessage(error));
     },
   });
   const cancelRunMutation = useMutation({
@@ -204,16 +224,32 @@ export function KanbanBoardPage() {
     return <div className="panel p-6 md:p-8 text-sm text-muted-foreground">Loading board…</div>;
   }
 
+  const totalCards = (cardsQuery.data ?? []).filter((card) => !card.archived).length;
+  const activeCards = (cardsQuery.data ?? []).filter((card) => {
+    return card.controlState?.runStatus === 'RUNNING' || card.columnId === 'in_progress';
+  }).length;
+
   return (
     <div className="grid gap-6">
-      <section className="panel p-6 md:p-8">
+      <section className="panel px-5 py-4 md:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <span className="pill">{boardQuery.data.templateKey}</span>
-            <h2 className="mt-4 text-3xl font-bold tracking-[-0.04em] text-foreground">{boardQuery.data.name}</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
+            <h2 className="mt-3 text-2xl font-bold tracking-[-0.04em] text-foreground">{boardQuery.data.name}</h2>
+            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
               {boardQuery.data.description || 'Board-specific columns, transitions, and team routing live here.'}
             </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                {boardQuery.data.flow.columns.length} columns
+              </span>
+              <span className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                {totalCards} cards
+              </span>
+              <span className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                {activeCards} active
+              </span>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link to="/boards" className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
@@ -235,7 +271,7 @@ export function KanbanBoardPage() {
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={(event) => void handleDragEnd(event)}>
         <section className="overflow-x-auto pb-3">
-          <div className="flex min-w-max gap-4">
+          <div className="flex min-w-max gap-3">
             {boardQuery.data.flow.columns.map((column) => (
               <KanbanColumn
                 key={column.id}
@@ -276,6 +312,7 @@ export function KanbanBoardPage() {
         assigneeOptions={assigneeOptionsQuery.data ?? null}
         allGolems={golemsQuery.data ?? []}
         isPending={updateCardMutation.isPending || assignCardMutation.isPending || archiveCardMutation.isPending}
+        isDispatchPending={createCommandMutation.isPending}
         isCancelPending={cancelRunMutation.isPending}
         controlError={controlError}
         onClose={() => setSelectedCardId(null)}
@@ -302,6 +339,15 @@ export function KanbanBoardPage() {
             return;
           }
           await archiveCardMutation.mutateAsync(selectedCardId);
+        }}
+        onDispatchCommand={async (input) => {
+          if (!cardDetailsQuery.data?.threadId) {
+            return;
+          }
+          await createCommandMutation.mutateAsync({
+            threadId: cardDetailsQuery.data.threadId,
+            input,
+          });
         }}
         onCancelRun={async (runId) => {
           if (!cardDetailsQuery.data?.threadId) {

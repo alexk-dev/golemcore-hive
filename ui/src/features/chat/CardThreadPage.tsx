@@ -181,12 +181,12 @@ export function CardThreadPage() {
 
   return (
     <div className="grid gap-6">
-      <section className="panel p-6 md:p-8">
+      <section className="panel px-5 py-4 md:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <span className="pill">Card thread</span>
-            <h2 className="mt-4 text-3xl font-bold tracking-[-0.04em] text-foreground">{cardQuery.data.title}</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
+            <h2 className="mt-3 text-2xl font-bold tracking-[-0.04em] text-foreground">{cardQuery.data.title}</h2>
+            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
               Card {cardQuery.data.id} · thread {threadQuery.data.threadId} · column {cardQuery.data.columnId}
             </p>
           </div>
@@ -215,7 +215,7 @@ export function CardThreadPage() {
           </div>
         </div>
         {latestControllableRun ? (
-          <p className="mt-4 text-sm leading-7 text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             Active control target: run {latestControllableRun.id} with status {latestControllableRun.status}
             {latestControllableCommand ? ` · command ${latestControllableCommand.status.toLowerCase()}` : ''}
           </p>
@@ -237,7 +237,7 @@ export function CardThreadPage() {
 
       <TransitionSuggestionBanner signal={latestSuggestion} />
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_360px]">
         <div className="grid gap-6">
           <ThreadMessageList messages={messagesQuery.data ?? []} />
           <ThreadComposer

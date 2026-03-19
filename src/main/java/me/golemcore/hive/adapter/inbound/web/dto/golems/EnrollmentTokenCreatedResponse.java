@@ -23,6 +23,7 @@ import java.time.Instant;
 public record EnrollmentTokenCreatedResponse(
         String id,
         String token,
+        String joinCode,
         String preview,
         String note,
         Instant createdAt,

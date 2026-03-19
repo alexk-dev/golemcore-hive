@@ -115,8 +115,9 @@ public class EnrollmentService {
                 GolemScope.EVENTS_WRITE.value(),
                 GolemScope.HEARTBEAT.value());
         MachineTokenPair tokens = issueMachineTokens(golem, scopes, null);
-        enrollmentToken.setUsedAt(Instant.now());
-        enrollmentToken.setRegisteredGolemId(golem.getId());
+        enrollmentToken.setLastUsedAt(Instant.now());
+        enrollmentToken.setRegistrationCount(enrollmentToken.getRegistrationCount() + 1L);
+        enrollmentToken.setLastRegisteredGolemId(golem.getId());
         saveEnrollmentToken(enrollmentToken);
         return new RegistrationResult(golem, tokens);
     }
@@ -159,9 +160,6 @@ public class EnrollmentService {
         if (enrollmentToken.isRevoked()) {
             throw new IllegalArgumentException("Enrollment token has been revoked");
         }
-        if (enrollmentToken.getUsedAt() != null) {
-            throw new IllegalArgumentException("Enrollment token has already been used");
-        }
         if (enrollmentToken.getExpiresAt().isBefore(Instant.now())) {
             throw new IllegalArgumentException("Enrollment token has expired");
         }
@@ -200,7 +198,7 @@ public class EnrollmentService {
             return Optional.empty();
         }
         try {
-            return Optional.of(objectMapper.readValue(content, EnrollmentToken.class));
+            return Optional.of(normalizeEnrollmentToken(objectMapper.readValue(content, EnrollmentToken.class)));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to deserialize enrollment token " + tokenId, exception);
         }
@@ -212,10 +210,20 @@ public class EnrollmentService {
             return Optional.empty();
         }
         try {
-            return Optional.of(objectMapper.readValue(content, EnrollmentToken.class));
+            return Optional.of(normalizeEnrollmentToken(objectMapper.readValue(content, EnrollmentToken.class)));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to deserialize enrollment token " + path, exception);
         }
+    }
+
+    private EnrollmentToken normalizeEnrollmentToken(EnrollmentToken enrollmentToken) {
+        if (enrollmentToken.getSchemaVersion() < 2) {
+            enrollmentToken.setSchemaVersion(2);
+        }
+        if (enrollmentToken.getRegistrationCount() <= 0L && enrollmentToken.getLastUsedAt() != null) {
+            enrollmentToken.setRegistrationCount(1L);
+        }
+        return enrollmentToken;
     }
 
     private void saveEnrollmentToken(EnrollmentToken enrollmentToken) {

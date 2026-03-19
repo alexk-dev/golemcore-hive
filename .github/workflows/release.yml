@@ -212,7 +212,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run docker-publish.yml --ref "${{ steps.release.outputs.version }}"
-
       - name: Summary
         if: steps.release-flag.outputs.should-release == 'true' && steps.tag-push.outputs.should-release == 'true'
         run: |

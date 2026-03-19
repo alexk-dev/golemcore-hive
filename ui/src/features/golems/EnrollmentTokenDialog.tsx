@@ -18,11 +18,13 @@ export function EnrollmentTokenDialog({
 }: EnrollmentTokenDialogProps) {
   const [note, setNote] = useState('');
   const [expiresInMinutes, setExpiresInMinutes] = useState('30');
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   useEffect(() => {
     if (!open) {
       setNote('');
       setExpiresInMinutes('30');
+      setCopyState('idle');
     }
   }, [open]);
 
@@ -39,15 +41,28 @@ export function EnrollmentTokenDialog({
     });
   }
 
+  async function handleCopyJoinCode() {
+    if (!createdToken) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(createdToken.joinCode);
+      setCopyState('copied');
+    } catch (error) {
+      console.error('Failed to copy join code', error);
+      setCopyState('failed');
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4 py-6 backdrop-blur-sm">
       <div className="panel w-full max-w-2xl p-6 md:p-8">
         <div className="flex items-start justify-between gap-4">
           <div>
             <span className="pill">Enrollment</span>
-            <h2 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">Mint a one-time bot token</h2>
+            <h2 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">Mint a reusable bot token</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Hive reveals the secret once. After registration the token becomes unusable.
+              Hive reveals the secret once and also prepares a ready-to-paste join code for `golemcore-bot`.
             </p>
           </div>
           <button
@@ -62,12 +77,33 @@ export function EnrollmentTokenDialog({
         {createdToken ? (
           <div className="mt-6 space-y-4">
             <div className="rounded-[24px] border border-primary/20 bg-primary/5 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Token secret</p>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Join code</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Paste this value into the bot Hive settings and press `Join`.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyJoinCode()}
+                  className="rounded-full border border-primary/20 bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+                >
+                  {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy join code'}
+                </button>
+              </div>
               <pre className="mt-3 overflow-x-auto rounded-[20px] bg-foreground px-4 py-4 text-sm text-primary-foreground">
-                {createdToken.token}
+                {createdToken.joinCode}
               </pre>
               <p className="mt-3 text-sm text-muted-foreground">
-                Expires at {new Date(createdToken.expiresAt).toLocaleString()} and will not be shown again.
+                Expires at {new Date(createdToken.expiresAt).toLocaleString()} and can be reused until it is revoked or expires.
+              </p>
+              <p className="mt-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">Raw token segment</p>
+              <pre className="mt-2 overflow-x-auto rounded-[20px] border border-border/70 bg-white/90 px-4 py-4 text-sm text-foreground">
+                {createdToken.token}
+              </pre>
+              <p className="mt-2 text-sm text-muted-foreground">
+                The raw token is shown only once. The join code is the preferred operator workflow.
               </p>
             </div>
           </div>

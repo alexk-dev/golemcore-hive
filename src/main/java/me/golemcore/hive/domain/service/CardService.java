@@ -219,7 +219,10 @@ public class CardService {
         if (!targetExists) {
             throw new IllegalArgumentException("Target column does not exist in board flow");
         }
-        if (!boardService.isTransitionAllowed(board, card.getColumnId(), targetColumnId)) {
+        boolean transitionAllowed = origin == CardTransitionOrigin.BOARD_AUTOMATION
+                ? boardService.isTransitionReachable(board, card.getColumnId(), targetColumnId)
+                : boardService.isTransitionAllowed(board, card.getColumnId(), targetColumnId);
+        if (!transitionAllowed) {
             throw new IllegalArgumentException("Transition is not allowed by board flow");
         }
 

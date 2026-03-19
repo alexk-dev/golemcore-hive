@@ -23,16 +23,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.domain.model.ApprovalRequest;
 import me.golemcore.hive.domain.model.ApprovalRiskLevel;
 import me.golemcore.hive.domain.model.Card;
-import me.golemcore.hive.domain.model.CardLifecycleSignal;
 import me.golemcore.hive.domain.model.AuditEvent;
+import me.golemcore.hive.domain.model.CardControlStateSnapshot;
+import me.golemcore.hive.domain.model.CardLifecycleSignal;
 import me.golemcore.hive.domain.model.CommandRecord;
 import me.golemcore.hive.domain.model.CommandStatus;
 import me.golemcore.hive.domain.model.ControlCommandEnvelope;
@@ -58,6 +62,8 @@ public class CommandDispatchService {
 
     private static final String COMMANDS_DIR = "commands";
     private static final String RUNS_DIR = "runs";
+    private static final String CONTROL_EVENT_TYPE_COMMAND = "command";
+    private static final String CONTROL_EVENT_TYPE_CANCEL = "command.cancel";
 
     private final StoragePort storagePort;
     private final ObjectMapper objectMapper;
@@ -210,6 +216,151 @@ public class CommandDispatchService {
         }
         runs.sort(Comparator.comparing(RunProjection::getCreatedAt).thenComparing(RunProjection::getId));
         return runs;
+    }
+
+    public Map<String, CardControlStateSnapshot> listActiveCardControlStates(List<Card> cards) {
+        if (cards == null || cards.isEmpty()) {
+            return Map.of();
+        }
+
+        Set<String> cardIds = cards.stream()
+                .map(Card::getId)
+                .filter(cardId -> cardId != null && !cardId.isBlank())
+                .collect(java.util.stream.Collectors.toSet());
+        if (cardIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, CommandRecord> commandsById = new HashMap<>();
+        for (CommandRecord command : listAllCommands()) {
+            if (!cardIds.contains(command.getCardId())) {
+                continue;
+            }
+            commandsById.put(command.getId(), command);
+        }
+
+        List<RunProjection> candidateRuns = listAllRuns().stream()
+                .filter(run -> cardIds.contains(run.getCardId()))
+                .filter(run -> !isTerminal(run.getStatus()))
+                .sorted(Comparator
+                        .comparing(this::controlStateUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .reversed()
+                        .thenComparing(RunProjection::getId, Comparator.nullsLast(String::compareTo)))
+                .toList();
+
+        Map<String, CardControlStateSnapshot> snapshots = new HashMap<>();
+        for (RunProjection run : candidateRuns) {
+            if (snapshots.containsKey(run.getCardId())) {
+                continue;
+            }
+            snapshots.put(run.getCardId(), toCardControlStateSnapshot(run, commandsById.get(run.getCommandId())));
+        }
+        return snapshots;
+    }
+
+    public RunProjection requestRunCancellation(String threadId,
+                                                String runId,
+                                                String operatorId,
+                                                String operatorName) {
+        RunProjection run = findRun(runId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown run: " + runId));
+        if (!threadId.equals(run.getThreadId())) {
+            throw new IllegalArgumentException("Run does not belong to thread: " + threadId);
+        }
+
+        CommandRecord command = resolveCommand(run.getCommandId(), run);
+        if (command == null) {
+            throw new IllegalStateException("Run has no linked command: " + runId);
+        }
+        if (command.getStatus() == CommandStatus.PENDING_APPROVAL || run.getStatus() == RunStatus.PENDING_APPROVAL) {
+            throw new IllegalStateException("Use the approvals workflow to reject commands waiting for approval");
+        }
+        if (isTerminal(command.getStatus()) || isTerminal(run.getStatus())) {
+            throw new IllegalStateException("Run is already finished and cannot be cancelled");
+        }
+        if (isCancellationPending(command, run)) {
+            throw new IllegalStateException("Cancellation is already pending confirmation from the golem");
+        }
+
+        ThreadRecord thread = threadService.getThread(threadId);
+        Card card = cardService.getCard(run.getCardId());
+        Instant now = Instant.now();
+
+        if (command.getStatus() == CommandStatus.QUEUED && run.getStatus() == RunStatus.QUEUED) {
+            command.setStatus(CommandStatus.CANCELLED);
+            command.setQueueReason("Cancelled by operator before dispatch");
+            command.setUpdatedAt(now);
+            command.setCompletedAt(now);
+            run.setStatus(RunStatus.CANCELLED);
+            run.setUpdatedAt(now);
+            run.setCompletedAt(now);
+            saveCommand(command);
+            saveRun(run);
+
+            threadService.appendMessage(thread, command.getId(), run.getId(), null,
+                    ThreadMessageType.COMMAND_STATUS, ThreadParticipantType.OPERATOR,
+                    operatorId, operatorName, "Cancelled queued command before dispatch", now);
+            auditService.record(AuditEvent.builder()
+                    .eventType("command.cancelled")
+                    .severity("INFO")
+                    .actorType("OPERATOR")
+                    .actorId(operatorId)
+                    .actorName(operatorName)
+                    .targetType("RUN")
+                    .targetId(run.getId())
+                    .boardId(card.getBoardId())
+                    .cardId(card.getId())
+                    .threadId(thread.getId())
+                    .golemId(command.getGolemId())
+                    .commandId(command.getId())
+                    .runId(run.getId())
+                    .summary("Queued command cancelled before dispatch")
+                    .details(command.getBody()));
+            publishThreadUpdate(card, thread, command, run, now, List.of("command", "run", "thread_message"));
+            budgetService.refreshSnapshots();
+            return run;
+        }
+
+        Golem golem = golemRegistryService.findGolem(command.getGolemId())
+                .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + command.getGolemId()));
+        ControlCommandEnvelope envelope = buildControlEnvelope(CONTROL_EVENT_TYPE_CANCEL, command, now, null);
+        boolean delivered = golemControlChannelService.send(golem.getId(), toJson(envelope));
+        if (!delivered) {
+            throw new IllegalStateException("Control channel unavailable for golem: " + golem.getDisplayName());
+        }
+
+        command.setUpdatedAt(now);
+        command.setCancelRequestedAt(now);
+        command.setCancelRequestedByActorId(operatorId);
+        command.setCancelRequestedByActorName(operatorName);
+        run.setUpdatedAt(now);
+        run.setCancelRequestedAt(now);
+        run.setCancelRequestedByActorId(operatorId);
+        run.setCancelRequestedByActorName(operatorName);
+        saveCommand(command);
+        saveRun(run);
+
+        threadService.appendMessage(thread, command.getId(), run.getId(), null,
+                ThreadMessageType.COMMAND_STATUS, ThreadParticipantType.OPERATOR,
+                operatorId, operatorName, "Requested stop for active run", now);
+        auditService.record(AuditEvent.builder()
+                .eventType("command.cancel_requested")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(operatorId)
+                .actorName(operatorName)
+                .targetType("RUN")
+                .targetId(run.getId())
+                .boardId(card.getBoardId())
+                .cardId(card.getId())
+                .threadId(thread.getId())
+                .golemId(golem.getId())
+                .commandId(command.getId())
+                .runId(run.getId())
+                .summary("Cancellation requested for active run")
+                .details(command.getBody()));
+        publishThreadUpdate(card, thread, command, run, now, List.of("thread_message", "command", "run"));
+        return run;
     }
 
     public void dispatchPendingCommands(String golemId) {
@@ -539,22 +690,22 @@ public class CommandDispatchService {
         return commands;
     }
 
+    private List<RunProjection> listAllRuns() {
+        List<RunProjection> runs = new ArrayList<>();
+        for (String path : storagePort.listObjects(RUNS_DIR, "")) {
+            Optional<RunProjection> runOptional = loadRun(path);
+            runOptional.ifPresent(runs::add);
+        }
+        return runs;
+    }
+
     private void dispatchToControlChannel(CommandRecord command, RunProjection run, Instant now, Golem golem) {
         command.setDispatchAttempts(command.getDispatchAttempts() + 1);
         command.setLastDispatchAttemptAt(now);
         command.setUpdatedAt(now);
         command.setQueueReason(null);
 
-        ControlCommandEnvelope envelope = ControlCommandEnvelope.builder()
-                .eventType("command")
-                .commandId(command.getId())
-                .threadId(command.getThreadId())
-                .cardId(command.getCardId())
-                .golemId(command.getGolemId())
-                .runId(command.getRunId())
-                .body(command.getBody())
-                .createdAt(now)
-                .build();
+        ControlCommandEnvelope envelope = buildControlEnvelope(CONTROL_EVENT_TYPE_COMMAND, command, now, command.getBody());
         boolean delivered = golemControlChannelService.send(golem.getId(), toJson(envelope));
         if (delivered) {
             command.setStatus(CommandStatus.DELIVERED);
@@ -565,10 +716,26 @@ public class CommandDispatchService {
             return;
         }
 
-            command.setStatus(CommandStatus.QUEUED);
+        command.setStatus(CommandStatus.QUEUED);
         command.setQueueReason(golemControlChannelService.isConnected(golem.getId())
                 ? "Command delivery failed"
                 : "Control channel unavailable");
+    }
+
+    private ControlCommandEnvelope buildControlEnvelope(String eventType,
+                                                        CommandRecord command,
+                                                        Instant createdAt,
+                                                        String body) {
+        return ControlCommandEnvelope.builder()
+                .eventType(eventType)
+                .commandId(command.getId())
+                .threadId(command.getThreadId())
+                .cardId(command.getCardId())
+                .golemId(command.getGolemId())
+                .runId(command.getRunId())
+                .body(body)
+                .createdAt(createdAt)
+                .build();
     }
 
     private void recordDispatchAudit(CommandRecord command,
@@ -596,6 +763,40 @@ public class CommandDispatchService {
                 .approvalId(command.getApprovalRequestId())
                 .summary(summary)
                 .details(command.getQueueReason()));
+    }
+
+    private CardControlStateSnapshot toCardControlStateSnapshot(RunProjection run, CommandRecord command) {
+        Instant cancelRequestedAt = latestInstant(
+                run != null ? run.getCancelRequestedAt() : null,
+                command != null ? command.getCancelRequestedAt() : null);
+        String cancelRequestedByActorName = firstNonBlank(
+                run != null ? run.getCancelRequestedByActorName() : null,
+                command != null ? command.getCancelRequestedByActorName() : null);
+        boolean cancelRequestedPending = cancelRequestedAt != null
+                && !isTerminal(run.getStatus())
+                && (command == null || !isTerminal(command.getStatus()));
+        boolean canCancel = command != null
+                && command.getStatus() != CommandStatus.PENDING_APPROVAL
+                && !isTerminal(command.getStatus())
+                && !isTerminal(run.getStatus())
+                && !cancelRequestedPending;
+        return new CardControlStateSnapshot(
+                command != null ? command.getId() : run.getCommandId(),
+                run.getId(),
+                firstNonBlank(run.getGolemId(), command != null ? command.getGolemId() : null),
+                command != null ? command.getStatus() : null,
+                run.getStatus(),
+                firstNonBlank(run.getSummary(), command != null ? command.getBody() : null),
+                command != null ? command.getQueueReason() : null,
+                controlStateUpdatedAt(run),
+                cancelRequestedAt,
+                cancelRequestedByActorName,
+                cancelRequestedPending,
+                canCancel);
+    }
+
+    private Instant controlStateUpdatedAt(RunProjection run) {
+        return latestInstant(run.getUpdatedAt(), run.getCreatedAt());
     }
 
     private Optional<CommandRecord> findCommand(String commandId) {
@@ -711,6 +912,56 @@ public class CommandDispatchService {
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize control command envelope", exception);
         }
+    }
+
+    private void publishThreadUpdate(Card card,
+                                     ThreadRecord thread,
+                                     CommandRecord command,
+                                     RunProjection run,
+                                     Instant createdAt,
+                                     List<String> kinds) {
+        operatorUpdatesService.publish(OperatorUpdate.builder()
+                .eventType("thread_updated")
+                .cardId(card.getId())
+                .threadId(thread.getId())
+                .commandId(command.getId())
+                .runId(run.getId())
+                .kinds(kinds)
+                .createdAt(createdAt)
+                .build());
+    }
+
+    private boolean isTerminal(CommandStatus status) {
+        return status == CommandStatus.COMPLETED
+                || status == CommandStatus.REJECTED
+                || status == CommandStatus.FAILED
+                || status == CommandStatus.CANCELLED;
+    }
+
+    private boolean isTerminal(RunStatus status) {
+        return status == RunStatus.COMPLETED
+                || status == RunStatus.REJECTED
+                || status == RunStatus.FAILED
+                || status == RunStatus.CANCELLED;
+    }
+
+    private boolean isCancellationPending(CommandRecord command, RunProjection run) {
+        Instant cancelRequestedAt = latestInstant(
+                run != null ? run.getCancelRequestedAt() : null,
+                command != null ? command.getCancelRequestedAt() : null);
+        return cancelRequestedAt != null
+                && (run == null || !isTerminal(run.getStatus()))
+                && (command == null || !isTerminal(command.getStatus()));
+    }
+
+    private Instant latestInstant(Instant first, Instant second) {
+        if (first == null) {
+            return second;
+        }
+        if (second == null) {
+            return first;
+        }
+        return first.isAfter(second) ? first : second;
     }
 
     private String firstNonBlank(String... candidates) {

@@ -20,6 +20,8 @@ export type CommandRecord = {
   deliveredAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
+  cancelRequestedAt: string | null;
+  cancelRequestedByActorName: string | null;
 };
 
 export type RunProjection = {
@@ -41,6 +43,8 @@ export type RunProjection = {
   updatedAt: string;
   startedAt: string | null;
   completedAt: string | null;
+  cancelRequestedAt: string | null;
+  cancelRequestedByActorName: string | null;
 };
 
 export type EvidenceRef = {
@@ -83,6 +87,12 @@ export function createThreadCommand(threadId: string, input: CreateThreadCommand
   return apiRequest<CommandRecord>(`/api/v1/threads/${threadId}/commands`, {
     method: 'POST',
     body: JSON.stringify(input),
+  });
+}
+
+export function cancelThreadRun(threadId: string, runId: string) {
+  return apiRequest<RunProjection>(`/api/v1/threads/${threadId}/runs/${runId}/cancel`, {
+    method: 'POST',
   });
 }
 

@@ -10,6 +10,21 @@ export type CardTransition = {
   actorName: string | null;
 };
 
+export type CardControlState = {
+  commandId: string | null;
+  runId: string;
+  golemId: string | null;
+  commandStatus: string | null;
+  runStatus: string;
+  summary: string | null;
+  queueReason: string | null;
+  updatedAt: string | null;
+  cancelRequestedAt: string | null;
+  cancelRequestedByActorName: string | null;
+  cancelRequestedPending: boolean;
+  canCancel: boolean;
+};
+
 export type CardSummary = {
   id: string;
   boardId: string;
@@ -20,6 +35,7 @@ export type CardSummary = {
   assignmentPolicy: string;
   position: number | null;
   archived: boolean;
+  controlState: CardControlState | null;
 };
 
 export type CardDetail = {
@@ -37,6 +53,7 @@ export type CardDetail = {
   createdAt: string;
   updatedAt: string;
   lastTransitionAt: string | null;
+  controlState: CardControlState | null;
   transitions: CardTransition[];
 };
 

@@ -2,7 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
+  cancelThreadRun,
   CreateThreadCommandInput,
+  CommandRecord,
   createThreadCommand,
   listThreadCommands,
   listThreadRuns,
@@ -11,7 +13,7 @@ import {
 import { getCard } from '../../lib/api/cardsApi';
 import { buildOperatorUpdatesUrl, OperatorUpdateEvent } from '../../lib/api/eventsApi';
 import { getCardThread, listThreadMessages } from '../../lib/api/threadsApi';
-import { useAuth } from '../../app/providers/AuthProvider';
+import { useAuth } from '../../app/providers/useAuth';
 import { GolemSwitcher } from './GolemSwitcher';
 import { ThreadComposer } from './ThreadComposer';
 import { ThreadMessageList } from './ThreadMessageList';
@@ -23,6 +25,7 @@ export function CardThreadPage() {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const [liveState, setLiveState] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const cardQuery = useQuery({
     queryKey: ['card', cardId],
@@ -59,6 +62,7 @@ export function CardThreadPage() {
     mutationFn: ({ threadId, input }: { threadId: string; input: CreateThreadCommandInput }) =>
       createThreadCommand(threadId, input),
     onSuccess: async () => {
+      setActionError(null);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['thread-commands', threadQuery.data?.threadId] }),
         queryClient.invalidateQueries({ queryKey: ['thread-runs', threadQuery.data?.threadId] }),
@@ -67,12 +71,53 @@ export function CardThreadPage() {
       ]);
     },
   });
+  const cancelRunMutation = useMutation({
+    mutationFn: ({ threadId, runId }: { threadId: string; runId: string }) => cancelThreadRun(threadId, runId),
+    onMutate: () => {
+      setActionError(null);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['thread-commands', threadQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-runs', threadQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-messages', threadQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-signals', threadQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['card-thread', cardId] }),
+      ]);
+    },
+    onError: (error) => {
+      setActionError(readErrorMessage(error));
+    },
+  });
 
   const latestSuggestion = useMemo(() => {
     return [...(signalsQuery.data ?? [])]
       .filter((signal) => signal.resolutionOutcome === 'SUGGESTED')
       .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0] ?? null;
   }, [signalsQuery.data]);
+  const latestControllableRun = useMemo(() => {
+    const commandsById = new Map<string, CommandRecord>();
+    for (const command of commandsQuery.data ?? []) {
+      commandsById.set(command.id, command);
+    }
+    return [...(runsQuery.data ?? [])]
+      .filter((run) => !isRunTerminal(run.status))
+      .sort((left, right) => new Date(right.updatedAt || right.createdAt).getTime() - new Date(left.updatedAt || left.createdAt).getTime())
+      .find((run) => {
+        const command = run.commandId ? commandsById.get(run.commandId) : null;
+        return command?.status !== 'PENDING_APPROVAL';
+      }) ?? null;
+  }, [commandsQuery.data, runsQuery.data]);
+  const latestControllableCommand = useMemo(() => {
+    if (!latestControllableRun?.commandId) {
+      return null;
+    }
+    return (commandsQuery.data ?? []).find((command) => command.id === latestControllableRun.commandId) ?? null;
+  }, [commandsQuery.data, latestControllableRun]);
+  const cancelRequestedPending = latestControllableRun ? isCancelRequestedPending(latestControllableRun.status, latestControllableRun.cancelRequestedAt) : false;
+  const cancelActionLabel = latestControllableCommand?.status === 'QUEUED'
+    ? 'Cancel queued command'
+    : 'Stop active run';
 
   useEffect(() => {
     if (!accessToken || !threadQuery.data?.threadId) {
@@ -146,6 +191,21 @@ export function CardThreadPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {threadQuery.data.threadId && latestControllableRun ? (
+              <button
+                type="button"
+                disabled={cancelRunMutation.isPending || cancelRequestedPending}
+                onClick={() => {
+                  void cancelRunMutation.mutateAsync({
+                    threadId: threadQuery.data.threadId,
+                    runId: latestControllableRun.id,
+                  });
+                }}
+                className="rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
+              >
+                {cancelRunMutation.isPending ? 'Sending stop...' : cancelRequestedPending ? 'Stop requested' : cancelActionLabel}
+              </button>
+            ) : null}
             <span className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
               Live: {liveState}
             </span>
@@ -154,6 +214,25 @@ export function CardThreadPage() {
             </Link>
           </div>
         </div>
+        {latestControllableRun ? (
+          <p className="mt-4 text-sm leading-7 text-muted-foreground">
+            Active control target: run {latestControllableRun.id} with status {latestControllableRun.status}
+            {latestControllableCommand ? ` · command ${latestControllableCommand.status.toLowerCase()}` : ''}
+          </p>
+        ) : null}
+        {latestControllableRun && cancelRequestedPending ? (
+          <div className="mt-4 rounded-[18px] border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+            Stop requested
+            {latestControllableRun.cancelRequestedByActorName ? ` by ${latestControllableRun.cancelRequestedByActorName}` : ''}
+            {latestControllableRun.cancelRequestedAt ? ` at ${new Date(latestControllableRun.cancelRequestedAt).toLocaleString()}` : ''}.
+            Waiting for bot confirmation.
+          </div>
+        ) : null}
+        {actionError ? (
+          <div className="mt-4 rounded-[18px] border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+            {actionError}
+          </div>
+        ) : null}
       </section>
 
       <TransitionSuggestionBanner signal={latestSuggestion} />
@@ -180,4 +259,19 @@ export function CardThreadPage() {
       </div>
     </div>
   );
+}
+
+function isRunTerminal(status: string) {
+  return status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED' || status === 'REJECTED';
+}
+
+function isCancelRequestedPending(status: string, cancelRequestedAt: string | null) {
+  return Boolean(cancelRequestedAt) && !isRunTerminal(status);
+}
+
+function readErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return 'The action failed. Check the Hive control channel state and try again.';
 }

@@ -108,6 +108,7 @@ public class HiveProperties {
         private int offlineAfterMisses = 4;
         @Min(1)
         private int presenceEvaluationIntervalSeconds = 15;
+        private String publicBaseUrl = "";
         @NotBlank
         private String controlChannelUrl = "/ws/golems/control";
     }

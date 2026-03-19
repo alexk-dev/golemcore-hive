@@ -43,6 +43,7 @@ hive:
     degraded-after-misses: 2
     offline-after-misses: 4
     presence-evaluation-interval-seconds: 15
+    public-base-url: http://localhost:8080
     control-channel-url: /ws/golems/control
   governance:
     approvals:

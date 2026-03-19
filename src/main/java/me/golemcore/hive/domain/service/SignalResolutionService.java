@@ -62,7 +62,7 @@ public class SignalResolutionService {
         } else if (targetColumnId == null || targetColumnId.isBlank()) {
             signal.setResolutionOutcome(SignalResolutionOutcome.REJECTED);
             signal.setResolutionSummary("Signal policy has no target column");
-        } else if (!boardService.isTransitionAllowed(board, card.getColumnId(), targetColumnId)) {
+        } else if (!isSignalTransitionApplicable(board, card.getColumnId(), targetColumnId, decision)) {
             signal.setResolutionOutcome(decision == BoardSignalDecision.SUGGEST_ONLY
                     ? SignalResolutionOutcome.SUGGESTED
                     : SignalResolutionOutcome.REJECTED);
@@ -109,6 +109,17 @@ public class SignalResolutionService {
             return BoardSignalDecision.IGNORE;
         }
         return BoardSignalDecision.SUGGEST_ONLY;
+    }
+
+    private boolean isSignalTransitionApplicable(
+            Board board,
+            String currentColumnId,
+            String targetColumnId,
+            BoardSignalDecision decision) {
+        if (decision == BoardSignalDecision.AUTO_APPLY) {
+            return boardService.isTransitionReachable(board, currentColumnId, targetColumnId);
+        }
+        return boardService.isTransitionAllowed(board, currentColumnId, targetColumnId);
     }
 
     private String buildSignalMessage(CardLifecycleSignal signal) {

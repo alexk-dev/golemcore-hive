@@ -143,7 +143,8 @@ export function GolemsPage() {
               Register runtimes, bind roles, and watch fleet presence in one place.
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-              Hive now exposes operator-issued enrollment tokens, machine JWT onboarding, heartbeat-aware status, and role assignment.
+              Hive now exposes reusable enrollment tokens, copy-ready join codes, machine JWT onboarding, heartbeat-aware
+              status, and role assignment.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -240,8 +241,8 @@ export function GolemsPage() {
               })
             ) : (
               <div className="rounded-[24px] border border-dashed border-border p-6 text-sm leading-6 text-muted-foreground">
-                No golems have enrolled yet. Create an enrollment token, pass it to `golemcore-bot`, then let the bot call
-                the registration endpoint.
+                No golems have enrolled yet. Create an enrollment token, copy its join code into `golemcore-bot`, then let
+                the bot join and register itself.
               </div>
             )}
           </div>
@@ -266,7 +267,7 @@ export function GolemsPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <span className="pill">Enrollment tokens</span>
-            <h3 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">Recent bootstrap secrets</h3>
+            <h3 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">Reusable join tokens</h3>
           </div>
         </div>
 
@@ -282,10 +283,15 @@ export function GolemsPage() {
                       Created by {token.createdByUsername || 'operator'} · expires {formatTimestamp(token.expiresAt)}
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {token.usedAt ? `Used ${formatTimestamp(token.usedAt)}` : token.revoked ? 'Revoked' : 'Unused'}
+                      Registrations {token.registrationCount}
+                      {token.lastUsedAt ? ` · last used ${formatTimestamp(token.lastUsedAt)}` : ' · never used'}
+                      {token.lastRegisteredGolemId ? ` · last golem ${token.lastRegisteredGolemId}` : ''}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {token.revoked ? 'Revoked' : 'Active'}
                     </p>
                   </div>
-                  {!token.usedAt && !token.revoked ? (
+                  {!token.revoked ? (
                     <button
                       type="button"
                       disabled={revokeTokenMutation.isPending}

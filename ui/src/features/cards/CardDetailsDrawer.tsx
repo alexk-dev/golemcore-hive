@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CardAssigneeOptions, CardDetail } from '../../lib/api/cardsApi';
+import { CardAssigneeOptions, CardControlState, CardDetail } from '../../lib/api/cardsApi';
 import { GolemSummary } from '../../lib/api/golemsApi';
 import { AssignmentPolicyBadge } from './AssignmentPolicyBadge';
 import { AssigneePicker } from './AssigneePicker';
@@ -15,6 +15,9 @@ type CardDetailsDrawerProps = {
   onUpdate: (input: { title: string; description: string; assignmentPolicy: string }) => Promise<void>;
   onAssign: (assigneeGolemId: string | null) => Promise<void>;
   onArchive: () => Promise<void>;
+  onCancelRun: (runId: string) => Promise<void>;
+  isCancelPending: boolean;
+  controlError: string | null;
 };
 
 export function CardDetailsDrawer({
@@ -27,6 +30,9 @@ export function CardDetailsDrawer({
   onUpdate,
   onAssign,
   onArchive,
+  onCancelRun,
+  isCancelPending,
+  controlError,
 }: CardDetailsDrawerProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -119,6 +125,48 @@ export function CardDetailsDrawer({
         </form>
 
         <section className="mt-8 grid gap-4">
+          <div className="flex items-start justify-between gap-4 rounded-[22px] border border-border bg-white/70 p-4">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Execution control</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {card.controlState
+                  ? `Run ${card.controlState.runId} · ${formatControlLabel(card.controlState)}`
+                  : 'No active run is attached to this card right now.'}
+              </p>
+              {card.controlState?.summary ? (
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{card.controlState.summary}</p>
+              ) : null}
+              {card.controlState?.queueReason ? (
+                <p className="mt-2 text-sm text-amber-900">{card.controlState.queueReason}</p>
+              ) : null}
+            </div>
+            {card.controlState?.canCancel ? (
+              <button
+                type="button"
+                disabled={isCancelPending}
+                onClick={() => void onCancelRun(card.controlState!.runId)}
+                className="rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
+              >
+                {isCancelPending ? 'Sending stop...' : controlActionLabel(card.controlState)}
+              </button>
+            ) : null}
+          </div>
+          {card.controlState?.cancelRequestedPending ? (
+            <div className="rounded-[20px] border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+              Stop requested
+              {card.controlState.cancelRequestedByActorName ? ` by ${card.controlState.cancelRequestedByActorName}` : ''}
+              {card.controlState.cancelRequestedAt ? ` at ${new Date(card.controlState.cancelRequestedAt).toLocaleString()}` : ''}.
+              Waiting for bot confirmation.
+            </div>
+          ) : null}
+          {controlError ? (
+            <div className="rounded-[20px] border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+              {controlError}
+            </div>
+          ) : null}
+        </section>
+
+        <section className="mt-8 grid gap-4">
           <div>
             <p className="text-sm font-semibold text-foreground">Assignee picker</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -169,4 +217,29 @@ export function CardDetailsDrawer({
       </div>
     </div>
   );
+}
+
+function controlActionLabel(controlState: CardControlState) {
+  return controlState.commandStatus === 'QUEUED' && controlState.runStatus === 'QUEUED'
+    ? 'Cancel queued command'
+    : 'Stop active run';
+}
+
+function formatControlLabel(controlState: CardControlState) {
+  if (controlState.cancelRequestedPending) {
+    return 'Stop requested';
+  }
+  if (controlState.runStatus === 'PENDING_APPROVAL') {
+    return 'Awaiting approval';
+  }
+  if (controlState.runStatus === 'QUEUED' && controlState.commandStatus === 'QUEUED') {
+    return 'Queued';
+  }
+  if (controlState.runStatus === 'BLOCKED') {
+    return 'Blocked';
+  }
+  if (controlState.runStatus === 'RUNNING') {
+    return 'Running';
+  }
+  return controlState.runStatus.replace(/_/g, ' ');
 }

@@ -19,23 +19,18 @@
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import java.time.Instant;
-import java.util.List;
 
-public record CardDetailResponse(
-        String id,
-        String boardId,
-        String threadId,
-        String title,
-        String description,
-        String columnId,
-        String assigneeGolemId,
-        String assignmentPolicy,
-        Integer position,
-        boolean archived,
-        Instant archivedAt,
-        Instant createdAt,
+public record CardControlStateResponse(
+        String commandId,
+        String runId,
+        String golemId,
+        String commandStatus,
+        String runStatus,
+        String summary,
+        String queueReason,
         Instant updatedAt,
-        Instant lastTransitionAt,
-        CardControlStateResponse controlState,
-        List<CardTransitionResponse> transitions) {
+        Instant cancelRequestedAt,
+        String cancelRequestedByActorName,
+        boolean cancelRequestedPending,
+        boolean canCancel) {
 }

@@ -51,4 +51,7 @@ public class RunProjection {
     private Instant updatedAt;
     private Instant startedAt;
     private Instant completedAt;
+    private Instant cancelRequestedAt;
+    private String cancelRequestedByActorId;
+    private String cancelRequestedByActorName;
 }

@@ -21,6 +21,8 @@ hive:
       username: admin
       password: replace-bootstrap-password
       display-name: Hive Admin
+  fleet:
+    public-base-url: https://hive.example.com
   governance:
     approvals:
       high-cost-threshold-micros: 5000000

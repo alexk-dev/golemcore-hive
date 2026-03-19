@@ -23,7 +23,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -247,6 +249,40 @@ public class BoardService {
         }
         return transitions.stream().anyMatch(transition ->
                 transition.getFromColumnId().equals(fromColumnId) && transition.getToColumnId().equals(toColumnId));
+    }
+
+    public boolean isTransitionReachable(Board board, String fromColumnId, String toColumnId) {
+        if (fromColumnId == null || fromColumnId.isBlank() || toColumnId == null || toColumnId.isBlank()) {
+            return false;
+        }
+        if (fromColumnId.equals(toColumnId)) {
+            return true;
+        }
+        List<BoardTransitionRule> transitions = board.getFlow().getTransitions();
+        if (transitions == null || transitions.isEmpty()) {
+            return true;
+        }
+
+        ArrayDeque<String> queue = new ArrayDeque<>();
+        Set<String> visited = new HashSet<>();
+        queue.add(fromColumnId);
+        visited.add(fromColumnId);
+
+        while (!queue.isEmpty()) {
+            String current = queue.removeFirst();
+            for (BoardTransitionRule transition : transitions) {
+                if (!current.equals(transition.getFromColumnId())) {
+                    continue;
+                }
+                if (toColumnId.equals(transition.getToColumnId())) {
+                    return true;
+                }
+                if (visited.add(transition.getToColumnId())) {
+                    queue.addLast(transition.getToColumnId());
+                }
+            }
+        }
+        return false;
     }
 
     private Optional<Board> loadBoardByPath(String path) {

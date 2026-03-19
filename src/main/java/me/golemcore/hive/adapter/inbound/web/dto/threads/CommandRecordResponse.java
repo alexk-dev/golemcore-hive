@@ -39,5 +39,7 @@ public record CommandRecordResponse(
         Instant lastDispatchAttemptAt,
         Instant deliveredAt,
         Instant startedAt,
-        Instant completedAt) {
+        Instant completedAt,
+        Instant cancelRequestedAt,
+        String cancelRequestedByActorName) {
 }

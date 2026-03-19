@@ -18,12 +18,15 @@
 
 package me.golemcore.hive.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @Builder
 @NoArgsConstructor
@@ -31,7 +34,7 @@ import lombok.NoArgsConstructor;
 public class EnrollmentToken {
 
     @Builder.Default
-    private int schemaVersion = 1;
+    private int schemaVersion = 2;
 
     private String id;
     private String secretHash;
@@ -41,9 +44,13 @@ public class EnrollmentToken {
     private String createdByOperatorUsername;
     private Instant createdAt;
     private Instant expiresAt;
-    private Instant usedAt;
+    @JsonAlias("usedAt")
+    private Instant lastUsedAt;
     private Instant revokedAt;
-    private String registeredGolemId;
+    @Builder.Default
+    private long registrationCount = 0L;
+    @JsonAlias("registeredGolemId")
+    private String lastRegisteredGolemId;
     private String revokeReason;
     private boolean revoked;
 }

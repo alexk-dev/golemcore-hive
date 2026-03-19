@@ -86,6 +86,12 @@ export function createThreadCommand(threadId: string, input: CreateThreadCommand
   });
 }
 
+export function cancelThreadRun(threadId: string, runId: string) {
+  return apiRequest<RunProjection>(`/api/v1/threads/${threadId}/runs/${runId}/cancel`, {
+    method: 'POST',
+  });
+}
+
 export function listThreadRuns(threadId: string) {
   return apiRequest<RunProjection[]>(`/api/v1/threads/${threadId}/runs`);
 }

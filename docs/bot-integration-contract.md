@@ -117,6 +117,21 @@ Required behavior:
 - `GET /ws/golems/control`
 - outbound WebSocket from bot to Hive
 
+Control command envelope event types:
+
+- `command`
+  - regular operator instruction
+  - carries `body`
+- `command.cancel`
+  - stop/cancel request for an already issued command/run
+  - carries the same `commandId`, `threadId`, `cardId`, `runId`, and `golemId`
+  - `body` may be omitted
+
+Rule:
+
+- Hive may locally cancel commands that were never delivered.
+- Once a command is delivered, Hive must request cancellation through `command.cancel` and wait for runtime/lifecycle events from the bot before marking the run terminal.
+
 ## 7. Security Rules
 
 - Enrollment token is bootstrap-only; ongoing machine auth is JWT-based.

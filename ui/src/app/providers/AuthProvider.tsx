@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { configureHttpClient } from '../../lib/api/httpClient';
 import {
   fetchCurrentOperator,
@@ -7,19 +7,7 @@ import {
   Operator,
   refresh as refreshRequest,
 } from '../../lib/api/authApi';
-
-type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
-
-type AuthContextValue = {
-  accessToken: string | null;
-  status: AuthStatus;
-  user: Operator | null;
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  refreshSession: () => Promise<string | null>;
-};
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+import { AuthContext, AuthContextValue, AuthStatus } from './authContext';
 
 type AuthProviderProps = {
   children: ReactNode;
@@ -45,22 +33,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return refreshed.accessToken;
   }
 
-  async function bootstrapSession() {
-    try {
-      const token = await refreshSession();
-      if (!token) {
-        return;
-      }
-      const currentUser = await fetchCurrentOperator();
-      setUser(currentUser);
-      setStatus('authenticated');
-    } catch {
-      setAccessToken(null);
-      setUser(null);
-      setStatus('unauthenticated');
-    }
-  }
-
   async function login(username: string, password: string) {
     const response = await loginRequest(username, password);
     setAccessToken(response.accessToken);
@@ -80,7 +52,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [accessToken]);
 
   useEffect(() => {
-    void bootstrapSession();
+    let cancelled = false;
+
+    async function bootstrap() {
+      try {
+        const token = await refreshSession();
+        if (!token || cancelled) {
+          return;
+        }
+        const currentUser = await fetchCurrentOperator();
+        if (cancelled) {
+          return;
+        }
+        setUser(currentUser);
+        setStatus('authenticated');
+      } catch {
+        if (cancelled) {
+          return;
+        }
+        setAccessToken(null);
+        setUser(null);
+        setStatus('unauthenticated');
+      }
+    }
+
+    void bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -96,12 +96,4 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
 }

@@ -78,6 +78,22 @@ export function RunTimeline({ commands, runs, signals }: RunTimelineProps) {
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-foreground">{item.payload.summary}</p>
+                {item.payload.details ? <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{item.payload.details}</p> : null}
+                {item.payload.blockerCode ? (
+                  <p className="mt-2 text-xs uppercase tracking-[0.16em] text-rose-900">Blocker code: {item.payload.blockerCode}</p>
+                ) : null}
+                {item.payload.evidenceRefs.length ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {item.payload.evidenceRefs.map((ref) => (
+                      <span
+                        key={`${item.payload.id}-${ref.kind}-${ref.ref}`}
+                        className="rounded-full border border-border bg-white/90 px-3 py-1 text-xs font-semibold text-muted-foreground"
+                      >
+                        {ref.kind}: {ref.ref}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
                 {item.payload.resolutionSummary ? <p className="mt-2 text-sm text-muted-foreground">{item.payload.resolutionSummary}</p> : null}
                 <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
               </article>

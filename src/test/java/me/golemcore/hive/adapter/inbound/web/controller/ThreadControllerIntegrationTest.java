@@ -21,6 +21,9 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +36,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.Disposable;
+import reactor.core.publisher.Sinks;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ThreadControllerIntegrationTest {
@@ -249,6 +254,110 @@ class ThreadControllerIntegrationTest {
                 .jsonPath("$[1].resolvedTargetColumnId").isEqualTo("in_progress");
     }
 
+    @Test
+    void shouldCancelQueuedCommandBeforeDispatch() throws Exception {
+        String operatorToken = loginAsAdmin();
+        createRole(operatorToken, "developer");
+        RegisteredGolem developer = registerOnlineGolem(operatorToken, "Atlas Queue", "host-queue", "developer");
+        String boardId = createBoard(operatorToken);
+        String cardId = createCard(operatorToken, boardId, "Cancel queued work", "ready", developer.golemId());
+        String threadId = getThreadId(operatorToken, cardId);
+        CommandEnvelope command = createCommand(operatorToken, threadId, "Queue this command and then cancel it.");
+
+        webTestClient.post()
+                .uri("/api/v1/threads/{threadId}/runs/{runId}/cancel", threadId, command.runId())
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo("CANCELLED");
+
+        webTestClient.get()
+                .uri("/api/v1/threads/{threadId}/commands", threadId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].status").isEqualTo("CANCELLED")
+                .jsonPath("$[0].queueReason").isEqualTo("Cancelled by operator before dispatch");
+
+        webTestClient.get()
+                .uri("/api/v1/threads/{threadId}/runs", threadId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].status").isEqualTo("CANCELLED");
+
+        webTestClient.get()
+                .uri("/api/v1/threads/{threadId}/messages", threadId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[1].type").isEqualTo("COMMAND_STATUS")
+                .jsonPath("$[1].participantType").isEqualTo("OPERATOR")
+                .jsonPath("$[1].body").isEqualTo("Cancelled queued command before dispatch");
+    }
+
+    @Test
+    void shouldSendCancelControlEnvelopeForDeliveredRun() throws Exception {
+        String operatorToken = loginAsAdmin();
+        createRole(operatorToken, "developer");
+        RegisteredGolem developer = registerOnlineGolem(operatorToken, "Atlas Live", "host-live", "developer");
+        BlockingQueue<String> controlMessages = new LinkedBlockingQueue<>();
+        Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
+        Disposable subscription = applicationContext.getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
+                .register(developer.golemId(), sink)
+                .subscribe(controlMessages::add);
+        try {
+            String boardId = createBoard(operatorToken);
+            String cardId = createCard(operatorToken, boardId, "Cancel active work", "ready", developer.golemId());
+            String threadId = getThreadId(operatorToken, cardId);
+            CommandEnvelope command = createCommand(operatorToken, threadId, "Dispatch and then request cancellation.", "DELIVERED");
+
+            JsonNode initialEnvelope = objectMapper.readTree(pollControlMessage(controlMessages));
+            Assertions.assertEquals("command", initialEnvelope.get("eventType").asText());
+            Assertions.assertEquals(command.commandId(), initialEnvelope.get("commandId").asText());
+
+            webTestClient.post()
+                    .uri("/api/v1/threads/{threadId}/runs/{runId}/cancel", threadId, command.runId())
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.status").isEqualTo("QUEUED");
+
+            JsonNode cancelEnvelope = objectMapper.readTree(pollControlMessage(controlMessages));
+            Assertions.assertEquals("command.cancel", cancelEnvelope.get("eventType").asText());
+            Assertions.assertEquals(command.commandId(), cancelEnvelope.get("commandId").asText());
+            Assertions.assertEquals(command.runId(), cancelEnvelope.get("runId").asText());
+            Assertions.assertTrue(cancelEnvelope.path("body").isMissingNode() || cancelEnvelope.path("body").isNull());
+
+            webTestClient.get()
+                    .uri("/api/v1/threads/{threadId}/commands", threadId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$[0].status").isEqualTo("DELIVERED");
+
+            webTestClient.get()
+                    .uri("/api/v1/threads/{threadId}/messages", threadId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$[1].type").isEqualTo("COMMAND_STATUS")
+                    .jsonPath("$[1].participantType").isEqualTo("OPERATOR")
+                    .jsonPath("$[1].body").isEqualTo("Requested stop for active run");
+        } finally {
+            subscription.dispose();
+            applicationContext.getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
+                    .unregister(developer.golemId(), sink);
+        }
+    }
+
     private String createBoard(String operatorToken) throws Exception {
         EntityExchangeResult<String> createBoardResult = webTestClient.post()
                 .uri("/api/v1/boards")
@@ -307,6 +416,10 @@ class ThreadControllerIntegrationTest {
     }
 
     private CommandEnvelope createCommand(String operatorToken, String threadId, String body) throws Exception {
+        return createCommand(operatorToken, threadId, body, "QUEUED");
+    }
+
+    private CommandEnvelope createCommand(String operatorToken, String threadId, String body, String expectedStatus) throws Exception {
         EntityExchangeResult<String> commandResult = webTestClient.post()
                 .uri("/api/v1/threads/{threadId}/commands", threadId)
                 .header(HttpHeaders.AUTHORIZATION, operatorToken)
@@ -321,12 +434,18 @@ class ThreadControllerIntegrationTest {
                 .expectBody(String.class)
                 .returnResult();
         JsonNode payload = objectMapper.readTree(commandResult.getResponseBody());
-        Assertions.assertEquals("QUEUED", payload.get("status").asText());
+        Assertions.assertEquals(expectedStatus, payload.get("status").asText());
         return new CommandEnvelope(payload.get("id").asText(), payload.get("runId").asText());
     }
 
+    private String pollControlMessage(BlockingQueue<String> controlMessages) throws InterruptedException {
+        String payload = controlMessages.poll(2, TimeUnit.SECONDS);
+        Assertions.assertNotNull(payload);
+        return payload;
+    }
+
     private void createRole(String operatorToken, String roleSlug) {
-        webTestClient.post()
+        EntityExchangeResult<String> result = webTestClient.post()
                 .uri("/api/v1/golem-roles")
                 .header(HttpHeaders.AUTHORIZATION, operatorToken)
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
@@ -339,7 +458,14 @@ class ThreadControllerIntegrationTest {
                         }
                         """.formatted(roleSlug))
                 .exchange()
-                .expectStatus().isCreated();
+                .expectBody(String.class)
+                .returnResult();
+        int status = result.getStatus().value();
+        if (status == 201) {
+            return;
+        }
+        Assertions.assertEquals(400, status);
+        Assertions.assertTrue(result.getResponseBody() != null && result.getResponseBody().contains("Role already exists"));
     }
 
     private RegisteredGolem registerOnlineGolem(String operatorToken, String displayName, String hostLabel, String roleSlug) throws Exception {

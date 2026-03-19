@@ -1,4 +1,4 @@
-import { useAuth } from '../../app/providers/AuthProvider';
+import { useAuth } from '../../app/providers/useAuth';
 
 const metrics = [
   { label: 'Storage', value: 'JSON-first', hint: 'No DB for v1' },

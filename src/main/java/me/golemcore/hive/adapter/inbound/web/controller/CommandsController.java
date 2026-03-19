@@ -85,6 +85,22 @@ public class CommandsController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    @PostMapping("/runs/{runId}/cancel")
+    public Mono<ResponseEntity<RunProjectionResponse>> cancelRun(
+            Principal principal,
+            @PathVariable String threadId,
+            @PathVariable String runId) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            RunProjection run = commandDispatchService.requestRunCancellation(
+                    threadId,
+                    runId,
+                    actor.getSubjectId(),
+                    actor.getName());
+            return ResponseEntity.ok(toRunResponse(run));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
     @GetMapping("/runs")
     public Mono<ResponseEntity<List<RunProjectionResponse>>> listRuns(Principal principal, @PathVariable String threadId) {
         return Mono.fromCallable(() -> {

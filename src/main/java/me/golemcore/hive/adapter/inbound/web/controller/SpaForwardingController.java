@@ -18,13 +18,16 @@
 
 package me.golemcore.hive.adapter.inbound.web.controller;
 
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class SpaForwardingController {
 
-    @GetMapping({
+    @GetMapping(path = {
             "/",
             "/login",
             "/fleet",
@@ -36,8 +39,9 @@ public class SpaForwardingController {
             "/audit",
             "/budgets",
             "/settings"
-    })
-    public String forwardToIndex() {
-        return "forward:/index.html";
+    }, produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseBody
+    public ClassPathResource forwardToIndex() {
+        return new ClassPathResource("static/index.html");
     }
 }

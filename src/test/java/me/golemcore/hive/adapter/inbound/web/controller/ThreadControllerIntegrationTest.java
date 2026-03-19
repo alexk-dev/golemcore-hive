@@ -255,6 +255,67 @@ class ThreadControllerIntegrationTest {
     }
 
     @Test
+    void shouldAutoAdvanceWorkStartedFromInboxToInProgress() throws Exception {
+        String operatorToken = loginAsAdmin();
+        createRole(operatorToken, "developer");
+        RegisteredGolem developer = registerOnlineGolem(operatorToken, "Atlas Inbox", "host-inbox", "developer");
+        String boardId = createBoard(operatorToken);
+        String cardId = createCard(operatorToken, boardId, "Start work from inbox", "inbox", developer.golemId());
+        String threadId = getThreadId(operatorToken, cardId);
+        CommandEnvelope command = createCommand(operatorToken, threadId, "Start the work.");
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/events:batch", developer.golemId())
+                .header(HttpHeaders.AUTHORIZATION, developer.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "schemaVersion": 1,
+                          "golemId": "%s",
+                          "events": [
+                            {
+                              "eventType": "card_lifecycle_signal",
+                              "signalId": "sig_started_from_inbox",
+                              "cardId": "%s",
+                              "threadId": "%s",
+                              "commandId": "%s",
+                              "runId": "%s",
+                              "signalType": "WORK_STARTED",
+                              "summary": "Work is now active"
+                            }
+                          ]
+                        }
+                        """.formatted(
+                        developer.golemId(),
+                        cardId,
+                        threadId,
+                        command.commandId(),
+                        command.runId()))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.acceptedEvents").isEqualTo(1)
+                .jsonPath("$.autoAppliedTransitions").isEqualTo(1);
+
+        webTestClient.get()
+                .uri("/api/v1/cards/{cardId}", cardId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.columnId").isEqualTo("in_progress");
+
+        webTestClient.get()
+                .uri("/api/v1/threads/{threadId}/signals", threadId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].resolutionOutcome").isEqualTo("AUTO_APPLIED")
+                .jsonPath("$[0].resolvedTargetColumnId").isEqualTo("in_progress");
+    }
+
+    @Test
     void shouldCancelQueuedCommandBeforeDispatch() throws Exception {
         String operatorToken = loginAsAdmin();
         createRole(operatorToken, "developer");

@@ -326,7 +326,9 @@ class ThreadControllerIntegrationTest {
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
-                    .jsonPath("$.status").isEqualTo("QUEUED");
+                    .jsonPath("$.status").isEqualTo("QUEUED")
+                    .jsonPath("$.cancelRequestedAt").isNotEmpty()
+                    .jsonPath("$.cancelRequestedByActorName").isNotEmpty();
 
             JsonNode cancelEnvelope = objectMapper.readTree(pollControlMessage(controlMessages));
             Assertions.assertEquals("command.cancel", cancelEnvelope.get("eventType").asText());
@@ -340,7 +342,39 @@ class ThreadControllerIntegrationTest {
                     .exchange()
                     .expectStatus().isOk()
                     .expectBody()
-                    .jsonPath("$[0].status").isEqualTo("DELIVERED");
+                    .jsonPath("$[0].status").isEqualTo("DELIVERED")
+                    .jsonPath("$[0].cancelRequestedAt").isNotEmpty()
+                    .jsonPath("$[0].cancelRequestedByActorName").isNotEmpty();
+
+            webTestClient.get()
+                    .uri("/api/v1/threads/{threadId}/runs", threadId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$[0].status").isEqualTo("QUEUED")
+                    .jsonPath("$[0].cancelRequestedAt").isNotEmpty()
+                    .jsonPath("$[0].cancelRequestedByActorName").isNotEmpty();
+
+            webTestClient.get()
+                    .uri("/api/v1/cards/{cardId}", cardId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.controlState.runId").isEqualTo(command.runId())
+                    .jsonPath("$.controlState.commandId").isEqualTo(command.commandId())
+                    .jsonPath("$.controlState.cancelRequestedPending").isEqualTo(true)
+                    .jsonPath("$.controlState.canCancel").isEqualTo(false);
+
+            webTestClient.get()
+                    .uri("/api/v1/cards?boardId={boardId}", boardId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$[0].controlState.runId").isEqualTo(command.runId())
+                    .jsonPath("$[0].controlState.cancelRequestedPending").isEqualTo(true);
 
             webTestClient.get()
                     .uri("/api/v1/threads/{threadId}/messages", threadId)

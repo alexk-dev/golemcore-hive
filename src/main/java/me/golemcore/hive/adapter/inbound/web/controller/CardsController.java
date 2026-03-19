@@ -21,6 +21,7 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.CreateCardRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.CardDetailResponse;
@@ -30,8 +31,10 @@ import me.golemcore.hive.adapter.inbound.web.dto.boards.UpdateCardAssigneeReques
 import me.golemcore.hive.adapter.inbound.web.dto.boards.UpdateCardRequest;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.Card;
+import me.golemcore.hive.domain.model.CardControlStateSnapshot;
 import me.golemcore.hive.domain.model.CardTransitionOrigin;
 import me.golemcore.hive.domain.service.CardService;
+import me.golemcore.hive.domain.service.CommandDispatchService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,6 +54,7 @@ import reactor.core.scheduler.Schedulers;
 public class CardsController extends BoardMappingSupport {
 
     private final CardService cardService;
+    private final CommandDispatchService commandDispatchService;
 
     @GetMapping
     public Mono<ResponseEntity<List<CardSummaryResponse>>> listCards(
@@ -59,8 +63,10 @@ public class CardsController extends BoardMappingSupport {
             @RequestParam(defaultValue = "false") boolean includeArchived) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<CardSummaryResponse> response = cardService.listCards(boardId, includeArchived).stream()
-                    .map(this::toCardSummaryResponse)
+            List<Card> cards = cardService.listCards(boardId, includeArchived);
+            Map<String, CardControlStateSnapshot> controlStates = commandDispatchService.listActiveCardControlStates(cards);
+            List<CardSummaryResponse> response = cards.stream()
+                    .map(card -> toCardSummaryResponse(card, controlStates.get(card.getId())))
                     .toList();
             return ResponseEntity.ok(response);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -82,7 +88,7 @@ public class CardsController extends BoardMappingSupport {
                     request.autoAssign(),
                     actor.getSubjectId(),
                     actor.getName());
-            return ResponseEntity.status(HttpStatus.CREATED).body(toCardDetailResponse(card));
+            return ResponseEntity.status(HttpStatus.CREATED).body(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -90,7 +96,8 @@ public class CardsController extends BoardMappingSupport {
     public Mono<ResponseEntity<CardDetailResponse>> getCard(Principal principal, @PathVariable String cardId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(toCardDetailResponse(cardService.getCard(cardId)));
+            Card card = cardService.getCard(cardId);
+            return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -106,7 +113,7 @@ public class CardsController extends BoardMappingSupport {
                     request != null ? request.title() : null,
                     request != null ? request.description() : null,
                     request != null ? parseAssignmentPolicy(request.assignmentPolicy()) : null);
-            return ResponseEntity.ok(toCardDetailResponse(card));
+            return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -125,7 +132,7 @@ public class CardsController extends BoardMappingSupport {
                     actor.getSubjectId(),
                     actor.getName(),
                     request.summary());
-            return ResponseEntity.ok(toCardDetailResponse(card));
+            return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -145,7 +152,7 @@ public class CardsController extends BoardMappingSupport {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
             Card card = cardService.assignCard(cardId, request != null ? request.assigneeGolemId() : null);
-            return ResponseEntity.ok(toCardDetailResponse(card));
+            return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -154,7 +161,11 @@ public class CardsController extends BoardMappingSupport {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
             Card card = cardService.archiveCard(cardId);
-            return ResponseEntity.ok(toCardDetailResponse(card));
+            return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private CardControlStateSnapshot findControlState(Card card) {
+        return commandDispatchService.listActiveCardControlStates(List.of(card)).get(card.getId());
     }
 }

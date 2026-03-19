@@ -114,6 +114,7 @@ export function CardThreadPage() {
     }
     return (commandsQuery.data ?? []).find((command) => command.id === latestControllableRun.commandId) ?? null;
   }, [commandsQuery.data, latestControllableRun]);
+  const cancelRequestedPending = latestControllableRun ? isCancelRequestedPending(latestControllableRun.status, latestControllableRun.cancelRequestedAt) : false;
   const cancelActionLabel = latestControllableCommand?.status === 'QUEUED'
     ? 'Cancel queued command'
     : 'Stop active run';
@@ -193,7 +194,7 @@ export function CardThreadPage() {
             {threadQuery.data.threadId && latestControllableRun ? (
               <button
                 type="button"
-                disabled={cancelRunMutation.isPending}
+                disabled={cancelRunMutation.isPending || cancelRequestedPending}
                 onClick={() => {
                   void cancelRunMutation.mutateAsync({
                     threadId: threadQuery.data.threadId,
@@ -202,7 +203,7 @@ export function CardThreadPage() {
                 }}
                 className="rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
               >
-                {cancelRunMutation.isPending ? 'Sending stop...' : cancelActionLabel}
+                {cancelRunMutation.isPending ? 'Sending stop...' : cancelRequestedPending ? 'Stop requested' : cancelActionLabel}
               </button>
             ) : null}
             <span className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
@@ -218,6 +219,14 @@ export function CardThreadPage() {
             Active control target: run {latestControllableRun.id} with status {latestControllableRun.status}
             {latestControllableCommand ? ` · command ${latestControllableCommand.status.toLowerCase()}` : ''}
           </p>
+        ) : null}
+        {latestControllableRun && cancelRequestedPending ? (
+          <div className="mt-4 rounded-[18px] border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+            Stop requested
+            {latestControllableRun.cancelRequestedByActorName ? ` by ${latestControllableRun.cancelRequestedByActorName}` : ''}
+            {latestControllableRun.cancelRequestedAt ? ` at ${new Date(latestControllableRun.cancelRequestedAt).toLocaleString()}` : ''}.
+            Waiting for bot confirmation.
+          </div>
         ) : null}
         {actionError ? (
           <div className="mt-4 rounded-[18px] border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
@@ -254,6 +263,10 @@ export function CardThreadPage() {
 
 function isRunTerminal(status: string) {
   return status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED' || status === 'REJECTED';
+}
+
+function isCancelRequestedPending(status: string, cancelRequestedAt: string | null) {
+  return Boolean(cancelRequestedAt) && !isRunTerminal(status);
 }
 
 function readErrorMessage(error: unknown) {

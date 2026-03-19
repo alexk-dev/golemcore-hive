@@ -143,7 +143,9 @@ public class CommandsController {
                 command.getLastDispatchAttemptAt(),
                 command.getDeliveredAt(),
                 command.getStartedAt(),
-                command.getCompletedAt());
+                command.getCompletedAt(),
+                command.getCancelRequestedAt(),
+                command.getCancelRequestedByActorName());
     }
 
     private RunProjectionResponse toRunResponse(RunProjection run) {
@@ -165,7 +167,9 @@ public class CommandsController {
                 run.getCreatedAt(),
                 run.getUpdatedAt(),
                 run.getStartedAt(),
-                run.getCompletedAt());
+                run.getCompletedAt(),
+                run.getCancelRequestedAt(),
+                run.getCancelRequestedByActorName());
     }
 
     private CardLifecycleSignalResponse toSignalResponse(CardLifecycleSignal signal) {

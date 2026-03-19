@@ -27,5 +27,6 @@ public record CardSummaryResponse(
         String assigneeGolemId,
         String assignmentPolicy,
         Integer position,
-        boolean archived) {
+        boolean archived,
+        CardControlStateResponse controlState) {
 }

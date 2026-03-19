@@ -45,6 +45,14 @@ export function RunTimeline({ commands, runs, signals }: RunTimelineProps) {
                     <p className="mt-2 text-sm text-muted-foreground">{item.payload.approvalReason}</p>
                   ) : null}
                   {item.payload.queueReason ? <p className="mt-2 text-sm text-amber-900">{item.payload.queueReason}</p> : null}
+                  {item.payload.cancelRequestedAt ? (
+                    <p className="mt-2 text-sm text-rose-900">
+                      Stop requested
+                      {item.payload.cancelRequestedByActorName ? ` by ${item.payload.cancelRequestedByActorName}` : ''}
+                      {' · '}
+                      {new Date(item.payload.cancelRequestedAt).toLocaleString()}
+                    </p>
+                  ) : null}
                   <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
                 </article>
               );
@@ -61,6 +69,14 @@ export function RunTimeline({ commands, runs, signals }: RunTimelineProps) {
                   </p>
                   {item.payload.approvalRequestId ? (
                     <p className="mt-2 text-sm text-muted-foreground">Approval request {item.payload.approvalRequestId}</p>
+                  ) : null}
+                  {item.payload.cancelRequestedAt ? (
+                    <p className="mt-2 text-sm text-rose-900">
+                      Stop requested
+                      {item.payload.cancelRequestedByActorName ? ` by ${item.payload.cancelRequestedByActorName}` : ''}
+                      {' · '}
+                      {new Date(item.payload.cancelRequestedAt).toLocaleString()}
+                    </p>
                   ) : null}
                   <p className="mt-2 text-sm text-muted-foreground">
                     Tokens {item.payload.inputTokens}/{item.payload.outputTokens} · cost micros {item.payload.accumulatedCostMicros}

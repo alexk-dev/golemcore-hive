@@ -20,6 +20,8 @@ export type CommandRecord = {
   deliveredAt: string | null;
   startedAt: string | null;
   completedAt: string | null;
+  cancelRequestedAt: string | null;
+  cancelRequestedByActorName: string | null;
 };
 
 export type RunProjection = {
@@ -41,6 +43,8 @@ export type RunProjection = {
   updatedAt: string;
   startedAt: string | null;
   completedAt: string | null;
+  cancelRequestedAt: string | null;
+  cancelRequestedByActorName: string | null;
 };
 
 export type EvidenceRef = {

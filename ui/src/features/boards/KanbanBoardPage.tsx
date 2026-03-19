@@ -1,9 +1,10 @@
 import { closestCorners, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getBoard, getBoardTeam } from '../../lib/api/boardsApi';
 import { archiveCard, assignCard, createCard, getCard, getCardAssignees, listCards, moveCard, updateCard } from '../../lib/api/cardsApi';
+import { cancelThreadRun } from '../../lib/api/commandsApi';
 import { listGolems } from '../../lib/api/golemsApi';
 import { CardComposerDialog } from '../cards/CardComposerDialog';
 import { CardDetailsDrawer } from '../cards/CardDetailsDrawer';
@@ -14,6 +15,7 @@ export function KanbanBoardPage() {
   const queryClient = useQueryClient();
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [controlError, setControlError] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const boardQuery = useQuery({
@@ -100,6 +102,26 @@ export function KanbanBoardPage() {
       setSelectedCardId(null);
     },
   });
+  const cancelRunMutation = useMutation({
+    mutationFn: ({ threadId, runId }: { threadId: string; runId: string }) => cancelThreadRun(threadId, runId),
+    onMutate: () => {
+      setControlError(null);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
+        queryClient.invalidateQueries({ queryKey: ['card', selectedCardId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-runs', cardDetailsQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-commands', cardDetailsQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-messages', cardDetailsQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['thread-signals', cardDetailsQuery.data?.threadId] }),
+        queryClient.invalidateQueries({ queryKey: ['card-thread', selectedCardId] }),
+      ]);
+    },
+    onError: (error) => {
+      setControlError(readErrorMessage(error));
+    },
+  });
 
   const composerAssigneeOptions = useMemo(() => {
     if (!boardQuery.data) {
@@ -121,6 +143,10 @@ export function KanbanBoardPage() {
         })) ?? [],
     };
   }, [boardQuery.data, golemsQuery.data, teamQuery.data]);
+
+  useEffect(() => {
+    setControlError(null);
+  }, [selectedCardId]);
 
   async function handleDragEnd(event: DragEndEvent) {
     const activeId = String(event.active.id);
@@ -250,6 +276,8 @@ export function KanbanBoardPage() {
         assigneeOptions={assigneeOptionsQuery.data ?? null}
         allGolems={golemsQuery.data ?? []}
         isPending={updateCardMutation.isPending || assignCardMutation.isPending || archiveCardMutation.isPending}
+        isCancelPending={cancelRunMutation.isPending}
+        controlError={controlError}
         onClose={() => setSelectedCardId(null)}
         onUpdate={async (input) => {
           if (!selectedCardId) {
@@ -275,7 +303,23 @@ export function KanbanBoardPage() {
           }
           await archiveCardMutation.mutateAsync(selectedCardId);
         }}
+        onCancelRun={async (runId) => {
+          if (!cardDetailsQuery.data?.threadId) {
+            return;
+          }
+          await cancelRunMutation.mutateAsync({
+            threadId: cardDetailsQuery.data.threadId,
+            runId,
+          });
+        }}
       />
     </div>
   );
+}
+
+function readErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return 'The action failed. Check the Hive control channel state and try again.';
 }

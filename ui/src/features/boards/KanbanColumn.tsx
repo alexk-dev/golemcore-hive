@@ -2,7 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { BoardColumn } from '../../lib/api/boardsApi';
-import { CardSummary } from '../../lib/api/cardsApi';
+import { CardControlState, CardSummary } from '../../lib/api/cardsApi';
 import { AssignmentPolicyBadge } from '../cards/AssignmentPolicyBadge';
 
 type KanbanColumnProps = {
@@ -18,6 +18,13 @@ type SortableCardProps = {
 
 function SortableCard({ card, onOpenCard }: SortableCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
+  const controlTone = card.controlState?.cancelRequestedPending
+    ? 'border-rose-200 bg-rose-50 text-rose-900'
+    : card.controlState?.runStatus === 'BLOCKED'
+      ? 'border-amber-200 bg-amber-50 text-amber-900'
+      : card.controlState?.runStatus === 'RUNNING'
+        ? 'border-primary/20 bg-primary/10 text-foreground'
+        : 'border-border bg-muted text-muted-foreground';
 
   return (
     <button
@@ -41,6 +48,16 @@ function SortableCard({ card, onOpenCard }: SortableCardProps) {
       </div>
       <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">{card.id}</p>
       <p className="mt-3 text-sm text-muted-foreground">{card.assigneeGolemId || 'Unassigned'}</p>
+      {card.controlState ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${controlTone}`}>
+            {formatControlLabel(card.controlState)}
+          </span>
+          {card.controlState.cancelRequestedPending && card.controlState.cancelRequestedByActorName ? (
+            <span className="text-xs text-rose-900">by {card.controlState.cancelRequestedByActorName}</span>
+          ) : null}
+        </div>
+      ) : null}
     </button>
   );
 }
@@ -84,4 +101,23 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
       </div>
     </section>
   );
+}
+
+function formatControlLabel(controlState: CardControlState) {
+  if (controlState.cancelRequestedPending) {
+    return 'Stop requested';
+  }
+  if (controlState.runStatus === 'PENDING_APPROVAL') {
+    return 'Awaiting approval';
+  }
+  if (controlState.runStatus === 'QUEUED' && controlState.commandStatus === 'QUEUED') {
+    return 'Queued';
+  }
+  if (controlState.runStatus === 'BLOCKED') {
+    return 'Blocked';
+  }
+  if (controlState.runStatus === 'RUNNING') {
+    return 'Running';
+  }
+  return controlState.runStatus.replace(/_/g, ' ');
 }

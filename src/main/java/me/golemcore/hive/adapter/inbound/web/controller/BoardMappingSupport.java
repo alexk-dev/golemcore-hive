@@ -31,6 +31,7 @@ import me.golemcore.hive.adapter.inbound.web.dto.boards.BoardSummaryResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.BoardTeamFilterPayload;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.BoardTeamPayload;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.BoardTransitionPayload;
+import me.golemcore.hive.adapter.inbound.web.dto.boards.CardControlStateResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.CardDetailResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.CardSummaryResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.CardTransitionResponse;
@@ -47,6 +48,7 @@ import me.golemcore.hive.domain.model.BoardTeamFilterType;
 import me.golemcore.hive.domain.model.BoardTransitionRule;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardAssignmentPolicy;
+import me.golemcore.hive.domain.model.CardControlStateSnapshot;
 import me.golemcore.hive.domain.model.CardTransitionEvent;
 import me.golemcore.hive.domain.service.FlowRemapService;
 
@@ -79,7 +81,7 @@ abstract class BoardMappingSupport {
                 toBoardCounts(cards));
     }
 
-    protected CardSummaryResponse toCardSummaryResponse(Card card) {
+    protected CardSummaryResponse toCardSummaryResponse(Card card, CardControlStateSnapshot controlState) {
         return new CardSummaryResponse(
                 card.getId(),
                 card.getBoardId(),
@@ -89,10 +91,11 @@ abstract class BoardMappingSupport {
                 card.getAssigneeGolemId(),
                 card.getAssignmentPolicy().name(),
                 card.getPosition(),
-                card.isArchived());
+                card.isArchived(),
+                toCardControlStateResponse(controlState));
     }
 
-    protected CardDetailResponse toCardDetailResponse(Card card) {
+    protected CardDetailResponse toCardDetailResponse(Card card, CardControlStateSnapshot controlState) {
         return new CardDetailResponse(
                 card.getId(),
                 card.getBoardId(),
@@ -108,6 +111,7 @@ abstract class BoardMappingSupport {
                 card.getCreatedAt(),
                 card.getUpdatedAt(),
                 card.getLastTransitionAt(),
+                toCardControlStateResponse(controlState),
                 card.getTransitionEvents().stream().map(this::toCardTransitionResponse).toList());
     }
 
@@ -224,5 +228,24 @@ abstract class BoardMappingSupport {
                 event.getSummary(),
                 event.getOccurredAt(),
                 event.getActorName());
+    }
+
+    private CardControlStateResponse toCardControlStateResponse(CardControlStateSnapshot controlState) {
+        if (controlState == null) {
+            return null;
+        }
+        return new CardControlStateResponse(
+                controlState.commandId(),
+                controlState.runId(),
+                controlState.golemId(),
+                controlState.commandStatus() != null ? controlState.commandStatus().name() : null,
+                controlState.runStatus() != null ? controlState.runStatus().name() : null,
+                controlState.summary(),
+                controlState.queueReason(),
+                controlState.updatedAt(),
+                controlState.cancelRequestedAt(),
+                controlState.cancelRequestedByActorName(),
+                controlState.cancelRequestedPending(),
+                controlState.canCancel());
     }
 }

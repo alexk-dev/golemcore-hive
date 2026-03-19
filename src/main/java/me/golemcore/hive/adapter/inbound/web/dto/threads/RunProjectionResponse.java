@@ -38,5 +38,7 @@ public record RunProjectionResponse(
         Instant createdAt,
         Instant updatedAt,
         Instant startedAt,
-        Instant completedAt) {
+        Instant completedAt,
+        Instant cancelRequestedAt,
+        String cancelRequestedByActorName) {
 }

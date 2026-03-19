@@ -24,6 +24,7 @@ public record CreateCardRequest(
         @NotBlank String boardId,
         @NotBlank String title,
         String description,
+        @NotBlank String prompt,
         String columnId,
         String assigneeGolemId,
         String assignmentPolicy,

@@ -95,6 +95,7 @@ class BoardControllerIntegrationTest {
                           "boardId":"%s",
                           "title":"Resident in progress card",
                           "description":"Keeps the target column occupied before remap.",
+                          "prompt":"Continue the resident in-progress work item and report status.",
                           "columnId":"in_progress",
                           "assigneeGolemId":"%s",
                           "assignmentPolicy":"MANUAL",
@@ -111,6 +112,7 @@ class BoardControllerIntegrationTest {
                           "boardId":"%s",
                           "title":"Implement board filters",
                           "description":"Auto-assign against the board team.",
+                          "prompt":"Implement board filters against the board team routing rules.",
                           "assignmentPolicy":"AUTOMATIC",
                           "autoAssign":true
                         }
@@ -123,6 +125,7 @@ class BoardControllerIntegrationTest {
         JsonNode autoAssignedCardPayload = objectMapper.readTree(autoAssignedCardResult.getResponseBody());
         String autoAssignedCardId = autoAssignedCardPayload.get("id").asText();
         Assertions.assertEquals(developer.golemId(), autoAssignedCardPayload.get("assigneeGolemId").asText());
+        Assertions.assertEquals("Implement board filters against the board team routing rules.", autoAssignedCardPayload.get("prompt").asText());
         Assertions.assertTrue(autoAssignedCardPayload.get("threadId").asText().startsWith("thread_"));
 
         webTestClient.get()
@@ -210,6 +213,28 @@ class BoardControllerIntegrationTest {
         }
         Assertions.assertEquals(2, inProgressCount);
         Assertions.assertEquals(Set.of(0, 1), inProgressPositions);
+    }
+
+    @Test
+    void shouldRequirePromptWhenCreatingCard() throws Exception {
+        String operatorToken = loginAsAdmin();
+        String boardId = createBoard(operatorToken);
+
+        webTestClient.post()
+                .uri("/api/v1/cards")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "boardId":"%s",
+                          "title":"Card without prompt",
+                          "description":"This request should fail validation.",
+                          "assignmentPolicy":"MANUAL",
+                          "autoAssign":false
+                        }
+                        """.formatted(boardId))
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     private String createBoard(String operatorToken) throws Exception {

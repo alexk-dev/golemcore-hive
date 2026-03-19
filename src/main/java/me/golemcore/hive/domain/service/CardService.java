@@ -91,6 +91,7 @@ public class CardService {
     public Card createCard(String boardId,
                            String title,
                            String description,
+                           String prompt,
                            String columnId,
                            String assigneeGolemId,
                            CardAssignmentPolicy assignmentPolicy,
@@ -99,6 +100,9 @@ public class CardService {
                            String actorName) {
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("Card title is required");
+        }
+        if (prompt == null || prompt.isBlank()) {
+            throw new IllegalArgumentException("Card prompt is required");
         }
         Board board = boardService.getBoard(boardId);
         String targetColumnId = columnId != null && !columnId.isBlank() ? columnId : board.getFlow().getDefaultColumnId();
@@ -128,6 +132,7 @@ public class CardService {
                 .threadId(threadId)
                 .title(title)
                 .description(description)
+                .prompt(prompt)
                 .columnId(targetColumnId)
                 .assigneeGolemId(effectiveAssigneeId)
                 .assignmentPolicy(effectivePolicy)
@@ -177,6 +182,7 @@ public class CardService {
     public Card updateCard(String cardId,
                            String title,
                            String description,
+                           String prompt,
                            CardAssignmentPolicy assignmentPolicy) {
         Card card = getCard(cardId);
         if (title != null && !title.isBlank()) {
@@ -184,6 +190,12 @@ public class CardService {
         }
         if (description != null) {
             card.setDescription(description);
+        }
+        if (prompt != null) {
+            if (prompt.isBlank()) {
+                throw new IllegalArgumentException("Card prompt is required");
+            }
+            card.setPrompt(prompt);
         }
         if (assignmentPolicy != null) {
             card.setAssignmentPolicy(assignmentPolicy);

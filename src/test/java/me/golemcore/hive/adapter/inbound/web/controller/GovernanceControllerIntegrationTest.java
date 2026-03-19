@@ -185,6 +185,7 @@ class GovernanceControllerIntegrationTest {
                           "boardId":"%s",
                           "title":"%s",
                           "description":"Integration test card",
+                          "prompt":"Execute the governance task and report approval-sensitive details.",
                           "columnId":"%s",
                           "assigneeGolemId":"%s",
                           "assignmentPolicy":"MANUAL",

@@ -82,6 +82,7 @@ public class CardsController extends BoardMappingSupport {
                     request.boardId(),
                     request.title(),
                     request.description(),
+                    request.prompt(),
                     request.columnId(),
                     request.assigneeGolemId(),
                     parseAssignmentPolicy(request.assignmentPolicy()),
@@ -112,6 +113,7 @@ public class CardsController extends BoardMappingSupport {
                     cardId,
                     request != null ? request.title() : null,
                     request != null ? request.description() : null,
+                    request != null ? request.prompt() : null,
                     request != null ? parseAssignmentPolicy(request.assignmentPolicy()) : null);
             return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
@@ -124,6 +126,11 @@ public class CardsController extends BoardMappingSupport {
             @Valid @RequestBody MoveCardRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Card existingCard = cardService.getCard(cardId);
+            boolean shouldAutoDispatchPrompt = shouldAutoDispatchPromptOnMove(existingCard, request.targetColumnId());
+            if (shouldAutoDispatchPrompt && (existingCard.getAssigneeGolemId() == null || existingCard.getAssigneeGolemId().isBlank())) {
+                throw new IllegalArgumentException("Card must be assigned before the first move to in_progress");
+            }
             Card card = cardService.moveCard(
                     cardId,
                     request.targetColumnId(),
@@ -132,6 +139,16 @@ public class CardsController extends BoardMappingSupport {
                     actor.getSubjectId(),
                     actor.getName(),
                     request.summary());
+            if (shouldAutoDispatchPrompt) {
+                commandDispatchService.createCommand(
+                        card.getThreadId(),
+                        card.getPrompt(),
+                        null,
+                        0,
+                        null,
+                        actor.getSubjectId(),
+                        actor.getName());
+            }
             return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -167,5 +184,13 @@ public class CardsController extends BoardMappingSupport {
 
     private CardControlStateSnapshot findControlState(Card card) {
         return commandDispatchService.listActiveCardControlStates(List.of(card)).get(card.getId());
+    }
+
+    private boolean shouldAutoDispatchPromptOnMove(Card card, String targetColumnId) {
+        if (card == null || !"in_progress".equals(targetColumnId) || "in_progress".equals(card.getColumnId())) {
+            return false;
+        }
+        return card.getTransitionEvents().stream()
+                .noneMatch(event -> "in_progress".equals(event.getToColumnId()));
     }
 }

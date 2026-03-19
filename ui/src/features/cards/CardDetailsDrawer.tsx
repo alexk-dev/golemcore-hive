@@ -13,7 +13,7 @@ type CardDetailsDrawerProps = {
   allGolems: GolemSummary[];
   isPending: boolean;
   onClose: () => void;
-  onUpdate: (input: { title: string; description: string; assignmentPolicy: string }) => Promise<void>;
+  onUpdate: (input: { title: string; description: string; prompt: string; assignmentPolicy: string }) => Promise<void>;
   onAssign: (assigneeGolemId: string | null) => Promise<void>;
   onArchive: () => Promise<void>;
   onDispatchCommand: (input: CreateThreadCommandInput) => Promise<void>;
@@ -41,6 +41,7 @@ export function CardDetailsDrawer({
 }: CardDetailsDrawerProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [prompt, setPrompt] = useState('');
   const [assignmentPolicy, setAssignmentPolicy] = useState('MANUAL');
   const [dispatchBody, setDispatchBody] = useState('');
   const [approvalRiskLevel, setApprovalRiskLevel] = useState<'NONE' | 'DESTRUCTIVE' | 'HIGH_COST'>('NONE');
@@ -53,12 +54,13 @@ export function CardDetailsDrawer({
     }
     setTitle(card.title);
     setDescription(card.description || '');
+    setPrompt(card.prompt);
     setAssignmentPolicy(card.assignmentPolicy);
     setDispatchBody('');
     setApprovalRiskLevel('NONE');
     setEstimatedCostMicros('');
     setApprovalReason('');
-  }, [card]);
+  }, [card?.id]);
 
   if (!open || !card) {
     return null;
@@ -66,7 +68,7 @@ export function CardDetailsDrawer({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await onUpdate({ title, description, assignmentPolicy });
+    await onUpdate({ title, description, prompt, assignmentPolicy });
   }
 
   async function handleDispatchSubmit(event: FormEvent<HTMLFormElement>) {
@@ -136,7 +138,8 @@ export function CardDetailsDrawer({
                 <div>
                   <h3 className="text-xl font-bold tracking-[-0.03em] text-foreground">Dispatch to assignee</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Send the next operator instruction without leaving the board.
+                    The saved card prompt goes out automatically on the first move to In Progress. Use dispatch here for
+                    manual follow-up instructions.
                   </p>
                 </div>
                 <span className="rounded-full border border-border bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -222,7 +225,7 @@ export function CardDetailsDrawer({
                 </div>
                 <button
                   type="submit"
-                  disabled={isPending}
+                  disabled={isPending || !title.trim() || !prompt.trim()}
                   className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
                 >
                   Save card
@@ -245,9 +248,21 @@ export function CardDetailsDrawer({
                   className="rounded-[18px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
                 />
               </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold text-foreground">Prompt</span>
+                <textarea
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  rows={6}
+                  className="rounded-[18px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+                />
+              </label>
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-border bg-white/65 p-4">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Assignment policy</p>
+                  <p className="text-sm font-semibold text-foreground">Assignee routing</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Routing chooses who receives work. Card status still follows lifecycle signals and board flow.
+                  </p>
                   <select
                     value={assignmentPolicy}
                     onChange={(event) => setAssignmentPolicy(event.target.value)}
@@ -302,7 +317,7 @@ export function CardDetailsDrawer({
 
             <section className="panel grid gap-3 p-4">
               <div>
-                <p className="text-sm font-semibold text-foreground">Assignee</p>
+                <p className="text-sm font-semibold text-foreground">Assignee routing</p>
                 <p className="mt-1 text-sm text-muted-foreground">Reassign from the board team or the full fleet.</p>
               </div>
               <AssigneePicker

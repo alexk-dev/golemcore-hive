@@ -316,6 +316,97 @@ class ThreadControllerIntegrationTest {
     }
 
     @Test
+    void shouldAutoDispatchCardPromptOnlyOnFirstManualMoveToInProgress() throws Exception {
+        String operatorToken = loginAsAdmin();
+        createRole(operatorToken, "developer");
+        RegisteredGolem developer = registerOnlineGolem(operatorToken, "Atlas Starter", "host-starter", "developer");
+        BlockingQueue<String> controlMessages = new LinkedBlockingQueue<>();
+        Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
+        Disposable subscription = applicationContext.getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
+                .register(developer.golemId(), sink)
+                .subscribe(controlMessages::add);
+        try {
+            String boardId = createBoard(operatorToken);
+            String cardId = createCard(operatorToken, boardId, "Kick off queued work", "ready", developer.golemId());
+            String threadId = getThreadId(operatorToken, cardId);
+
+            webTestClient.post()
+                    .uri("/api/v1/cards/{cardId}:move", cardId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .bodyValue("""
+                            {
+                              "targetColumnId":"in_progress",
+                              "summary":"Start the assigned work"
+                            }
+                            """)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.columnId").isEqualTo("in_progress")
+                    .jsonPath("$.controlState.commandId").isNotEmpty()
+                    .jsonPath("$.controlState.runId").isNotEmpty();
+
+            JsonNode initialEnvelope = objectMapper.readTree(pollControlMessage(controlMessages));
+            Assertions.assertEquals("command", initialEnvelope.get("eventType").asText());
+            Assertions.assertEquals(cardId, initialEnvelope.get("cardId").asText());
+            Assertions.assertEquals(threadId, initialEnvelope.get("threadId").asText());
+            Assertions.assertEquals("Execute the full card prompt and report concrete progress.", initialEnvelope.get("body").asText());
+
+            webTestClient.get()
+                    .uri("/api/v1/threads/{threadId}/commands", threadId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.length()").isEqualTo(1)
+                    .jsonPath("$[0].body").isEqualTo("Execute the full card prompt and report concrete progress.");
+
+            webTestClient.post()
+                    .uri("/api/v1/cards/{cardId}:move", cardId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .bodyValue("""
+                            {
+                              "targetColumnId":"review",
+                              "summary":"Ready for review"
+                            }
+                            """)
+                    .exchange()
+                    .expectStatus().isOk();
+
+            webTestClient.post()
+                    .uri("/api/v1/cards/{cardId}:move", cardId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .bodyValue("""
+                            {
+                              "targetColumnId":"in_progress",
+                              "summary":"Apply review feedback"
+                            }
+                            """)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.columnId").isEqualTo("in_progress");
+
+            Assertions.assertNull(controlMessages.poll(500, TimeUnit.MILLISECONDS));
+
+            webTestClient.get()
+                    .uri("/api/v1/threads/{threadId}/commands", threadId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.length()").isEqualTo(1);
+        } finally {
+            subscription.dispose();
+            applicationContext.getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
+                    .unregister(developer.golemId(), sink);
+        }
+    }
+
+    @Test
     void shouldCancelQueuedCommandBeforeDispatch() throws Exception {
         String operatorToken = loginAsAdmin();
         createRole(operatorToken, "developer");
@@ -566,6 +657,7 @@ class ThreadControllerIntegrationTest {
                           "boardId":"%s",
                           "title":"%s",
                           "description":"Integration test card",
+                          "prompt":"Execute the full card prompt and report concrete progress.",
                           "columnId":"%s",
                           "assigneeGolemId":"%s",
                           "assignmentPolicy":"MANUAL",

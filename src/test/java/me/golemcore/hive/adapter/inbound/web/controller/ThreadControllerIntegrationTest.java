@@ -385,6 +385,88 @@ class ThreadControllerIntegrationTest {
                     .jsonPath("$[1].type").isEqualTo("COMMAND_STATUS")
                     .jsonPath("$[1].participantType").isEqualTo("OPERATOR")
                     .jsonPath("$[1].body").isEqualTo("Requested stop for active run");
+
+            webTestClient.post()
+                    .uri("/api/v1/golems/{golemId}/events:batch", developer.golemId())
+                    .header(HttpHeaders.AUTHORIZATION, developer.accessToken())
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .bodyValue("""
+                            {
+                              "schemaVersion": 1,
+                              "golemId": "%s",
+                              "events": [
+                                {
+                                  "eventType": "runtime_event",
+                                  "runtimeEventType": "RUN_CANCELLED",
+                                  "cardId": "%s",
+                                  "threadId": "%s",
+                                  "commandId": "%s",
+                                  "runId": "%s",
+                                  "summary": "Run cancelled by operator"
+                                },
+                                {
+                                  "eventType": "card_lifecycle_signal",
+                                  "signalId": "sig_cancelled",
+                                  "cardId": "%s",
+                                  "threadId": "%s",
+                                  "commandId": "%s",
+                                  "runId": "%s",
+                                  "signalType": "WORK_CANCELLED",
+                                  "summary": "Work cancelled after operator stop request"
+                                }
+                              ]
+                            }
+                            """.formatted(
+                            developer.golemId(),
+                            cardId,
+                            threadId,
+                            command.commandId(),
+                            command.runId(),
+                            cardId,
+                            threadId,
+                            command.commandId(),
+                            command.runId()))
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.acceptedEvents").isEqualTo(2)
+                    .jsonPath("$.runtimeEvents").isEqualTo(1)
+                    .jsonPath("$.lifecycleSignals").isEqualTo(1);
+
+            webTestClient.get()
+                    .uri("/api/v1/threads/{threadId}/commands", threadId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$[0].status").isEqualTo("CANCELLED")
+                    .jsonPath("$[0].cancelRequestedAt").isNotEmpty();
+
+            webTestClient.get()
+                    .uri("/api/v1/threads/{threadId}/runs", threadId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$[0].status").isEqualTo("CANCELLED")
+                    .jsonPath("$[0].lastSignalType").isEqualTo("WORK_CANCELLED")
+                    .jsonPath("$[0].cancelRequestedAt").isNotEmpty();
+
+            webTestClient.get()
+                    .uri("/api/v1/cards/{cardId}", cardId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.controlState").isEmpty();
+
+            webTestClient.get()
+                    .uri("/api/v1/cards?boardId={boardId}", boardId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$[0].controlState").isEmpty();
         } finally {
             subscription.dispose();
             applicationContext.getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)

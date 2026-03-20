@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 export function KanbanBoardHeader({
   boardId,
   boardName,
-  boardDescription,
   templateKey,
   columnCount,
   totalCards,
@@ -12,7 +11,6 @@ export function KanbanBoardHeader({
 }: {
   boardId: string;
   boardName: string;
-  boardDescription: string | null;
   templateKey: string;
   columnCount: number;
   totalCards: number;
@@ -20,15 +18,12 @@ export function KanbanBoardHeader({
   onNewCard: () => void;
 }) {
   return (
-    <section className="panel px-5 py-4 md:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <span className="pill">{templateKey}</span>
-          <h2 className="mt-3 text-2xl font-bold tracking-[-0.04em] text-foreground">{boardName}</h2>
-          <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            {boardDescription || 'Board-specific columns, transitions, and team routing live here.'}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
+    <section className="panel px-4 py-3 md:px-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{templateKey}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <h2 className="text-xl font-bold tracking-[-0.04em] text-foreground">{boardName}</h2>
             <MetricPill label={`${columnCount} columns`} />
             <MetricPill label={`${totalCards} cards`} />
             <MetricPill label={`${activeCards} active`} />
@@ -56,7 +51,7 @@ export function KanbanBoardHeader({
 
 function MetricPill({ label }: { label: string }) {
   return (
-    <span className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+    <span className="rounded-full border border-border/80 bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
       {label}
     </span>
   );

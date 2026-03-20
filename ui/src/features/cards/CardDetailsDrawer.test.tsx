@@ -65,4 +65,30 @@ describe('CardDetailsDrawer', () => {
     expect(screen.getAllByText(/assignee routing/i)).toHaveLength(2);
     expect(screen.getByLabelText(/prompt/i)).toHaveDisplayValue('Start with the saved card prompt before sending manual follow-ups.');
   });
+
+  it('does not crash when a legacy card comes back with a null prompt', () => {
+    render(
+      <MemoryRouter>
+        <CardDetailsDrawer
+          open
+          card={createCard({ prompt: null as unknown as string })}
+          assigneeOptions={createAssigneeOptions()}
+          allGolems={[]}
+          isPending={false}
+          onClose={vi.fn()}
+          onUpdate={vi.fn(async () => undefined)}
+          onAssign={vi.fn(async () => undefined)}
+          onArchive={vi.fn(async () => undefined)}
+          onDispatchCommand={vi.fn(async () => undefined)}
+          onCancelRun={vi.fn(async () => undefined)}
+          isDispatchPending={false}
+          isCancelPending={false}
+          controlError={null}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { name: /card details/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/prompt/i)).toHaveDisplayValue('');
+  });
 });

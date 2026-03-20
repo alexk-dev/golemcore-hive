@@ -45,10 +45,10 @@ function useCardDetailsDrafts(card: CardDetail | null) {
     if (!card || hydratedCardId === card.id) {
       return;
     }
-    setTitle(card.title);
-    setDescription(card.description || '');
-    setPrompt(card.prompt);
-    setAssignmentPolicy(card.assignmentPolicy);
+    setTitle(normalizeText(card.title));
+    setDescription(normalizeText(card.description));
+    setPrompt(normalizeText(card.prompt));
+    setAssignmentPolicy(normalizeText(card.assignmentPolicy) || 'MANUAL');
     setDispatchBody('');
     setApprovalRiskLevel('NONE');
     setEstimatedCostMicros('');
@@ -174,4 +174,8 @@ export function CardDetailsDrawer({
       </div>
     </div>
   );
+}
+
+function normalizeText(value: string | null | undefined) {
+  return value ?? '';
 }

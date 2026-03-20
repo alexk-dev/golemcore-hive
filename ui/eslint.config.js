@@ -94,9 +94,9 @@ export default tseslint.config(
       'no-useless-return': 'error',
       'max-depth': ['error', 4],
       'max-params': ['error', 5],
-      'max-lines': ['warn', { max: 400, skipBlankLines: true, skipComments: true }],
-      'max-lines-per-function': ['warn', { max: 200, skipBlankLines: true, skipComments: true }],
-      'complexity': ['warn', 15],
+      'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['error', { max: 200, skipBlankLines: true, skipComments: true }],
+      'complexity': ['error', 15],
     },
   },
   {
@@ -104,18 +104,6 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/no-confusing-void-expression': 'off',
-      'max-lines': 'off',
-      'max-lines-per-function': 'off',
-      'complexity': 'off',
-    },
-  },
-  {
-    files: [
-      'src/features/boards/KanbanBoardPage.tsx',
-      'src/features/cards/CardDetailsDrawer.tsx',
-      'src/features/chat/CardThreadPage.tsx',
-    ],
-    rules: {
       'max-lines': 'off',
       'max-lines-per-function': 'off',
       'complexity': 'off',

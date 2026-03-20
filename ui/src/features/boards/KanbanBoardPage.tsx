@@ -1,24 +1,33 @@
-import { closestCorners, DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { closestCorners, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { getBoard, getBoardTeam } from '../../lib/api/boardsApi';
 import { archiveCard, assignCard, createCard, getCard, getCardAssignees, listCards, moveCard, updateCard } from '../../lib/api/cardsApi';
 import { cancelThreadRun, createThreadCommand, type CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import { listGolems } from '../../lib/api/golemsApi';
 import { CardComposerDialog } from '../cards/CardComposerDialog';
 import { CardDetailsDrawer } from '../cards/CardDetailsDrawer';
+import { KanbanBoardHeader } from './KanbanBoardHeader';
 import { KanbanColumn } from './KanbanColumn';
+import { getMoveInput } from './kanbanDrag';
 
 const KANBAN_BACKGROUND_REFRESH_MS = 10_000;
 
-export function KanbanBoardPage() {
-  const { boardId = '' } = useParams();
+function useKanbanBoardData({
+  boardId,
+  selectedCardId,
+  onComposerClosed,
+  onCardClosed,
+  onControlError,
+}: {
+  boardId: string;
+  selectedCardId: string | null;
+  onComposerClosed: () => void;
+  onCardClosed: () => void;
+  onControlError: (message: string | null) => void;
+}) {
   const queryClient = useQueryClient();
-  const [isComposerOpen, setIsComposerOpen] = useState(false);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [controlError, setControlError] = useState<string | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const boardQuery = useQuery({
     queryKey: ['board', boardId],
@@ -58,29 +67,42 @@ export function KanbanBoardPage() {
     refetchIntervalInBackground: true,
   });
 
+  const invalidateBoardQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
+      queryClient.invalidateQueries({ queryKey: ['board', boardId] }),
+    ]);
+  };
+  const invalidateSelectedCardQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['card', selectedCardId] }),
+      queryClient.invalidateQueries({ queryKey: ['card-assignees', selectedCardId] }),
+    ]);
+  };
+  const invalidateThreadQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['thread-runs', cardDetailsQuery.data?.threadId] }),
+      queryClient.invalidateQueries({ queryKey: ['thread-commands', cardDetailsQuery.data?.threadId] }),
+      queryClient.invalidateQueries({ queryKey: ['thread-messages', cardDetailsQuery.data?.threadId] }),
+      queryClient.invalidateQueries({ queryKey: ['thread-signals', cardDetailsQuery.data?.threadId] }),
+      queryClient.invalidateQueries({ queryKey: ['card-thread', selectedCardId] }),
+    ]);
+  };
+
   const createCardMutation = useMutation({
     mutationFn: createCard,
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
-        queryClient.invalidateQueries({ queryKey: ['board', boardId] }),
-      ]);
-      setIsComposerOpen(false);
+      await invalidateBoardQueries();
+      onComposerClosed();
     },
   });
-
   const moveCardMutation = useMutation({
     mutationFn: ({ cardId, input }: { cardId: string; input: { targetColumnId: string; targetIndex?: number; summary?: string } }) =>
       moveCard(cardId, input),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
-        queryClient.invalidateQueries({ queryKey: ['board', boardId] }),
-        queryClient.invalidateQueries({ queryKey: ['card', selectedCardId] }),
-      ]);
+      await Promise.all([invalidateBoardQueries(), invalidateSelectedCardQueries()]);
     },
   });
-
   const updateCardMutation = useMutation({
     mutationFn: ({ cardId, input }: { cardId: string; input: { title?: string; description?: string; prompt?: string; assignmentPolicy?: string } }) =>
       updateCard(cardId, input),
@@ -91,66 +113,52 @@ export function KanbanBoardPage() {
       ]);
     },
   });
-
   const assignCardMutation = useMutation({
     mutationFn: ({ cardId, assigneeGolemId }: { cardId: string; assigneeGolemId: string | null }) => assignCard(cardId, assigneeGolemId),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
-        queryClient.invalidateQueries({ queryKey: ['card', selectedCardId] }),
-        queryClient.invalidateQueries({ queryKey: ['card-assignees', selectedCardId] }),
+        invalidateSelectedCardQueries(),
       ]);
     },
   });
-
   const archiveCardMutation = useMutation({
     mutationFn: archiveCard,
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
-        queryClient.invalidateQueries({ queryKey: ['board', boardId] }),
-      ]);
-      setSelectedCardId(null);
+      await invalidateBoardQueries();
+      onCardClosed();
     },
   });
   const createCommandMutation = useMutation({
     mutationFn: ({ threadId, input }: { threadId: string; input: CreateThreadCommandInput }) => createThreadCommand(threadId, input),
     onMutate: () => {
-      setControlError(null);
+      onControlError(null);
     },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
         queryClient.invalidateQueries({ queryKey: ['card', selectedCardId] }),
-        queryClient.invalidateQueries({ queryKey: ['thread-runs', cardDetailsQuery.data?.threadId] }),
-        queryClient.invalidateQueries({ queryKey: ['thread-commands', cardDetailsQuery.data?.threadId] }),
-        queryClient.invalidateQueries({ queryKey: ['thread-messages', cardDetailsQuery.data?.threadId] }),
-        queryClient.invalidateQueries({ queryKey: ['thread-signals', cardDetailsQuery.data?.threadId] }),
-        queryClient.invalidateQueries({ queryKey: ['card-thread', selectedCardId] }),
+        invalidateThreadQueries(),
       ]);
     },
     onError: (error) => {
-      setControlError(readErrorMessage(error));
+      onControlError(readErrorMessage(error));
     },
   });
   const cancelRunMutation = useMutation({
     mutationFn: ({ threadId, runId }: { threadId: string; runId: string }) => cancelThreadRun(threadId, runId),
     onMutate: () => {
-      setControlError(null);
+      onControlError(null);
     },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
         queryClient.invalidateQueries({ queryKey: ['card', selectedCardId] }),
-        queryClient.invalidateQueries({ queryKey: ['thread-runs', cardDetailsQuery.data?.threadId] }),
-        queryClient.invalidateQueries({ queryKey: ['thread-commands', cardDetailsQuery.data?.threadId] }),
-        queryClient.invalidateQueries({ queryKey: ['thread-messages', cardDetailsQuery.data?.threadId] }),
-        queryClient.invalidateQueries({ queryKey: ['thread-signals', cardDetailsQuery.data?.threadId] }),
-        queryClient.invalidateQueries({ queryKey: ['card-thread', selectedCardId] }),
+        invalidateThreadQueries(),
       ]);
     },
     onError: (error) => {
-      setControlError(readErrorMessage(error));
+      onControlError(readErrorMessage(error));
     },
   });
 
@@ -175,122 +183,83 @@ export function KanbanBoardPage() {
     };
   }, [boardQuery.data, golemsQuery.data, teamQuery.data]);
 
+  return {
+    boardQuery,
+    cardsQuery,
+    golemsQuery,
+    cardDetailsQuery,
+    assigneeOptionsQuery,
+    composerAssigneeOptions,
+    createCardMutation,
+    moveCardMutation,
+    updateCardMutation,
+    assignCardMutation,
+    archiveCardMutation,
+    createCommandMutation,
+    cancelRunMutation,
+  };
+}
+
+export function KanbanBoardPage() {
+  const { boardId = '' } = useParams();
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [controlError, setControlError] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const data = useKanbanBoardData({
+    boardId,
+    selectedCardId,
+    onComposerClosed: () => setIsComposerOpen(false),
+    onCardClosed: () => setSelectedCardId(null),
+    onControlError: setControlError,
+  });
+
   useEffect(() => {
     setControlError(null);
   }, [selectedCardId]);
 
-  async function handleDragEnd(event: DragEndEvent) {
-    const activeId = String(event.active.id);
-    const overId = event.over?.id ? String(event.over.id) : null;
-    if (!overId || !cardsQuery.data) {
-      return;
-    }
-    const movingCard = cardsQuery.data.find((card) => card.id === activeId);
-    if (!movingCard) {
-      return;
-    }
-
-    let targetColumnId = movingCard.columnId;
-    let targetIndex = cardsQuery.data.filter((card) => card.columnId === movingCard.columnId).length;
-
-    if (overId.startsWith('column:')) {
-      targetColumnId = overId.replace('column:', '');
-      targetIndex = cardsQuery.data.filter((card) => card.columnId === targetColumnId).length;
-    } else {
-      const overCard = cardsQuery.data.find((card) => card.id === overId);
-      if (!overCard) {
-        return;
-      }
-      targetColumnId = overCard.columnId;
-      targetIndex = cardsQuery.data
-        .filter((card) => card.columnId === targetColumnId && card.id !== movingCard.id)
-        .sort((left, right) => (left.position ?? 0) - (right.position ?? 0))
-        .findIndex((card) => card.id === overCard.id);
-      if (targetIndex < 0) {
-        targetIndex = 0;
-      }
-    }
-
-    if (targetColumnId === movingCard.columnId) {
-      const currentIndex = cardsQuery.data
-        .filter((card) => card.columnId === movingCard.columnId)
-        .sort((left, right) => (left.position ?? 0) - (right.position ?? 0))
-        .findIndex((card) => card.id === movingCard.id);
-      if (currentIndex === targetIndex) {
-        return;
-      }
-    }
-
-    await moveCardMutation.mutateAsync({
-      cardId: movingCard.id,
-      input: {
-        targetColumnId,
-        targetIndex,
-        summary: 'Card moved from kanban board',
-      },
-    });
-  }
-
-  if (!boardQuery.data) {
+  if (!data.boardQuery.data) {
     return <div className="panel p-6 md:p-8 text-sm text-muted-foreground">Loading board…</div>;
   }
 
-  const totalCards = (cardsQuery.data ?? []).filter((card) => !card.archived).length;
-  const activeCards = (cardsQuery.data ?? []).filter((card) => {
-    return card.controlState?.runStatus === 'RUNNING' || card.columnId === 'in_progress';
-  }).length;
+  const cards = data.cardsQuery.data ?? [];
+  const totalCards = cards.filter((card) => !card.archived).length;
+  const activeCards = cards.filter((card) => card.controlState?.runStatus === 'RUNNING' || card.columnId === 'in_progress').length;
 
   return (
     <div className="grid gap-6">
-      <section className="panel px-5 py-4 md:px-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <span className="pill">{boardQuery.data.templateKey}</span>
-            <h2 className="mt-3 text-2xl font-bold tracking-[-0.04em] text-foreground">{boardQuery.data.name}</h2>
-            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-              {boardQuery.data.description || 'Board-specific columns, transitions, and team routing live here.'}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                {boardQuery.data.flow.columns.length} columns
-              </span>
-              <span className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                {totalCards} cards
-              </span>
-              <span className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                {activeCards} active
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link to="/boards" className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
-              All boards
-            </Link>
-            <Link to={`/boards/${boardId}/settings`} className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
-              Edit flow
-            </Link>
-            <button
-              type="button"
-              onClick={() => setIsComposerOpen(true)}
-              className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white"
-            >
-              New card
-            </button>
-          </div>
-        </div>
-      </section>
+      <KanbanBoardHeader
+        boardId={boardId}
+        boardName={data.boardQuery.data.name}
+        boardDescription={data.boardQuery.data.description}
+        templateKey={data.boardQuery.data.templateKey}
+        columnCount={data.boardQuery.data.flow.columns.length}
+        totalCards={totalCards}
+        activeCards={activeCards}
+        onNewCard={() => setIsComposerOpen(true)}
+      />
 
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={(event) => void handleDragEnd(event)}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragEnd={(event) => {
+          const moveInput = getMoveInput(cards, event);
+          if (!moveInput) {
+            return;
+          }
+          void data.moveCardMutation.mutateAsync(moveInput);
+        }}
+      >
         <section className="overflow-x-auto pb-3">
           <div className="flex min-w-max gap-3">
-            {boardQuery.data.flow.columns.map((column) => (
+            {data.boardQuery.data.flow.columns.map((column) => (
               <KanbanColumn
                 key={column.id}
                 column={column}
-                cards={(cardsQuery.data ?? [])
+                cards={cards
                   .filter((card) => card.columnId === column.id && !card.archived)
                   .sort((left, right) => (left.position ?? 0) - (right.position ?? 0))}
-                onOpenCard={(cardId) => setSelectedCardId(cardId)}
+                onOpenCard={setSelectedCardId}
               />
             ))}
           </div>
@@ -299,13 +268,13 @@ export function KanbanBoardPage() {
 
       <CardComposerDialog
         open={isComposerOpen}
-        board={boardQuery.data}
-        allGolems={golemsQuery.data ?? []}
-        assigneeOptions={composerAssigneeOptions}
-        isPending={createCardMutation.isPending}
+        board={data.boardQuery.data}
+        allGolems={data.golemsQuery.data ?? []}
+        assigneeOptions={data.composerAssigneeOptions}
+        isPending={data.createCardMutation.isPending}
         onClose={() => setIsComposerOpen(false)}
         onSubmit={async (input) => {
-          await createCardMutation.mutateAsync({
+          await data.createCardMutation.mutateAsync({
             boardId,
             title: input.title,
             prompt: input.prompt,
@@ -320,55 +289,45 @@ export function KanbanBoardPage() {
 
       <CardDetailsDrawer
         open={Boolean(selectedCardId)}
-        card={cardDetailsQuery.data ?? null}
-        assigneeOptions={assigneeOptionsQuery.data ?? null}
-        allGolems={golemsQuery.data ?? []}
-        isPending={updateCardMutation.isPending || assignCardMutation.isPending || archiveCardMutation.isPending}
-        isDispatchPending={createCommandMutation.isPending}
-        isCancelPending={cancelRunMutation.isPending}
+        card={data.cardDetailsQuery.data ?? null}
+        assigneeOptions={data.assigneeOptionsQuery.data ?? null}
+        allGolems={data.golemsQuery.data ?? []}
+        isPending={
+          data.updateCardMutation.isPending || data.assignCardMutation.isPending || data.archiveCardMutation.isPending
+        }
+        isDispatchPending={data.createCommandMutation.isPending}
+        isCancelPending={data.cancelRunMutation.isPending}
         controlError={controlError}
         onClose={() => setSelectedCardId(null)}
         onUpdate={async (input) => {
           if (!selectedCardId) {
             return;
           }
-          await updateCardMutation.mutateAsync({
-            cardId: selectedCardId,
-            input,
-          });
+          await data.updateCardMutation.mutateAsync({ cardId: selectedCardId, input });
         }}
         onAssign={async (assigneeGolemId) => {
           if (!selectedCardId) {
             return;
           }
-          await assignCardMutation.mutateAsync({
-            cardId: selectedCardId,
-            assigneeGolemId,
-          });
+          await data.assignCardMutation.mutateAsync({ cardId: selectedCardId, assigneeGolemId });
         }}
         onArchive={async () => {
           if (!selectedCardId) {
             return;
           }
-          await archiveCardMutation.mutateAsync(selectedCardId);
+          await data.archiveCardMutation.mutateAsync(selectedCardId);
         }}
         onDispatchCommand={async (input) => {
-          if (!cardDetailsQuery.data?.threadId) {
+          if (!data.cardDetailsQuery.data?.threadId) {
             return;
           }
-          await createCommandMutation.mutateAsync({
-            threadId: cardDetailsQuery.data.threadId,
-            input,
-          });
+          await data.createCommandMutation.mutateAsync({ threadId: data.cardDetailsQuery.data.threadId, input });
         }}
         onCancelRun={async (runId) => {
-          if (!cardDetailsQuery.data?.threadId) {
+          if (!data.cardDetailsQuery.data?.threadId) {
             return;
           }
-          await cancelRunMutation.mutateAsync({
-            threadId: cardDetailsQuery.data.threadId,
-            runId,
-          });
+          await data.cancelRunMutation.mutateAsync({ threadId: data.cardDetailsQuery.data.threadId, runId });
         }}
       />
     </div>

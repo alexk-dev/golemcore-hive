@@ -1,6 +1,6 @@
 import { apiRequest } from './httpClient';
 
-export type GolemCapabilitySnapshot = {
+export interface GolemCapabilitySnapshot {
   providers: string[];
   modelFamilies: string[];
   enabledTools: string[];
@@ -9,9 +9,9 @@ export type GolemCapabilitySnapshot = {
   supportedChannels: string[];
   snapshotHash: string | null;
   defaultModel: string | null;
-};
+}
 
-export type HeartbeatSnapshot = {
+export interface HeartbeatSnapshot {
   status: string | null;
   currentRunState: string | null;
   currentCardId: string | null;
@@ -25,9 +25,9 @@ export type HeartbeatSnapshot = {
   lastErrorSummary: string | null;
   uptimeSeconds: number;
   capabilitySnapshotHash: string | null;
-};
+}
 
-export type GolemSummary = {
+export interface GolemSummary {
   id: string;
   displayName: string;
   hostLabel: string | null;
@@ -37,9 +37,9 @@ export type GolemSummary = {
   lastSeenAt: string | null;
   missedHeartbeatCount: number;
   roleSlugs: string[];
-};
+}
 
-export type GolemDetails = {
+export interface GolemDetails {
   id: string;
   displayName: string;
   hostLabel: string | null;
@@ -61,9 +61,9 @@ export type GolemDetails = {
   capabilities: GolemCapabilitySnapshot | null;
   lastHeartbeat: HeartbeatSnapshot | null;
   roleSlugs: string[];
-};
+}
 
-export type EnrollmentToken = {
+export interface EnrollmentToken {
   id: string;
   preview: string;
   note: string | null;
@@ -76,9 +76,9 @@ export type EnrollmentToken = {
   lastRegisteredGolemId: string | null;
   revokeReason: string | null;
   revoked: boolean;
-};
+}
 
-export type EnrollmentTokenCreated = {
+export interface EnrollmentTokenCreated {
   id: string;
   token: string;
   joinCode: string;
@@ -86,29 +86,29 @@ export type EnrollmentTokenCreated = {
   note: string | null;
   createdAt: string;
   expiresAt: string;
-};
+}
 
-export type GolemRole = {
+export interface GolemRole {
   slug: string;
   name: string;
   description: string | null;
   capabilityTags: string[];
   createdAt: string | null;
   updatedAt: string | null;
-};
+}
 
-export type FleetFilters = {
+export interface FleetFilters {
   query?: string;
   state?: string;
   role?: string;
-};
+}
 
-type RolePayload = {
+interface RolePayload {
   slug?: string;
   name?: string;
   description?: string;
   capabilityTags?: string[];
-};
+}
 
 function buildQueryString(filters: FleetFilters): string {
   const params = new URLSearchParams();

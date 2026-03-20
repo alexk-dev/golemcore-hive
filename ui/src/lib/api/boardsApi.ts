@@ -1,49 +1,49 @@
 import { apiRequest } from './httpClient';
 
-export type BoardCount = {
+export interface BoardCount {
   columnId: string;
   count: number;
-};
+}
 
-export type BoardColumn = {
+export interface BoardColumn {
   id: string;
   name: string;
   description: string | null;
   wipLimit: number | null;
   terminal: boolean;
-};
+}
 
-export type BoardTransition = {
+export interface BoardTransition {
   fromColumnId: string;
   toColumnId: string;
-};
+}
 
-export type BoardSignalMapping = {
+export interface BoardSignalMapping {
   signalType: string;
   decision: string;
   targetColumnId: string | null;
-};
+}
 
-export type BoardFlow = {
+export interface BoardFlow {
   flowId: string;
   name: string;
   defaultColumnId: string;
   columns: BoardColumn[];
   transitions: BoardTransition[];
   signalMappings: BoardSignalMapping[];
-};
+}
 
-export type BoardTeamFilter = {
+export interface BoardTeamFilter {
   type: string;
   value: string;
-};
+}
 
-export type BoardTeam = {
+export interface BoardTeam {
   explicitGolemIds: string[];
   filters: BoardTeamFilter[];
-};
+}
 
-export type BoardSummary = {
+export interface BoardSummary {
   id: string;
   slug: string;
   name: string;
@@ -52,9 +52,9 @@ export type BoardSummary = {
   defaultAssignmentPolicy: string;
   updatedAt: string;
   cardCounts: BoardCount[];
-};
+}
 
-export type BoardDetail = {
+export interface BoardDetail {
   id: string;
   slug: string;
   name: string;
@@ -66,9 +66,9 @@ export type BoardDetail = {
   createdAt: string;
   updatedAt: string;
   cardCounts: BoardCount[];
-};
+}
 
-export type AssignmentSuggestion = {
+export interface AssignmentSuggestion {
   golemId: string;
   displayName: string;
   state: string;
@@ -76,17 +76,17 @@ export type AssignmentSuggestion = {
   reasons: string[];
   roleSlugs: string[];
   inBoardTeam: boolean;
-};
+}
 
-export type BoardTeamResolved = {
+export interface BoardTeamResolved {
   boardId: string;
   candidates: AssignmentSuggestion[];
-};
+}
 
-export type RemapPreview = {
+export interface RemapPreview {
   removedColumnIds: string[];
   affectedCardCounts: Record<string, number>;
-};
+}
 
 export function listBoards() {
   return apiRequest<BoardSummary[]>('/api/v1/boards');

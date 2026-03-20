@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { BoardDetail, BoardFlow, previewBoardFlow } from '../../lib/api/boardsApi';
+import { previewBoardFlow, type BoardDetail, type BoardFlow } from '../../lib/api/boardsApi';
+import { FlowColumnsEditor, FlowPreviewPanel, FlowSignalMappingsEditor, FlowTransitionsEditor } from './FlowEditorSections';
 
-type FlowEditorProps = {
+interface FlowEditorProps {
   board: BoardDetail;
   isPending: boolean;
   onSave: (input: { flow: BoardFlow; columnRemap?: Record<string, string> }) => Promise<void>;
-};
+}
 
 function emptyColumn(index: number) {
   return {
@@ -38,6 +39,46 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
     } catch (error) {
       setPreviewError(error instanceof Error ? error.message : 'Failed to preview flow remap');
     }
+  }
+
+  function updateColumn(index: number, patch: Partial<BoardFlow['columns'][number]>) {
+    setFlow((current) => ({
+      ...current,
+      columns: current.columns.map((column, columnIndex) => (columnIndex === index ? { ...column, ...patch } : column)),
+    }));
+  }
+
+  function removeColumn(index: number) {
+    setFlow((current) => {
+      const removedColumnId = current.columns[index]?.id;
+      const nextColumns = current.columns.filter((_, columnIndex) => columnIndex !== index);
+      const nextDefaultColumnId = current.defaultColumnId === removedColumnId
+        ? nextColumns[0]?.id ?? ''
+        : current.defaultColumnId;
+      return {
+        ...current,
+        columns: nextColumns,
+        defaultColumnId: nextDefaultColumnId,
+      };
+    });
+  }
+
+  function updateTransition(index: number, patch: Partial<BoardFlow['transitions'][number]>) {
+    setFlow((current) => ({
+      ...current,
+      transitions: current.transitions.map((transition, transitionIndex) =>
+        transitionIndex === index ? { ...transition, ...patch } : transition,
+      ),
+    }));
+  }
+
+  function updateSignalMapping(index: number, patch: Partial<BoardFlow['signalMappings'][number]>) {
+    setFlow((current) => ({
+      ...current,
+      signalMappings: current.signalMappings.map((mapping, mappingIndex) =>
+        mappingIndex === index ? { ...mapping, ...patch } : mapping,
+      ),
+    }));
   }
 
   return (
@@ -77,319 +118,61 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
           />
         </label>
 
-        <div className="grid gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-foreground">Columns</p>
-            <button
-              type="button"
-              onClick={() =>
-                setFlow((current) => ({
-                  ...current,
-                  columns: [...current.columns, emptyColumn(current.columns.length)],
-                }))
-              }
-              className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground"
-            >
-              Add column
-            </button>
-          </div>
-          {flow.columns.map((column, index) => (
-            <div key={column.id} className="grid gap-3 rounded-[20px] border border-border bg-white/70 p-4">
-              <div className="grid gap-3 md:grid-cols-[1fr_1fr_120px_110px_auto]">
-              <input
-                value={column.id}
-                onChange={(event) =>
-                  setFlow((current) => ({
-                    ...current,
-                    columns: current.columns.map((currentColumn, currentIndex) =>
-                      currentIndex === index ? { ...currentColumn, id: event.target.value } : currentColumn,
-                    ),
-                  }))
-                }
-                className="rounded-[16px] border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
-                placeholder="column_id"
-              />
-              <input
-                value={column.name}
-                onChange={(event) =>
-                  setFlow((current) => ({
-                    ...current,
-                    columns: current.columns.map((currentColumn, currentIndex) =>
-                      currentIndex === index ? { ...currentColumn, name: event.target.value } : currentColumn,
-                    ),
-                  }))
-                }
-                className="rounded-[16px] border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
-                placeholder="Column name"
-              />
-              <input
-                value={column.wipLimit ?? ''}
-                onChange={(event) =>
-                  setFlow((current) => ({
-                    ...current,
-                    columns: current.columns.map((currentColumn, currentIndex) =>
-                      currentIndex === index
-                        ? {
-                            ...currentColumn,
-                            wipLimit: event.target.value ? Number.parseInt(event.target.value, 10) : null,
-                          }
-                        : currentColumn,
-                    ),
-                  }))
-                }
-                className="rounded-[16px] border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
-                placeholder="WIP"
-              />
-              <label className="flex items-center gap-2 rounded-[16px] border border-border bg-white px-3 py-2 text-sm text-foreground">
-                <input
-                  type="checkbox"
-                  checked={column.terminal}
-                  onChange={(event) =>
-                    setFlow((current) => ({
-                      ...current,
-                      columns: current.columns.map((currentColumn, currentIndex) =>
-                        currentIndex === index ? { ...currentColumn, terminal: event.target.checked } : currentColumn,
-                      ),
-                    }))
-                  }
-                />
-                Done
-              </label>
-              <button
-                type="button"
-                onClick={() =>
-                  setFlow((current) => ({
-                    ...current,
-                    columns: current.columns.filter((_, currentIndex) => currentIndex !== index),
-                    defaultColumnId: current.defaultColumnId === column.id && current.columns.length > 1
-                      ? current.columns.find((_, currentIndex) => currentIndex !== index)?.id ?? ''
-                      : current.defaultColumnId,
-                  }))
-                }
-                className="rounded-[16px] border border-rose-300 bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-900"
-              >
-                Remove
-              </button>
-              </div>
-              <textarea
-                value={column.description ?? ''}
-                onChange={(event) =>
-                  setFlow((current) => ({
-                    ...current,
-                    columns: current.columns.map((currentColumn, currentIndex) =>
-                      currentIndex === index ? { ...currentColumn, description: event.target.value } : currentColumn,
-                    ),
-                  }))
-                }
-                rows={2}
-                className="rounded-[16px] border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
-                placeholder="Column description"
-              />
-            </div>
-          ))}
-          <label className="grid gap-2">
-            <span className="text-sm font-semibold text-foreground">Default column</span>
-            <select
-              value={flow.defaultColumnId}
-              onChange={(event) => setFlow((current) => ({ ...current, defaultColumnId: event.target.value }))}
-              className="rounded-[18px] border border-border bg-white px-4 py-3 text-sm outline-none transition focus:border-primary"
-            >
-              {flow.columns.map((column) => (
-                <option key={column.id} value={column.id}>
-                  {column.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        <FlowColumnsEditor
+          columns={flow.columns}
+          defaultColumnId={flow.defaultColumnId}
+          onAddColumn={() => setFlow((current) => ({ ...current, columns: [...current.columns, emptyColumn(current.columns.length)] }))}
+          onUpdateColumn={updateColumn}
+          onRemoveColumn={removeColumn}
+          onDefaultColumnChange={(defaultColumnId) => setFlow((current) => ({ ...current, defaultColumnId }))}
+        />
 
         <div className="grid gap-4 xl:grid-cols-2">
-          <div className="grid gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-foreground">Transitions</p>
-              <button
-                type="button"
-                onClick={() =>
-                  setFlow((current) => ({
-                    ...current,
-                    transitions: [...current.transitions, { fromColumnId: current.defaultColumnId, toColumnId: current.defaultColumnId }],
-                  }))
-                }
-                className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground"
-              >
-                Add transition
-              </button>
-            </div>
-            {flow.transitions.map((transition, index) => (
-              <div key={`${transition.fromColumnId}-${transition.toColumnId}-${index}`} className="grid gap-3 rounded-[18px] border border-border bg-white/70 p-4 md:grid-cols-[1fr_1fr_auto]">
-                <select
-                  value={transition.fromColumnId}
-                  onChange={(event) =>
-                    setFlow((current) => ({
-                      ...current,
-                      transitions: current.transitions.map((currentTransition, currentIndex) =>
-                        currentIndex === index ? { ...currentTransition, fromColumnId: event.target.value } : currentTransition,
-                      ),
-                    }))
-                  }
-                  className="rounded-[16px] border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
-                >
-                  {flow.columns.map((column) => (
-                    <option key={column.id} value={column.id}>
-                      {column.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={transition.toColumnId}
-                  onChange={(event) =>
-                    setFlow((current) => ({
-                      ...current,
-                      transitions: current.transitions.map((currentTransition, currentIndex) =>
-                        currentIndex === index ? { ...currentTransition, toColumnId: event.target.value } : currentTransition,
-                      ),
-                    }))
-                  }
-                  className="rounded-[16px] border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
-                >
-                  {flow.columns.map((column) => (
-                    <option key={column.id} value={column.id}>
-                      {column.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFlow((current) => ({
-                      ...current,
-                      transitions: current.transitions.filter((_, currentIndex) => currentIndex !== index),
-                    }))
-                  }
-                  className="rounded-[16px] border border-rose-300 bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-900"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
+          <FlowTransitionsEditor
+            columns={flow.columns}
+            transitions={flow.transitions}
+            defaultColumnId={flow.defaultColumnId}
+            onAddTransition={(fromColumnId) =>
+              setFlow((current) => ({
+                ...current,
+                transitions: [...current.transitions, { fromColumnId, toColumnId: fromColumnId }],
+              }))}
+            onUpdateTransition={updateTransition}
+            onRemoveTransition={(index) =>
+              setFlow((current) => ({
+                ...current,
+                transitions: current.transitions.filter((_, transitionIndex) => transitionIndex !== index),
+              }))}
+          />
 
-          <div className="grid gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-foreground">Signal mappings</p>
-              <button
-                type="button"
-                onClick={() =>
-                  setFlow((current) => ({
-                    ...current,
-                    signalMappings: [...current.signalMappings, { signalType: 'PROGRESS_REPORTED', decision: 'IGNORE', targetColumnId: null }],
-                  }))
-                }
-                className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground"
-              >
-                Add mapping
-              </button>
-            </div>
-            {flow.signalMappings.map((mapping, index) => (
-              <div key={`${mapping.signalType}-${index}`} className="grid gap-3 rounded-[18px] border border-border bg-white/70 p-4 md:grid-cols-[1fr_1fr_1fr_auto]">
-                <input
-                  value={mapping.signalType}
-                  onChange={(event) =>
-                    setFlow((current) => ({
-                      ...current,
-                      signalMappings: current.signalMappings.map((currentMapping, currentIndex) =>
-                        currentIndex === index ? { ...currentMapping, signalType: event.target.value } : currentMapping,
-                      ),
-                    }))
-                  }
-                  className="rounded-[16px] border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
-                />
-                <select
-                  value={mapping.decision}
-                  onChange={(event) =>
-                    setFlow((current) => ({
-                      ...current,
-                      signalMappings: current.signalMappings.map((currentMapping, currentIndex) =>
-                        currentIndex === index ? { ...currentMapping, decision: event.target.value } : currentMapping,
-                      ),
-                    }))
-                  }
-                  className="rounded-[16px] border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
-                >
-                  <option value="AUTO_APPLY">AUTO_APPLY</option>
-                  <option value="SUGGEST_ONLY">SUGGEST_ONLY</option>
-                  <option value="IGNORE">IGNORE</option>
-                </select>
-                <select
-                  value={mapping.targetColumnId ?? ''}
-                  onChange={(event) =>
-                    setFlow((current) => ({
-                      ...current,
-                      signalMappings: current.signalMappings.map((currentMapping, currentIndex) =>
-                        currentIndex === index ? { ...currentMapping, targetColumnId: event.target.value || null } : currentMapping,
-                      ),
-                    }))
-                  }
-                  className="rounded-[16px] border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
-                >
-                  <option value="">No target</option>
-                  {flow.columns.map((column) => (
-                    <option key={column.id} value={column.id}>
-                      {column.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFlow((current) => ({
-                      ...current,
-                      signalMappings: current.signalMappings.filter((_, currentIndex) => currentIndex !== index),
-                    }))
-                  }
-                  className="rounded-[16px] border border-rose-300 bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-900"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
+          <FlowSignalMappingsEditor
+            columns={flow.columns}
+            signalMappings={flow.signalMappings}
+            onAddMapping={() =>
+              setFlow((current) => ({
+                ...current,
+                signalMappings: [
+                  ...current.signalMappings,
+                  { signalType: 'PROGRESS_REPORTED', decision: 'IGNORE', targetColumnId: null },
+                ],
+              }))}
+            onUpdateMapping={updateSignalMapping}
+            onRemoveMapping={(index) =>
+              setFlow((current) => ({
+                ...current,
+                signalMappings: current.signalMappings.filter((_, mappingIndex) => mappingIndex !== index),
+              }))}
+          />
         </div>
 
-        {previewError ? <p className="text-sm text-rose-900">{previewError}</p> : null}
-        {preview?.removedColumnIds.length ? (
-          <div className="rounded-[24px] border border-amber-300 bg-amber-50 p-4">
-            <p className="text-sm font-semibold text-amber-900">Flow remap required</p>
-            <p className="mt-2 text-sm leading-6 text-amber-900">
-              Existing cards sit in columns you removed. Choose where they should land.
-            </p>
-            <div className="mt-4 grid gap-3">
-              {preview.removedColumnIds.map((columnId) => (
-                <label key={columnId} className="grid gap-2 md:grid-cols-[1fr_260px] md:items-center">
-                  <span className="text-sm text-amber-900">
-                    {columnId} · {preview.affectedCardCounts[columnId] || 0} affected cards
-                  </span>
-                  <select
-                    value={remap[columnId] || ''}
-                    onChange={(event) => setRemap((current) => ({ ...current, [columnId]: event.target.value }))}
-                    className="rounded-[16px] border border-amber-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
-                  >
-                    <option value="">Select remap target</option>
-                    {flow.columns.map((column) => (
-                      <option key={column.id} value={column.id}>
-                        {column.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
-          </div>
-        ) : preview ? (
-          <div className="rounded-[24px] border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
-            No remap is required for this flow edit.
-          </div>
-        ) : null}
+        <FlowPreviewPanel
+          preview={preview}
+          previewError={previewError}
+          remap={remap}
+          columns={flow.columns}
+          onRemapChange={(columnId, targetColumnId) =>
+            setRemap((current) => ({ ...current, [columnId]: targetColumnId }))}
+        />
       </div>
     </section>
   );

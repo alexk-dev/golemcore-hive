@@ -1,8 +1,8 @@
-import { ThreadMessage } from '../../lib/api/threadsApi';
+import type { ThreadMessage } from '../../lib/api/threadsApi';
 
-type ThreadMessageListProps = {
+interface ThreadMessageListProps {
   messages: ThreadMessage[];
-};
+}
 
 export function ThreadMessageList({ messages }: ThreadMessageListProps) {
   return (

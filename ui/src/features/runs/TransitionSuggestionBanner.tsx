@@ -1,8 +1,8 @@
-import { CardLifecycleSignal } from '../../lib/api/commandsApi';
+import type { CardLifecycleSignal } from '../../lib/api/commandsApi';
 
-type TransitionSuggestionBannerProps = {
+interface TransitionSuggestionBannerProps {
   signal: CardLifecycleSignal | null;
-};
+}
 
 export function TransitionSuggestionBanner({ signal }: TransitionSuggestionBannerProps) {
   if (signal?.resolutionOutcome !== 'SUGGESTED') {

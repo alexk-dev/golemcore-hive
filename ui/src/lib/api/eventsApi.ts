@@ -1,4 +1,4 @@
-export type OperatorUpdateEvent = {
+export interface OperatorUpdateEvent {
   schemaVersion: number;
   eventType: string;
   cardId: string | null;
@@ -8,7 +8,7 @@ export type OperatorUpdateEvent = {
   signalId: string | null;
   kinds: string[];
   createdAt: string;
-};
+}
 
 export function buildOperatorUpdatesUrl(accessToken: string) {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

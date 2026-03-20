@@ -1,13 +1,13 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { ApprovalRequest } from '../../lib/api/approvalsApi';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { ApprovalRequest } from '../../lib/api/approvalsApi';
 
-type ApprovalDecisionDialogProps = {
+interface ApprovalDecisionDialogProps {
   approval: ApprovalRequest | null;
   mode: 'approve' | 'reject' | null;
   isPending: boolean;
   onClose: () => void;
   onSubmit: (comment: string) => Promise<void>;
-};
+}
 
 export function ApprovalDecisionDialog({
   approval,

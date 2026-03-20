@@ -1,20 +1,20 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { BoardColumn } from '../../lib/api/boardsApi';
-import { CardControlState, CardSummary } from '../../lib/api/cardsApi';
+import type { BoardColumn } from '../../lib/api/boardsApi';
+import type { CardControlState, CardSummary } from '../../lib/api/cardsApi';
 import { AssignmentPolicyBadge } from '../cards/AssignmentPolicyBadge';
 
-type KanbanColumnProps = {
+interface KanbanColumnProps {
   column: BoardColumn;
   cards: CardSummary[];
   onOpenCard: (cardId: string) => void;
-};
+}
 
-type SortableCardProps = {
+interface SortableCardProps {
   card: CardSummary;
   onOpenCard: (cardId: string) => void;
-};
+}
 
 function SortableCard({ card, onOpenCard }: SortableCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });

@@ -1,16 +1,16 @@
 import { apiRequest } from './httpClient';
 
-export type Operator = {
+export interface Operator {
   id: string;
   username: string;
   displayName: string;
   roles: string[];
-};
+}
 
-export type LoginResponse = {
+export interface LoginResponse {
   accessToken: string;
   operator: Operator;
-};
+}
 
 export async function login(username: string, password: string): Promise<LoginResponse> {
   const response = await fetch('/api/v1/auth/login', {

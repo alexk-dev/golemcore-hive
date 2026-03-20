@@ -1,17 +1,17 @@
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { configureHttpClient } from '../../lib/api/httpClient';
 import {
   fetchCurrentOperator,
   login as loginRequest,
   logout as logoutRequest,
-  Operator,
   refresh as refreshRequest,
+  type Operator,
 } from '../../lib/api/authApi';
-import { AuthContext, AuthContextValue, AuthStatus } from './authContext';
+import { AuthContext, type AuthContextValue, type AuthStatus } from './authContext';
 
-type AuthProviderProps = {
+interface AuthProviderProps {
   children: ReactNode;
-};
+}
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [accessToken, setAccessToken] = useState<string | null>(null);

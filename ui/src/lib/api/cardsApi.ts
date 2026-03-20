@@ -1,16 +1,16 @@
 import { apiRequest } from './httpClient';
-import { AssignmentSuggestion } from './boardsApi';
+import type { AssignmentSuggestion } from './boardsApi';
 
-export type CardTransition = {
+export interface CardTransition {
   fromColumnId: string | null;
   toColumnId: string;
   origin: string;
   summary: string;
   occurredAt: string;
   actorName: string | null;
-};
+}
 
-export type CardControlState = {
+export interface CardControlState {
   commandId: string | null;
   runId: string;
   golemId: string | null;
@@ -23,9 +23,9 @@ export type CardControlState = {
   cancelRequestedByActorName: string | null;
   cancelRequestedPending: boolean;
   canCancel: boolean;
-};
+}
 
-export type CardSummary = {
+export interface CardSummary {
   id: string;
   boardId: string;
   threadId: string;
@@ -36,9 +36,9 @@ export type CardSummary = {
   position: number | null;
   archived: boolean;
   controlState: CardControlState | null;
-};
+}
 
-export type CardDetail = {
+export interface CardDetail {
   id: string;
   boardId: string;
   threadId: string;
@@ -56,14 +56,14 @@ export type CardDetail = {
   lastTransitionAt: string | null;
   controlState: CardControlState | null;
   transitions: CardTransition[];
-};
+}
 
-export type CardAssigneeOptions = {
+export interface CardAssigneeOptions {
   cardId: string;
   boardId: string;
   teamCandidates: AssignmentSuggestion[];
   allCandidates: AssignmentSuggestion[];
-};
+}
 
 export function listCards(boardId: string, includeArchived = false) {
   return apiRequest<CardSummary[]>(`/api/v1/cards?boardId=${encodeURIComponent(boardId)}&includeArchived=${includeArchived}`);

@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
-import { CardAssigneeOptions } from '../../lib/api/cardsApi';
-import { GolemSummary } from '../../lib/api/golemsApi';
+import type { CardAssigneeOptions } from '../../lib/api/cardsApi';
+import type { GolemSummary } from '../../lib/api/golemsApi';
 import { GolemStatusBadge } from '../golems/GolemStatusBadge';
 
-type AssigneePickerProps = {
+interface AssigneePickerProps {
   options: CardAssigneeOptions | null;
   allGolems: GolemSummary[];
   currentAssigneeId: string | null;
   isPending: boolean;
   onAssign: (assigneeGolemId: string | null) => void | Promise<void>;
-};
+}
 
 type PickerTab = 'team' | 'all';
 

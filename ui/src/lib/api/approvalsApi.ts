@@ -1,6 +1,6 @@
 import { apiRequest } from './httpClient';
 
-export type ApprovalRequest = {
+export interface ApprovalRequest {
   id: string;
   commandId: string;
   runId: string;
@@ -21,14 +21,14 @@ export type ApprovalRequest = {
   decidedByActorId: string | null;
   decidedByActorName: string | null;
   decisionComment: string | null;
-};
+}
 
-type ApprovalFilter = {
+interface ApprovalFilter {
   status?: string;
   boardId?: string;
   cardId?: string;
   golemId?: string;
-};
+}
 
 function buildQuery(filter: ApprovalFilter) {
   const params = new URLSearchParams();

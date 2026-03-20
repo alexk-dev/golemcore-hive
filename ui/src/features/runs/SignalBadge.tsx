@@ -1,6 +1,6 @@
-type SignalBadgeProps = {
+interface SignalBadgeProps {
   signalType: string;
-};
+}
 
 export function SignalBadge({ signalType }: SignalBadgeProps) {
   const tone =

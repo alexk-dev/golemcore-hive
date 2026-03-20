@@ -1,13 +1,13 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { GolemRole } from '../../lib/api/golemsApi';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { GolemRole } from '../../lib/api/golemsApi';
 
-type RoleEditorDialogProps = {
+interface RoleEditorDialogProps {
   open: boolean;
   role: GolemRole | null;
   isPending: boolean;
   onClose: () => void;
   onSubmit: (input: { slug?: string; name: string; description: string; capabilityTags: string[] }) => Promise<void>;
-};
+}
 
 export function RoleEditorDialog({ open, role, isPending, onClose, onSubmit }: RoleEditorDialogProps) {
   const [slug, setSlug] = useState('');

@@ -7,9 +7,9 @@ const toneMap: Record<string, string> = {
   PENDING_ENROLLMENT: 'bg-orange-100 text-orange-900 border-orange-200',
 };
 
-type GolemStatusBadgeProps = {
+interface GolemStatusBadgeProps {
   state: string;
-};
+}
 
 export function GolemStatusBadge({ state }: GolemStatusBadgeProps) {
   return (

@@ -15,11 +15,11 @@ export function AppShell() {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen px-3 py-3 md:px-4 md:py-4">
-      <div className="mx-auto grid min-h-screen max-w-[1800px] gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+    <div className="min-h-screen px-3 py-3 md:px-4 md:py-4 lg:px-0 lg:py-0">
+      <div className="grid min-h-screen gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-0">
         <aside
           aria-hidden={isMobileNavigationOpen ? 'true' : undefined}
-          className="panel hidden border-white/70 bg-[rgba(255,251,245,0.92)] lg:flex lg:min-h-[calc(100vh-2rem)] lg:flex-col lg:px-4 lg:py-5"
+          className="hidden border-r border-border/70 bg-[rgba(255,251,245,0.92)] lg:flex lg:min-h-screen lg:flex-col lg:px-4 lg:py-5"
         >
           <div className="border-b border-border/70 pb-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Operator workspace</p>
@@ -31,8 +31,8 @@ export function AppShell() {
           <AccountPanel displayName={user?.displayName} username={user?.username} userRoles={userRoles} onLogout={() => void logout()} />
         </aside>
 
-        <main className="min-w-0">
-          <div className="panel mb-4 flex items-center justify-between border-white/70 bg-[rgba(255,251,245,0.92)] px-4 py-3 lg:hidden">
+        <main className="min-w-0 lg:px-6 lg:py-6">
+          <div className="mb-4 flex items-center justify-between border border-border/70 bg-[rgba(255,251,245,0.92)] px-4 py-3 lg:hidden">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Operator workspace</p>
               <p className="mt-1 text-lg font-bold tracking-[-0.04em] text-foreground">
@@ -44,7 +44,7 @@ export function AppShell() {
               aria-controls="mobile-navigation-menu"
               aria-expanded={isMobileNavigationOpen}
               onClick={() => setIsMobileNavigationOpen(true)}
-              className="rounded-[16px] border border-foreground/10 bg-white/90 px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-white"
+              className="border border-foreground/10 bg-white/90 px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-white"
             >
               Open navigation
             </button>
@@ -65,7 +65,7 @@ export function AppShell() {
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="panel absolute inset-y-3 left-3 flex w-[min(320px,calc(100vw-1.5rem))] flex-col border-white/70 bg-[rgba(255,251,245,0.98)] px-4 py-5"
+            className="absolute inset-y-0 left-0 flex w-[min(320px,100vw)] flex-col border-r border-border/70 bg-[rgba(255,251,245,0.98)] px-4 py-5"
           >
             <div className="flex items-start justify-between gap-3 border-b border-border/70 pb-4">
               <div>
@@ -75,7 +75,7 @@ export function AppShell() {
               <button
                 type="button"
                 onClick={() => setIsMobileNavigationOpen(false)}
-                className="rounded-[16px] border border-foreground/10 bg-white/90 px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-white"
+                className="border border-foreground/10 bg-white/90 px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-white"
               >
                 Close navigation
               </button>
@@ -153,7 +153,7 @@ function AccountPanel({
 }) {
   return (
     <div className="mt-6 border-t border-border/70 pt-4">
-      <div className="soft-card border border-primary/10 bg-[linear-gradient(135deg,rgba(238,109,52,0.12),rgba(11,164,124,0.08))] px-4 py-3">
+      <div className="border border-primary/10 bg-[linear-gradient(135deg,rgba(238,109,52,0.12),rgba(11,164,124,0.08))] px-4 py-3">
         <p className="text-sm font-semibold text-foreground">{displayName}</p>
         <p className="mt-1 text-xs text-muted-foreground">
           @{username}
@@ -163,7 +163,7 @@ function AccountPanel({
       <button
         type="button"
         onClick={onLogout}
-        className="mt-3 w-full rounded-[18px] border border-foreground/10 bg-white/90 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-white"
+        className="mt-3 w-full border border-foreground/10 bg-white/90 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-white"
       >
         Sign out
       </button>
@@ -173,18 +173,18 @@ function AccountPanel({
 
 function sectionLinkClassName(isActive: boolean) {
   if (isActive) {
-    return 'flex items-center justify-between rounded-[18px] bg-foreground px-4 py-3 text-sm font-semibold text-white shadow-glow transition';
+    return 'flex items-center justify-between bg-foreground px-4 py-3 text-sm font-semibold text-white shadow-glow transition';
   }
 
-  return 'flex items-center justify-between rounded-[18px] bg-white/70 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-white';
+  return 'flex items-center justify-between bg-white/70 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-white';
 }
 
 function childLinkClassName(isActive: boolean) {
   if (isActive) {
-    return 'rounded-[14px] bg-primary/10 px-3 py-2 text-[13px] font-semibold text-foreground transition';
+    return 'bg-primary/10 px-3 py-2 text-[13px] font-semibold text-foreground transition';
   }
 
-  return 'rounded-[14px] px-3 py-2 text-[13px] font-medium text-muted-foreground transition hover:bg-white/80 hover:text-foreground';
+  return 'px-3 py-2 text-[13px] font-medium text-muted-foreground transition hover:bg-white/80 hover:text-foreground';
 }
 
 function formatUserRoles(roles: string[]) {

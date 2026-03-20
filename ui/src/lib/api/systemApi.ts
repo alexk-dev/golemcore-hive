@@ -1,6 +1,6 @@
 import { apiRequest } from './httpClient';
 
-export type NotificationEvent = {
+export interface NotificationEvent {
   id: string;
   type: string;
   severity: string;
@@ -15,9 +15,9 @@ export type NotificationEvent = {
   acknowledged: boolean;
   createdAt: string;
   acknowledgedAt: string | null;
-};
+}
 
-export type SystemSettings = {
+export interface SystemSettings {
   productionMode: boolean;
   storageBasePath: string;
   secureRefreshCookie: boolean;
@@ -34,7 +34,7 @@ export type SystemSettings = {
     commandFailed: boolean;
   };
   recentNotifications: NotificationEvent[];
-};
+}
 
 export function getSystemSettings() {
   return apiRequest<SystemSettings>('/api/v1/system/settings');

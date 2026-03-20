@@ -1,11 +1,11 @@
-import { CardLifecycleSignal, CommandRecord, RunProjection } from '../../lib/api/commandsApi';
+import type { CardLifecycleSignal, CommandRecord, RunProjection } from '../../lib/api/commandsApi';
 import { SignalBadge } from './SignalBadge';
 
-type RunTimelineProps = {
+interface RunTimelineProps {
   commands: CommandRecord[];
   runs: RunProjection[];
   signals: CardLifecycleSignal[];
-};
+}
 
 type TimelineItem =
   | { kind: 'command'; timestamp: string; id: string; payload: CommandRecord }

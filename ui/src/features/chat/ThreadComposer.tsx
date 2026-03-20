@@ -1,12 +1,12 @@
-import { FormEvent, useState } from 'react';
-import { ThreadTargetGolem } from '../../lib/api/threadsApi';
-import { CreateThreadCommandInput } from '../../lib/api/commandsApi';
+import { useState, type FormEvent } from 'react';
+import type { ThreadTargetGolem } from '../../lib/api/threadsApi';
+import type { CreateThreadCommandInput } from '../../lib/api/commandsApi';
 
-type ThreadComposerProps = {
+interface ThreadComposerProps {
   targetGolem: ThreadTargetGolem | null;
   isPending: boolean;
   onSubmit: (input: CreateThreadCommandInput) => Promise<void>;
-};
+}
 
 export function ThreadComposer({ targetGolem, isPending, onSubmit }: ThreadComposerProps) {
   const [body, setBody] = useState('');

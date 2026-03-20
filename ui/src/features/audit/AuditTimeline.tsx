@@ -1,8 +1,8 @@
-import { AuditEvent } from '../../lib/api/auditApi';
+import type { AuditEvent } from '../../lib/api/auditApi';
 
-type AuditTimelineProps = {
+interface AuditTimelineProps {
   events: AuditEvent[];
-};
+}
 
 export function AuditTimeline({ events }: AuditTimelineProps) {
   if (!events.length) {

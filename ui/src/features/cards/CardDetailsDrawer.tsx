@@ -1,12 +1,12 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { CardAssigneeOptions, CardControlState, CardDetail } from '../../lib/api/cardsApi';
-import { CreateThreadCommandInput } from '../../lib/api/commandsApi';
-import { GolemSummary } from '../../lib/api/golemsApi';
+import type { CardAssigneeOptions, CardControlState, CardDetail } from '../../lib/api/cardsApi';
+import type { CreateThreadCommandInput } from '../../lib/api/commandsApi';
+import type { GolemSummary } from '../../lib/api/golemsApi';
 import { AssignmentPolicyBadge } from './AssignmentPolicyBadge';
 import { AssigneePicker } from './AssigneePicker';
 
-type CardDetailsDrawerProps = {
+interface CardDetailsDrawerProps {
   open: boolean;
   card: CardDetail | null;
   assigneeOptions: CardAssigneeOptions | null;
@@ -21,7 +21,7 @@ type CardDetailsDrawerProps = {
   isDispatchPending: boolean;
   isCancelPending: boolean;
   controlError: string | null;
-};
+}
 
 export function CardDetailsDrawer({
   open,

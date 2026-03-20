@@ -3,15 +3,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   cancelThreadRun,
-  CreateThreadCommandInput,
-  CommandRecord,
   createThreadCommand,
   listThreadCommands,
   listThreadRuns,
   listThreadSignals,
+  type CommandRecord,
+  type CreateThreadCommandInput,
 } from '../../lib/api/commandsApi';
 import { getCard } from '../../lib/api/cardsApi';
-import { buildOperatorUpdatesUrl, OperatorUpdateEvent } from '../../lib/api/eventsApi';
+import { buildOperatorUpdatesUrl, type OperatorUpdateEvent } from '../../lib/api/eventsApi';
 import { getCardThread, listThreadMessages } from '../../lib/api/threadsApi';
 import { useAuth } from '../../app/providers/useAuth';
 import { GolemSwitcher } from './GolemSwitcher';

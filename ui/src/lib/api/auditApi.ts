@@ -1,6 +1,6 @@
 import { apiRequest } from './httpClient';
 
-export type AuditEvent = {
+export interface AuditEvent {
   id: string;
   eventType: string;
   severity: string;
@@ -19,9 +19,9 @@ export type AuditEvent = {
   summary: string | null;
   details: string | null;
   createdAt: string;
-};
+}
 
-export type AuditFilter = {
+export interface AuditFilter {
   actorId?: string;
   golemId?: string;
   boardId?: string;
@@ -29,7 +29,7 @@ export type AuditFilter = {
   eventType?: string;
   from?: string;
   to?: string;
-};
+}
 
 export function listAuditEvents(filter: AuditFilter = {}) {
   const params = new URLSearchParams();

@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BoardDetail, BoardTeamResolved } from '../../lib/api/boardsApi';
-import { GolemRole, GolemSummary } from '../../lib/api/golemsApi';
+import type { BoardDetail, BoardTeamResolved } from '../../lib/api/boardsApi';
+import type { GolemRole, GolemSummary } from '../../lib/api/golemsApi';
 
-type BoardTeamEditorProps = {
+interface BoardTeamEditorProps {
   board: BoardDetail;
   golems: GolemSummary[];
   roles: GolemRole[];
   resolvedTeam: BoardTeamResolved | null;
   isPending: boolean;
   onSave: (input: { explicitGolemIds: string[]; filters: { type: string; value: string }[] }) => Promise<void>;
-};
+}
 
 export function BoardTeamEditor({ board, golems, roles, resolvedTeam, isPending, onSave }: BoardTeamEditorProps) {
   const [explicitIds, setExplicitIds] = useState<string[]>([]);

@@ -1,10 +1,10 @@
-import { closestCorners, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { closestCorners, DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getBoard, getBoardTeam } from '../../lib/api/boardsApi';
 import { archiveCard, assignCard, createCard, getCard, getCardAssignees, listCards, moveCard, updateCard } from '../../lib/api/cardsApi';
-import { cancelThreadRun, createThreadCommand, CreateThreadCommandInput } from '../../lib/api/commandsApi';
+import { cancelThreadRun, createThreadCommand, type CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import { listGolems } from '../../lib/api/golemsApi';
 import { CardComposerDialog } from '../cards/CardComposerDialog';
 import { CardDetailsDrawer } from '../cards/CardDetailsDrawer';

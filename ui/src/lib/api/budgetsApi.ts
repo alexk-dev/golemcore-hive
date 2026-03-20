@@ -1,6 +1,6 @@
 import { apiRequest } from './httpClient';
 
-export type BudgetSnapshot = {
+export interface BudgetSnapshot {
   id: string;
   scopeType: string;
   scopeId: string;
@@ -15,7 +15,7 @@ export type BudgetSnapshot = {
   actualCostMicros: number;
   estimatedPendingCostMicros: number;
   updatedAt: string;
-};
+}
 
 export function listBudgetSnapshots(scopeType?: string, query?: string) {
   const params = new URLSearchParams();

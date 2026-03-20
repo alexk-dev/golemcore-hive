@@ -1,13 +1,13 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { EnrollmentTokenCreated } from '../../lib/api/golemsApi';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { EnrollmentTokenCreated } from '../../lib/api/golemsApi';
 
-type EnrollmentTokenDialogProps = {
+interface EnrollmentTokenDialogProps {
   open: boolean;
   isPending: boolean;
   createdToken: EnrollmentTokenCreated | null;
   onClose: () => void;
   onCreate: (input: { note: string; expiresInMinutes: number | null }) => Promise<void>;
-};
+}
 
 export function EnrollmentTokenDialog({
   open,

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { BoardDetail, BoardFlow, previewBoardFlow } from '../../lib/api/boardsApi';
+import { previewBoardFlow, type BoardDetail, type BoardFlow } from '../../lib/api/boardsApi';
 
-type FlowEditorProps = {
+interface FlowEditorProps {
   board: BoardDetail;
   isPending: boolean;
   onSave: (input: { flow: BoardFlow; columnRemap?: Record<string, string> }) => Promise<void>;
-};
+}
 
 function emptyColumn(index: number) {
   return {

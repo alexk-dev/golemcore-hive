@@ -1,11 +1,11 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { BoardDetail } from '../../lib/api/boardsApi';
-import { CardAssigneeOptions } from '../../lib/api/cardsApi';
-import { GolemSummary } from '../../lib/api/golemsApi';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { BoardDetail } from '../../lib/api/boardsApi';
+import type { CardAssigneeOptions } from '../../lib/api/cardsApi';
+import type { GolemSummary } from '../../lib/api/golemsApi';
 import { AssignmentPolicyBadge } from './AssignmentPolicyBadge';
 import { AssigneePicker } from './AssigneePicker';
 
-type CardComposerDialogProps = {
+interface CardComposerDialogProps {
   open: boolean;
   board: BoardDetail | null;
   allGolems: GolemSummary[];
@@ -21,7 +21,7 @@ type CardComposerDialogProps = {
     assignmentPolicy: string;
     autoAssign: boolean;
   }) => Promise<void>;
-};
+}
 
 export function CardComposerDialog({
   open,

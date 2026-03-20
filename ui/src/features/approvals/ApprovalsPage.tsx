@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { ApprovalDecisionDialog } from './ApprovalDecisionDialog';
-import { ApprovalRequest, approveApproval, listApprovals, rejectApproval } from '../../lib/api/approvalsApi';
+import { approveApproval, listApprovals, rejectApproval, type ApprovalRequest } from '../../lib/api/approvalsApi';
 
 export function ApprovalsPage() {
   const queryClient = useQueryClient();

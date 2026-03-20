@@ -1,13 +1,13 @@
 import { apiRequest } from './httpClient';
 
-export type ThreadTargetGolem = {
+export interface ThreadTargetGolem {
   id: string;
   displayName: string;
   state: string;
   roleSlugs: string[];
-};
+}
 
-export type CardThread = {
+export interface CardThread {
   threadId: string;
   cardId: string;
   boardId: string;
@@ -19,9 +19,9 @@ export type CardThread = {
   updatedAt: string;
   lastMessageAt: string | null;
   lastCommandAt: string | null;
-};
+}
 
-export type ThreadMessage = {
+export interface ThreadMessage {
   id: string;
   threadId: string;
   cardId: string;
@@ -34,7 +34,7 @@ export type ThreadMessage = {
   authorName: string | null;
   body: string;
   createdAt: string;
-};
+}
 
 export function getCardThread(cardId: string) {
   return apiRequest<CardThread>(`/api/v1/cards/${cardId}/thread`);

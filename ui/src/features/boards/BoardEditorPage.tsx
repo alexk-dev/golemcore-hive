@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BoardFlow, getBoard, getBoardTeam, updateBoard, updateBoardFlow, updateBoardTeam } from '../../lib/api/boardsApi';
+import { getBoard, getBoardTeam, updateBoard, updateBoardFlow, updateBoardTeam, type BoardFlow } from '../../lib/api/boardsApi';
 import { listGolemRoles, listGolems } from '../../lib/api/golemsApi';
 import { BoardTeamEditor } from './BoardTeamEditor';
 import { FlowEditor } from './FlowEditor';

@@ -1,6 +1,6 @@
 import { apiRequest } from './httpClient';
 
-export type CommandRecord = {
+export interface CommandRecord {
   id: string;
   threadId: string;
   cardId: string;
@@ -22,9 +22,9 @@ export type CommandRecord = {
   completedAt: string | null;
   cancelRequestedAt: string | null;
   cancelRequestedByActorName: string | null;
-};
+}
 
-export type RunProjection = {
+export interface RunProjection {
   id: string;
   threadId: string;
   cardId: string;
@@ -45,14 +45,14 @@ export type RunProjection = {
   completedAt: string | null;
   cancelRequestedAt: string | null;
   cancelRequestedByActorName: string | null;
-};
+}
 
-export type EvidenceRef = {
+export interface EvidenceRef {
   kind: string;
   ref: string;
-};
+}
 
-export type CardLifecycleSignal = {
+export interface CardLifecycleSignal {
   id: string;
   cardId: string;
   golemId: string;
@@ -70,18 +70,18 @@ export type CardLifecycleSignal = {
   resolutionOutcome: string | null;
   resolutionSummary: string | null;
   resolvedAt: string | null;
-};
+}
 
 export function listThreadCommands(threadId: string) {
   return apiRequest<CommandRecord[]>(`/api/v1/threads/${threadId}/commands`);
 }
 
-export type CreateThreadCommandInput = {
+export interface CreateThreadCommandInput {
   body: string;
   approvalRiskLevel?: string | null;
   estimatedCostMicros?: number;
   approvalReason?: string;
-};
+}
 
 export function createThreadCommand(threadId: string, input: CreateThreadCommandInput) {
   return apiRequest<CommandRecord>(`/api/v1/threads/${threadId}/commands`, {

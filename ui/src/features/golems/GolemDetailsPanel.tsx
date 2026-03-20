@@ -1,15 +1,15 @@
-import { GolemDetails, GolemRole } from '../../lib/api/golemsApi';
+import type { GolemDetails, GolemRole } from '../../lib/api/golemsApi';
 import { GolemStatusBadge } from './GolemStatusBadge';
 
-type GolemDetailsPanelProps = {
+interface GolemDetailsPanelProps {
   golem: GolemDetails | null;
   roles: GolemRole[];
   isBusy: boolean;
   onToggleRole: (roleSlug: string, nextAssigned: boolean) => Promise<void>;
-  onPause: () => Promise<void>;
+  onPause: () => void | Promise<void>;
   onResume: () => Promise<void>;
-  onRevoke: () => Promise<void>;
-};
+  onRevoke: () => void | Promise<void>;
+}
 
 function formatTimestamp(value: string | null) {
   if (!value) {

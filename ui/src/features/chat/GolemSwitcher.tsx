@@ -1,9 +1,9 @@
-import { ThreadTargetGolem } from '../../lib/api/threadsApi';
+import type { ThreadTargetGolem } from '../../lib/api/threadsApi';
 import { GolemStatusBadge } from '../golems/GolemStatusBadge';
 
-type GolemSwitcherProps = {
+interface GolemSwitcherProps {
   targetGolem: ThreadTargetGolem | null;
-};
+}
 
 export function GolemSwitcher({ targetGolem }: GolemSwitcherProps) {
   return (

@@ -1,6 +1,6 @@
-type AssignmentPolicyBadgeProps = {
+interface AssignmentPolicyBadgeProps {
   policy: string;
-};
+}
 
 const toneMap: Record<string, string> = {
   MANUAL: 'bg-slate-100 text-slate-900 border-slate-200',

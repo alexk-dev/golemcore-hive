@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDeferredValue, useEffect, useState } from 'react';
+import { useDeferredValue, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   assignGolemRoles,
@@ -20,6 +20,8 @@ import { GolemStatusBadge } from './GolemStatusBadge';
 
 const fleetStates = ['', 'ONLINE', 'DEGRADED', 'OFFLINE', 'PAUSED', 'REVOKED', 'PENDING_ENROLLMENT'];
 
+type GolemActionDialogMode = 'pause' | 'revoke';
+
 function formatTimestamp(value: string | null) {
   if (!value) {
     return 'Never';
@@ -34,6 +36,8 @@ export function GolemsPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [selectedGolemId, setSelectedGolemId] = useState<string | null>(null);
   const [isEnrollmentDialogOpen, setIsEnrollmentDialogOpen] = useState(false);
+  const [actionDialogMode, setActionDialogMode] = useState<GolemActionDialogMode | null>(null);
+  const [actionReason, setActionReason] = useState('');
   const deferredQuery = useDeferredValue(query);
 
   const golemsQuery = useQuery({
@@ -123,14 +127,27 @@ export function GolemsPage() {
     },
   });
 
-  async function handlePause() {
-    const reason = window.prompt('Pause reason (optional):') ?? undefined;
-    await golemActionMutation.mutateAsync({ action: 'pause', reason });
+  function handlePause() {
+    setActionReason('');
+    setActionDialogMode('pause');
   }
 
-  async function handleRevoke() {
-    const reason = window.prompt('Revoke reason (recommended):') ?? undefined;
-    await golemActionMutation.mutateAsync({ action: 'revoke', reason });
+  function handleRevoke() {
+    setActionReason('');
+    setActionDialogMode('revoke');
+  }
+
+  async function handleActionDialogSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!actionDialogMode) {
+      return;
+    }
+    await golemActionMutation.mutateAsync({
+      action: actionDialogMode,
+      reason: actionReason.trim() || undefined,
+    });
+    setActionDialogMode(null);
+    setActionReason('');
   }
 
   return (
@@ -322,6 +339,78 @@ export function GolemsPage() {
           await enrollmentMutation.mutateAsync(input);
         }}
       />
+
+      {actionDialogMode ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4 py-6 backdrop-blur-sm">
+          <div className="panel w-full max-w-xl p-6 md:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <span className="pill">{actionDialogMode === 'pause' ? 'Pause golem' : 'Revoke golem'}</span>
+                <h3 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">
+                  {actionDialogMode === 'pause' ? 'Record a pause reason' : 'Record a revoke reason'}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {actionDialogMode === 'pause'
+                    ? 'Optional context helps operators understand why this runtime is being paused.'
+                    : 'A revoke reason is recommended so the fleet history stays auditable.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setActionDialogMode(null);
+                  setActionReason('');
+                }}
+                className="rounded-full border border-border bg-white/70 px-3 py-2 text-sm font-semibold text-foreground"
+              >
+                Close
+              </button>
+            </div>
+
+            <form className="mt-6 grid gap-4" onSubmit={(event) => void handleActionDialogSubmit(event)}>
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold text-foreground">Reason</span>
+                <textarea
+                  value={actionReason}
+                  onChange={(event) => setActionReason(event.target.value)}
+                  rows={5}
+                  className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+                  placeholder={
+                    actionDialogMode === 'pause'
+                      ? 'Optional note for the pause action.'
+                      : 'Recommended note explaining why this runtime is being revoked.'
+                  }
+                />
+              </label>
+              <div className="flex flex-wrap justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActionDialogMode(null);
+                    setActionReason('');
+                  }}
+                  className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={golemActionMutation.isPending}
+                  className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {golemActionMutation.isPending
+                    ? actionDialogMode === 'pause'
+                      ? 'Pausing...'
+                      : 'Revoking...'
+                    : actionDialogMode === 'pause'
+                      ? 'Pause golem'
+                      : 'Revoke golem'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

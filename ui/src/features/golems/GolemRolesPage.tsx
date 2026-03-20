@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { NavLink } from 'react-router-dom';
-import { createGolemRole, GolemRole, listGolemRoles, updateGolemRole } from '../../lib/api/golemsApi';
-import { RoleEditorDialog } from './RoleEditorDialog';
 import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
+import { createGolemRole, listGolemRoles, updateGolemRole, type GolemRole } from '../../lib/api/golemsApi';
+import { RoleEditorDialog } from './RoleEditorDialog';
 
 export function GolemRolesPage() {
   const queryClient = useQueryClient();

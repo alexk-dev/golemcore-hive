@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { BoardDetail } from '../../lib/api/boardsApi';
+import type { BoardDetail } from '../../lib/api/boardsApi';
 import { CardComposerDialog } from './CardComposerDialog';
 
 function createBoard(): BoardDetail {

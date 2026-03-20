@@ -69,6 +69,23 @@ describe('AppShell', () => {
 
     expect(screen.queryByRole('dialog', { name: 'Navigation menu' })).not.toBeInTheDocument();
   });
+
+  it('keeps the desktop shell flush to the left edge instead of centering it', () => {
+    renderShell('/');
+
+    const shellGrid = screen.getByRole('complementary').parentElement;
+
+    expect(shellGrid).not.toHaveClass('mx-auto');
+    expect(shellGrid).not.toHaveClass('max-w-[1800px]');
+  });
+
+  it('uses square shell chrome instead of rounded panels', () => {
+    renderShell('/fleet');
+
+    expect(screen.getByRole('complementary')).not.toHaveClass('panel');
+    expect(screen.getByRole('link', { name: 'Fleet' })).not.toHaveClass('rounded-[18px]');
+    expect(screen.getByRole('button', { name: 'Open navigation' })).not.toHaveClass('rounded-[16px]');
+  });
 });
 
 function renderShell(initialEntry: string) {

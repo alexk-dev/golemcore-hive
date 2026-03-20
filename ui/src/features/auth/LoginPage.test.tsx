@@ -29,5 +29,7 @@ describe('LoginPage', () => {
     expect(await screen.findByRole('heading', { name: /bootstrap the control plane/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/username/i)).toHaveValue('admin');
     expect(screen.getByLabelText(/password/i)).toHaveValue('change-me-now');
+    expect(screen.queryByText('Today')).not.toBeInTheDocument();
+    expect(screen.queryByText('Next')).not.toBeInTheDocument();
   });
 });

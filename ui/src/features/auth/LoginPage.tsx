@@ -30,35 +30,21 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="panel hidden p-8 lg:block">
-          <div className="flex h-full flex-col justify-between gap-10">
-            <div className="space-y-5">
+          <div className="flex h-full flex-col justify-between gap-6">
+            <div className="space-y-4">
               <span className="pill">Operator access</span>
-              <div className="space-y-3">
-                <h1 className="text-5xl font-bold tracking-[-0.05em] text-foreground">
-                  Hive is where the human keeps the golems honest.
-                </h1>
-                <p className="max-w-xl text-base leading-8 text-muted-foreground">
-                  Phase 1 does not try to be clever. It establishes access control, refresh rotation, and the control
-                  shell that later phases will turn into the fleet board.
-                </p>
-              </div>
+              <h1 className="text-5xl font-bold tracking-[-0.05em] text-foreground">Hive control plane</h1>
+              <p className="max-w-xl text-base leading-8 text-muted-foreground">
+                Sign in with the bootstrap operator to manage fleet, boards, approvals, audit, and budgets.
+              </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="soft-card p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Today</p>
-                <p className="mt-3 text-lg font-bold tracking-[-0.03em] text-foreground">JWT access + refresh</p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Browser refresh stays in an `HttpOnly` cookie, while the UI keeps access tokens in memory only.
-                </p>
-              </div>
-              <div className="soft-card p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Next</p>
-                <p className="mt-3 text-lg font-bold tracking-[-0.03em] text-foreground">Fleet + Kanban</p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Enrollment, board teams, cards, chat threads, and lifecycle routing stack on top of this baseline.
-                </p>
-              </div>
+            <div className="section-surface p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Access model</p>
+              <p className="mt-3 text-lg font-semibold text-foreground">JWT access + refresh</p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                The browser keeps refresh tokens in an `HttpOnly` cookie while UI access tokens stay in memory only.
+              </p>
             </div>
           </div>
         </section>
@@ -68,9 +54,7 @@ export function LoginPage() {
             <div className="space-y-3">
               <span className="pill">Sign in</span>
               <h2 className="text-3xl font-bold tracking-[-0.04em] text-foreground">Bootstrap the control plane</h2>
-              <p className="text-sm leading-7 text-muted-foreground">
-                Use the bootstrap operator from `application.yml` or the environment override values.
-              </p>
+              <p className="text-sm leading-7 text-muted-foreground">Use the bootstrap operator credentials configured for this deployment.</p>
             </div>
 
             <div className="space-y-4">

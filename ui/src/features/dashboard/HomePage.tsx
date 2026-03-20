@@ -1,79 +1,73 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../app/providers/useAuth';
+import { PageHeader } from '../layout/PageHeader';
 
-const metrics = [
-  { label: 'Storage', value: 'JSON-first', hint: 'No DB for v1' },
-  { label: 'Auth', value: 'JWT + refresh', hint: 'Browser cookie rotation' },
-  { label: 'Governance', value: 'Approvals live', hint: 'Audit and budget views online' },
+const summaryRows = [
+  { label: 'Storage', value: 'JSON-first', hint: 'Local-first runtime without a database dependency.' },
+  { label: 'Auth', value: 'JWT + refresh', hint: 'Browser refresh uses the secure cookie rotation flow.' },
+  { label: 'Governance', value: 'Approvals, audit, budgets', hint: 'Risk and cost tooling is live in the same shell.' },
 ];
 
-const roadmapCards = [
-  {
-    title: 'Approvals and audit',
-    text: 'Risky commands can now pause for approval, and every auth, dispatch, and lifecycle decision lands in the audit stream.',
-  },
-  {
-    title: 'Budget snapshots',
-    text: 'System, board, card, and golem scopes now aggregate token and cost projections from the same local JSON runtime.',
-  },
-  {
-    title: 'Self-hosted defaults',
-    text: 'Settings now expose notification hooks, retention windows, and production deployment guardrails for packaged releases.',
-  },
+const quickLinks = [
+  { label: 'Open Fleet', description: 'Manage runtimes, roles, and enrollment tokens.', to: '/fleet' },
+  { label: 'Open Boards', description: 'Review active flows and open the current workspace.', to: '/boards' },
+  { label: 'Review Approvals', description: 'Check blocked high-risk commands.', to: '/approvals' },
+  { label: 'Inspect Audit', description: 'Scan operator and runtime history.', to: '/audit' },
+  { label: 'View Budgets', description: 'Check token and cost pressure by scope.', to: '/budgets' },
+  { label: 'System settings', description: 'Review deployment defaults and notifications.', to: '/settings' },
 ];
 
 export function HomePage() {
   const { user } = useAuth();
+  const roleLabel = user?.roles?.join(' / ') ?? 'OPERATOR';
 
   return (
     <div className="grid gap-6">
-      <section className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
-        <article className="panel px-6 py-6 md:px-8">
-            <div className="space-y-4">
-            <span className="pill">Phase 5</span>
-            <h2 className="text-3xl font-bold tracking-[-0.04em] text-foreground">
-              Hive now governs risky work, not just routing it.
-            </h2>
-            <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-              Operators can gate destructive or high-cost commands, inspect audit history, and watch budget pressure
-              without leaving the same control plane that owns boards and golem threads.
-            </p>
-          </div>
-        </article>
+      <section className="panel p-6 md:p-8">
+        <PageHeader
+          eyebrow="Overview"
+          title="Operator workspace"
+          description="Monitor fleet, boards, approvals, audit, and budgets from one control plane."
+          meta={
+            <>
+              <span>{user?.displayName}</span>
+              <span>@{user?.username}</span>
+              <span>{roleLabel}</span>
+            </>
+          }
+        />
 
-        <article className="panel px-6 py-6 md:px-8">
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Operator profile</p>
-              <h3 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-foreground">{user?.displayName}</h3>
+        <div className="mt-6 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+          <section className="section-surface p-5">
+            <h2 className="text-lg font-semibold tracking-[-0.03em] text-foreground">Current control plane</h2>
+            <div className="mt-4 grid gap-3">
+              {summaryRows.map((row) => (
+                <article key={row.label} className="dense-row">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{row.label}</p>
+                    <p className="mt-1 text-base font-semibold text-foreground">{row.value}</p>
+                  </div>
+                  <p className="max-w-xs text-sm text-muted-foreground">{row.hint}</p>
+                </article>
+              ))}
             </div>
-            <div className="rounded-[22px] border border-border/80 bg-muted/60 p-4">
-              <p className="text-sm font-medium text-foreground">Ready for thread orchestration</p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                The current session now fronts a governed control plane: JWT rotation, local JSON persistence, fleet
-                routing, kanban state, approvals, and budget snapshots all share the same local-first runtime.
-              </p>
+          </section>
+
+          <section className="section-surface p-5">
+            <h2 className="text-lg font-semibold tracking-[-0.03em] text-foreground">Primary routes</h2>
+            <div className="mt-4 grid gap-1">
+              {quickLinks.map((link) => (
+                <Link key={link.to} to={link.to} className="dense-row px-1 text-left transition hover:text-foreground">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">{link.label}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{link.description}</p>
+                  </div>
+                  <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Open</span>
+                </Link>
+              ))}
             </div>
-          </div>
-        </article>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-3">
-        {metrics.map((metric) => (
-          <article key={metric.label} className="soft-card p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{metric.label}</p>
-            <p className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">{metric.value}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{metric.hint}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-3">
-        {roadmapCards.map((card) => (
-          <article key={card.title} className="panel p-5">
-            <h3 className="text-lg font-bold tracking-[-0.03em] text-foreground">{card.title}</h3>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">{card.text}</p>
-          </article>
-        ))}
+          </section>
+        </div>
       </section>
     </div>
   );

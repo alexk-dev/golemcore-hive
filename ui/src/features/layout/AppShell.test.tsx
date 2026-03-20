@@ -16,19 +16,39 @@ vi.mock('../../app/providers/useAuth', () => ({
 }));
 
 describe('AppShell', () => {
-  it('keeps the descriptive subtitle on non-board routes', () => {
+  it('renders a sidebar and keeps non-active sections collapsed on overview routes', () => {
     renderShell('/');
 
-    expect(screen.getByText('Operator workbench for boards, golems, and governed dispatch')).toBeInTheDocument();
+    expect(screen.getByText('Golemcore Hive')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Overview' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Roles' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Current board' })).not.toBeInTheDocument();
     expect(screen.getByText('Overview page')).toBeInTheDocument();
   });
 
-  it('uses a quieter compact shell on board routes', () => {
-    renderShell('/boards/board_1');
+  it('expands Boards children on a board settings route', () => {
+    renderShell('/boards/board_1/settings');
 
-    expect(screen.queryByText('Operator workbench for boards, golems, and governed dispatch')).not.toBeInTheDocument();
-    expect(screen.getByText('Board page')).toBeInTheDocument();
-    expect(screen.getByText('Golemcore Hive')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'All boards' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Current board' })).toHaveAttribute('href', '/boards/board_1');
+    expect(screen.getByRole('link', { name: 'Board settings' })).toHaveAttribute('href', '/boards/board_1/settings');
+    expect(screen.getByText('Board settings page')).toBeInTheDocument();
+  });
+
+  it('expands Fleet children on /fleet/roles', () => {
+    renderShell('/fleet/roles');
+
+    expect(screen.getByRole('link', { name: 'Registry' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Roles' })).toBeInTheDocument();
+    expect(screen.getByText('Fleet roles page')).toBeInTheDocument();
+  });
+
+  it('treats thread routes as part of Boards without inventing board-specific links', () => {
+    renderShell('/cards/card_1/thread');
+
+    expect(screen.getByRole('link', { name: 'All boards' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Current board' })).not.toBeInTheDocument();
+    expect(screen.getByText('Thread page')).toBeInTheDocument();
   });
 });
 
@@ -38,7 +58,12 @@ function renderShell(initialEntry: string) {
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<div>Overview page</div>} />
+          <Route path="/fleet" element={<div>Fleet page</div>} />
+          <Route path="/fleet/roles" element={<div>Fleet roles page</div>} />
+          <Route path="/boards" element={<div>Boards page</div>} />
           <Route path="/boards/:boardId" element={<div>Board page</div>} />
+          <Route path="/boards/:boardId/settings" element={<div>Board settings page</div>} />
+          <Route path="/cards/:cardId/thread" element={<div>Thread page</div>} />
         </Route>
       </Routes>
     </MemoryRouter>,

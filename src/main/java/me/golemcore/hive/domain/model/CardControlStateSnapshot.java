@@ -20,17 +20,4 @@ package me.golemcore.hive.domain.model;
 
 import java.time.Instant;
 
-public record CardControlStateSnapshot(
-        String commandId,
-        String runId,
-        String golemId,
-        CommandStatus commandStatus,
-        RunStatus runStatus,
-        String summary,
-        String queueReason,
-        Instant updatedAt,
-        Instant cancelRequestedAt,
-        String cancelRequestedByActorName,
-        boolean cancelRequestedPending,
-        boolean canCancel) {
-}
+public record CardControlStateSnapshot(String commandId,String runId,String golemId,CommandStatus commandStatus,RunStatus runStatus,String summary,String queueReason,Instant updatedAt,Instant cancelRequestedAt,String cancelRequestedByActorName,boolean cancelRequestedPending,boolean canCancel){}

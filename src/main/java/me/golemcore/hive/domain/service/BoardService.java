@@ -23,8 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.ArrayDeque;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -82,9 +82,9 @@ public class BoardService {
     }
 
     public Board createBoard(String name,
-                             String description,
-                             String templateKey,
-                             CardAssignmentPolicy defaultAssignmentPolicy) {
+            String description,
+            String templateKey,
+            CardAssignmentPolicy defaultAssignmentPolicy) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Board name is required");
         }
@@ -101,7 +101,8 @@ public class BoardService {
                 .name(name)
                 .description(description)
                 .templateKey(normalizedTemplateKey)
-                .defaultAssignmentPolicy(defaultAssignmentPolicy != null ? defaultAssignmentPolicy : CardAssignmentPolicy.MANUAL)
+                .defaultAssignmentPolicy(
+                        defaultAssignmentPolicy != null ? defaultAssignmentPolicy : CardAssignmentPolicy.MANUAL)
                 .flow(buildTemplate(normalizedTemplateKey))
                 .team(BoardTeam.builder().build())
                 .createdAt(now)
@@ -120,7 +121,8 @@ public class BoardService {
         return board;
     }
 
-    public Board updateBoard(String boardId, String name, String description, CardAssignmentPolicy defaultAssignmentPolicy) {
+    public Board updateBoard(String boardId, String name, String description,
+            CardAssignmentPolicy defaultAssignmentPolicy) {
         Board board = getBoard(boardId);
         if (name != null && !name.isBlank()) {
             board.setName(name);
@@ -146,10 +148,10 @@ public class BoardService {
     }
 
     public Board updateBoardFlow(String boardId,
-                                 BoardFlowDefinition flow,
-                                 Map<String, String> columnRemap,
-                                 String actorId,
-                                 String actorName) {
+            BoardFlowDefinition flow,
+            Map<String, String> columnRemap,
+            String actorId,
+            String actorName) {
         Board board = getBoard(boardId);
         validateFlow(flow);
         flowRemapService.apply(board, flow, columnRemap, actorId, actorName);
@@ -233,7 +235,8 @@ public class BoardService {
                 throw new IllegalArgumentException("Signal mapping decision is required");
             }
             if (signalMapping.getDecision() != BoardSignalDecision.IGNORE
-                    && (signalMapping.getTargetColumnId() == null || !columnIds.contains(signalMapping.getTargetColumnId()))) {
+                    && (signalMapping.getTargetColumnId() == null
+                            || !columnIds.contains(signalMapping.getTargetColumnId()))) {
                 throw new IllegalArgumentException("Signal mapping target column must exist");
             }
         }
@@ -247,8 +250,8 @@ public class BoardService {
         if (transitions == null || transitions.isEmpty()) {
             return true;
         }
-        return transitions.stream().anyMatch(transition ->
-                transition.getFromColumnId().equals(fromColumnId) && transition.getToColumnId().equals(toColumnId));
+        return transitions.stream().anyMatch(transition -> transition.getFromColumnId().equals(fromColumnId)
+                && transition.getToColumnId().equals(toColumnId));
     }
 
     public boolean isTransitionReachable(Board board, String fromColumnId, String toColumnId) {
@@ -263,7 +266,7 @@ public class BoardService {
             return true;
         }
 
-        ArrayDeque<String> queue = new ArrayDeque<>();
+        Deque<String> queue = new java.util.ArrayDeque<>();
         Set<String> visited = new HashSet<>();
         queue.add(fromColumnId);
         visited.add(fromColumnId);
@@ -334,7 +337,8 @@ public class BoardService {
         if (baseSlug.isBlank()) {
             baseSlug = "board";
         }
-        Set<String> existingSlugs = listBoards().stream().map(Board::getSlug).collect(java.util.stream.Collectors.toSet());
+        Set<String> existingSlugs = listBoards().stream().map(Board::getSlug)
+                .collect(java.util.stream.Collectors.toSet());
         if (!existingSlugs.contains(baseSlug)) {
             return baseSlug;
         }
@@ -347,11 +351,11 @@ public class BoardService {
 
     private BoardFlowDefinition buildTemplate(String templateKey) {
         return switch (templateKey) {
-            case "content" -> contentTemplate();
-            case "support" -> supportTemplate();
-            case "research" -> researchTemplate();
-            case "engineering" -> engineeringTemplate();
-            default -> throw new IllegalArgumentException("Unknown board template: " + templateKey);
+        case "content" -> contentTemplate();
+        case "support" -> supportTemplate();
+        case "research" -> researchTemplate();
+        case "engineering" -> engineeringTemplate();
+        default -> throw new IllegalArgumentException("Unknown board template: " + templateKey);
         };
     }
 

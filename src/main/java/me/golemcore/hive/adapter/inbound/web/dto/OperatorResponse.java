@@ -20,9 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto;
 
 import java.util.List;
 
-public record OperatorResponse(
-        String id,
-        String username,
-        String displayName,
-        List<String> roles) {
-}
+public record OperatorResponse(String id,String username,String displayName,List<String>roles){}

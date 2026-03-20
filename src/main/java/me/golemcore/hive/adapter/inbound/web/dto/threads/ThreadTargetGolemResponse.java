@@ -20,9 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.threads;
 
 import java.util.List;
 
-public record ThreadTargetGolemResponse(
-        String id,
-        String displayName,
-        String state,
-        List<String> roleSlugs) {
-}
+public record ThreadTargetGolemResponse(String id,String displayName,String state,List<String>roleSlugs){}

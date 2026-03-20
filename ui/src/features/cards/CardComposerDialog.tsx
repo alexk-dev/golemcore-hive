@@ -192,7 +192,7 @@ export function CardComposerDialog({
               allGolems={allGolems}
               currentAssigneeId={assigneeGolemId}
               isPending={isPending}
-              onAssign={async (nextAssigneeId) => {
+              onAssign={(nextAssigneeId) => {
                 setAssigneeGolemId(nextAssigneeId);
               }}
             />

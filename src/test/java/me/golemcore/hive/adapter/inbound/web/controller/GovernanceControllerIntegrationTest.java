@@ -174,7 +174,8 @@ class GovernanceControllerIntegrationTest {
         return boardPayload.get("id").asText();
     }
 
-    private String createCard(String operatorToken, String boardId, String title, String columnId, String assigneeGolemId)
+    private String createCard(String operatorToken, String boardId, String title, String columnId,
+            String assigneeGolemId)
             throws Exception {
         EntityExchangeResult<String> createCardResult = webTestClient.post()
                 .uri("/api/v1/cards")
@@ -229,7 +230,8 @@ class GovernanceControllerIntegrationTest {
                 .expectStatus().isCreated();
     }
 
-    private RegisteredGolem registerOnlineGolem(String operatorToken, String displayName, String hostLabel, String roleSlug)
+    private RegisteredGolem registerOnlineGolem(String operatorToken, String displayName, String hostLabel,
+            String roleSlug)
             throws Exception {
         EntityExchangeResult<String> enrollmentTokenResult = webTestClient.post()
                 .uri("/api/v1/enrollment-tokens")

@@ -21,5 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 import java.util.List;
 import java.util.Set;
 
-public record BoardTeamPayload(Set<String> explicitGolemIds, List<BoardTeamFilterPayload> filters) {
-}
+public record BoardTeamPayload(Set<String>explicitGolemIds,List<BoardTeamFilterPayload>filters){}

@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
-public record BoardCountsResponse(String columnId, int count) {
-}
+public record BoardCountsResponse(String columnId,int count){}

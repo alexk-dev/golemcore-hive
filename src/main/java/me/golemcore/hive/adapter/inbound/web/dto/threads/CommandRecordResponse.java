@@ -20,26 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.threads;
 
 import java.time.Instant;
 
-public record CommandRecordResponse(
-        String id,
-        String threadId,
-        String cardId,
-        String golemId,
-        String runId,
-        String body,
-        String approvalRequestId,
-        String approvalRiskLevel,
-        String approvalReason,
-        long estimatedCostMicros,
-        String status,
-        String queueReason,
-        int dispatchAttempts,
-        Instant createdAt,
-        Instant updatedAt,
-        Instant lastDispatchAttemptAt,
-        Instant deliveredAt,
-        Instant startedAt,
-        Instant completedAt,
-        Instant cancelRequestedAt,
-        String cancelRequestedByActorName) {
-}
+public record CommandRecordResponse(String id,String threadId,String cardId,String golemId,String runId,String body,String approvalRequestId,String approvalRiskLevel,String approvalReason,long estimatedCostMicros,String status,String queueReason,int dispatchAttempts,Instant createdAt,Instant updatedAt,Instant lastDispatchAttemptAt,Instant deliveredAt,Instant startedAt,Instant completedAt,Instant cancelRequestedAt,String cancelRequestedByActorName){}

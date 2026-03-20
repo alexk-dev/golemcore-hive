@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
-public record BoardSignalMappingPayload(String signalType, String decision, String targetColumnId) {
-}
+public record BoardSignalMappingPayload(String signalType,String decision,String targetColumnId){}

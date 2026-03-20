@@ -19,10 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum GolemState {
-    PENDING_ENROLLMENT,
-    ONLINE,
-    DEGRADED,
-    OFFLINE,
-    PAUSED,
-    REVOKED
+    PENDING_ENROLLMENT, ONLINE, DEGRADED, OFFLINE, PAUSED, REVOKED
 }

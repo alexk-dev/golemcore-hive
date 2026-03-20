@@ -76,9 +76,11 @@ class ThreadControllerIntegrationTest {
         RegisteredGolem developer = registerOnlineGolem(operatorToken, "Atlas Dev", "host-dev", "developer");
         String boardId = createBoard(operatorToken);
 
-        String firstCardId = createCard(operatorToken, boardId, "Ship thread orchestration", "ready", developer.golemId());
+        String firstCardId = createCard(operatorToken, boardId, "Ship thread orchestration", "ready",
+                developer.golemId());
         String firstThreadId = getThreadId(operatorToken, firstCardId);
-        CommandEnvelope firstCommand = createCommand(operatorToken, firstThreadId, "Implement thread orchestration and report back.");
+        CommandEnvelope firstCommand = createCommand(operatorToken, firstThreadId,
+                "Implement thread orchestration and report back.");
 
         webTestClient.post()
                 .uri("/api/v1/golems/{golemId}/events:batch", developer.golemId())
@@ -183,7 +185,8 @@ class ThreadControllerIntegrationTest {
                 .expectBody()
                 .jsonPath("$.length()").isEqualTo(4);
 
-        String secondCardId = createCard(operatorToken, boardId, "Investigate blocker path", "in_progress", developer.golemId());
+        String secondCardId = createCard(operatorToken, boardId, "Investigate blocker path", "in_progress",
+                developer.golemId());
         String secondThreadId = getThreadId(operatorToken, secondCardId);
         CommandEnvelope secondCommand = createCommand(operatorToken, secondThreadId, "Check blocker escalation.");
 
@@ -322,7 +325,8 @@ class ThreadControllerIntegrationTest {
         RegisteredGolem developer = registerOnlineGolem(operatorToken, "Atlas Starter", "host-starter", "developer");
         BlockingQueue<String> controlMessages = new LinkedBlockingQueue<>();
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
-        Disposable subscription = applicationContext.getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
+        Disposable subscription = applicationContext
+                .getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
                 .register(developer.golemId(), sink)
                 .subscribe(controlMessages::add);
         try {
@@ -351,7 +355,8 @@ class ThreadControllerIntegrationTest {
             Assertions.assertEquals("command", initialEnvelope.get("eventType").asText());
             Assertions.assertEquals(cardId, initialEnvelope.get("cardId").asText());
             Assertions.assertEquals(threadId, initialEnvelope.get("threadId").asText());
-            Assertions.assertEquals("Execute the full card prompt and report concrete progress.", initialEnvelope.get("body").asText());
+            Assertions.assertEquals("Execute the full card prompt and report concrete progress.",
+                    initialEnvelope.get("body").asText());
 
             webTestClient.get()
                     .uri("/api/v1/threads/{threadId}/commands", threadId)
@@ -459,14 +464,16 @@ class ThreadControllerIntegrationTest {
         RegisteredGolem developer = registerOnlineGolem(operatorToken, "Atlas Live", "host-live", "developer");
         BlockingQueue<String> controlMessages = new LinkedBlockingQueue<>();
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
-        Disposable subscription = applicationContext.getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
+        Disposable subscription = applicationContext
+                .getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
                 .register(developer.golemId(), sink)
                 .subscribe(controlMessages::add);
         try {
             String boardId = createBoard(operatorToken);
             String cardId = createCard(operatorToken, boardId, "Cancel active work", "ready", developer.golemId());
             String threadId = getThreadId(operatorToken, cardId);
-            CommandEnvelope command = createCommand(operatorToken, threadId, "Dispatch and then request cancellation.", "DELIVERED");
+            CommandEnvelope command = createCommand(operatorToken, threadId, "Dispatch and then request cancellation.",
+                    "DELIVERED");
 
             JsonNode initialEnvelope = objectMapper.readTree(pollControlMessage(controlMessages));
             Assertions.assertEquals("command", initialEnvelope.get("eventType").asText());
@@ -647,7 +654,8 @@ class ThreadControllerIntegrationTest {
         return boardPayload.get("id").asText();
     }
 
-    private String createCard(String operatorToken, String boardId, String title, String columnId, String assigneeGolemId) throws Exception {
+    private String createCard(String operatorToken, String boardId, String title, String columnId,
+            String assigneeGolemId) throws Exception {
         EntityExchangeResult<String> createCardResult = webTestClient.post()
                 .uri("/api/v1/cards")
                 .header(HttpHeaders.AUTHORIZATION, operatorToken)
@@ -688,7 +696,8 @@ class ThreadControllerIntegrationTest {
         return createCommand(operatorToken, threadId, body, "QUEUED");
     }
 
-    private CommandEnvelope createCommand(String operatorToken, String threadId, String body, String expectedStatus) throws Exception {
+    private CommandEnvelope createCommand(String operatorToken, String threadId, String body, String expectedStatus)
+            throws Exception {
         EntityExchangeResult<String> commandResult = webTestClient.post()
                 .uri("/api/v1/threads/{threadId}/commands", threadId)
                 .header(HttpHeaders.AUTHORIZATION, operatorToken)
@@ -734,10 +743,12 @@ class ThreadControllerIntegrationTest {
             return;
         }
         Assertions.assertEquals(400, status);
-        Assertions.assertTrue(result.getResponseBody() != null && result.getResponseBody().contains("Role already exists"));
+        Assertions.assertTrue(
+                result.getResponseBody() != null && result.getResponseBody().contains("Role already exists"));
     }
 
-    private RegisteredGolem registerOnlineGolem(String operatorToken, String displayName, String hostLabel, String roleSlug) throws Exception {
+    private RegisteredGolem registerOnlineGolem(String operatorToken, String displayName, String hostLabel,
+            String roleSlug) throws Exception {
         EntityExchangeResult<String> enrollmentTokenResult = webTestClient.post()
                 .uri("/api/v1/enrollment-tokens")
                 .header(HttpHeaders.AUTHORIZATION, operatorToken)

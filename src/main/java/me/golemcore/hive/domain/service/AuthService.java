@@ -110,7 +110,8 @@ public class AuthService {
 
     private TokenPair issueTokens(OperatorAccount operator, RefreshSession existingSession) {
         Instant now = Instant.now();
-        String sessionId = existingSession != null ? existingSession.getId() : "rs_" + UUID.randomUUID().toString().replace("-", "");
+        String sessionId = existingSession != null ? existingSession.getId()
+                : "rs_" + UUID.randomUUID().toString().replace("-", "");
         String refreshToken = jwtTokenProvider.generateRefreshToken(operator, sessionId);
         RefreshSession refreshSession = RefreshSession.builder()
                 .id(sessionId)

@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -62,13 +63,15 @@ public class BudgetService {
                 continue;
             }
             BudgetSnapshot snapshot = snapshotOptional.get();
-            if (scopeType != null && !scopeType.isBlank() && !snapshot.getScopeType().name().equalsIgnoreCase(scopeType)) {
+            if (scopeType != null && !scopeType.isBlank()
+                    && !snapshot.getScopeType().name().equalsIgnoreCase(scopeType)) {
                 continue;
             }
             if (query != null && !query.isBlank()) {
-                String normalized = query.toLowerCase();
-                String label = snapshot.getScopeLabel() != null ? snapshot.getScopeLabel().toLowerCase() : "";
-                String scopeId = snapshot.getScopeId() != null ? snapshot.getScopeId().toLowerCase() : "";
+                String normalized = query.toLowerCase(Locale.ROOT);
+                String label = snapshot.getScopeLabel() != null ? snapshot.getScopeLabel().toLowerCase(Locale.ROOT)
+                        : "";
+                String scopeId = snapshot.getScopeId() != null ? snapshot.getScopeId().toLowerCase(Locale.ROOT) : "";
                 if (!label.contains(normalized) && !scopeId.contains(normalized)) {
                     continue;
                 }
@@ -101,7 +104,8 @@ public class BudgetService {
             }
             if (golem != null) {
                 addCommand(accumulators, BudgetScopeType.GOLEM, golem.getId(), golem.getDisplayName(),
-                        card != null ? card.getBoardId() : null, card != null ? card.getId() : null, golem.getId(), command);
+                        card != null ? card.getBoardId() : null, card != null ? card.getId() : null, golem.getId(),
+                        command);
             }
         }
 
@@ -118,7 +122,8 @@ public class BudgetService {
             }
             if (golem != null) {
                 addRun(accumulators, BudgetScopeType.GOLEM, golem.getId(), golem.getDisplayName(),
-                        card != null ? card.getBoardId() : null, card != null ? card.getId() : null, golem.getId(), run);
+                        card != null ? card.getBoardId() : null, card != null ? card.getId() : null, golem.getId(),
+                        run);
             }
         }
 
@@ -128,13 +133,13 @@ public class BudgetService {
     }
 
     private void addCommand(Map<String, BudgetAccumulator> accumulators,
-                            BudgetScopeType scopeType,
-                            String scopeId,
-                            String scopeLabel,
-                            String boardId,
-                            String cardId,
-                            String golemId,
-                            CommandRecord command) {
+            BudgetScopeType scopeType,
+            String scopeId,
+            String scopeLabel,
+            String boardId,
+            String cardId,
+            String golemId,
+            CommandRecord command) {
         BudgetAccumulator accumulator = accumulators.computeIfAbsent(
                 key(scopeType, scopeId),
                 ignored -> new BudgetAccumulator(scopeType, scopeId, scopeLabel, boardId, cardId, golemId));
@@ -148,13 +153,13 @@ public class BudgetService {
     }
 
     private void addRun(Map<String, BudgetAccumulator> accumulators,
-                        BudgetScopeType scopeType,
-                        String scopeId,
-                        String scopeLabel,
-                        String boardId,
-                        String cardId,
-                        String golemId,
-                        RunProjection run) {
+            BudgetScopeType scopeType,
+            String scopeId,
+            String scopeLabel,
+            String boardId,
+            String cardId,
+            String golemId,
+            RunProjection run) {
         BudgetAccumulator accumulator = accumulators.computeIfAbsent(
                 key(scopeType, scopeId),
                 ignored -> new BudgetAccumulator(scopeType, scopeId, scopeLabel, boardId, cardId, golemId));
@@ -199,7 +204,8 @@ public class BudgetService {
 
     private void saveSnapshot(BudgetSnapshot snapshot) {
         try {
-            storagePort.putTextAtomic(BUDGETS_DIR, snapshot.getId() + ".json", objectMapper.writeValueAsString(snapshot));
+            storagePort.putTextAtomic(BUDGETS_DIR, snapshot.getId() + ".json",
+                    objectMapper.writeValueAsString(snapshot));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize budget snapshot " + snapshot.getId(), exception);
         }
@@ -224,11 +230,11 @@ public class BudgetService {
         private long estimatedPendingCostMicros;
 
         private BudgetAccumulator(BudgetScopeType scopeType,
-                                  String scopeId,
-                                  String scopeLabel,
-                                  String boardId,
-                                  String cardId,
-                                  String golemId) {
+                String scopeId,
+                String scopeLabel,
+                String boardId,
+                String cardId,
+                String golemId) {
             this.scopeType = scopeType;
             this.scopeId = scopeId;
             this.scopeLabel = scopeLabel;
@@ -239,7 +245,7 @@ public class BudgetService {
 
         private BudgetSnapshot toSnapshot() {
             return BudgetSnapshot.builder()
-                    .id(scopeType.name().toLowerCase() + "_" + scopeId)
+                    .id(scopeType.name().toLowerCase(Locale.ROOT) + "_" + scopeId)
                     .scopeType(scopeType)
                     .scopeId(scopeId)
                     .scopeLabel(scopeLabel)

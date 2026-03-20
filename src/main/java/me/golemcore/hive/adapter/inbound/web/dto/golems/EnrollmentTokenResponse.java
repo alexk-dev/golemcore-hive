@@ -20,17 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
 import java.time.Instant;
 
-public record EnrollmentTokenResponse(
-        String id,
-        String preview,
-        String note,
-        String createdByUsername,
-        Instant createdAt,
-        Instant expiresAt,
-        Instant lastUsedAt,
-        long registrationCount,
-        Instant revokedAt,
-        String lastRegisteredGolemId,
-        String revokeReason,
-        boolean revoked) {
-}
+public record EnrollmentTokenResponse(String id,String preview,String note,String createdByUsername,Instant createdAt,Instant expiresAt,Instant lastUsedAt,long registrationCount,Instant revokedAt,String lastRegisteredGolemId,String revokeReason,boolean revoked){}

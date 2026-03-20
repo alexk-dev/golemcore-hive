@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
-public record EnrollmentTokenCreateRequest(String note, Integer expiresInMinutes) {
-}
+public record EnrollmentTokenCreateRequest(String note,Integer expiresInMinutes){}

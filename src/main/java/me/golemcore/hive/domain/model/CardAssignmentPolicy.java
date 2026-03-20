@@ -19,7 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum CardAssignmentPolicy {
-    MANUAL,
-    SUGGESTED,
-    AUTOMATIC
+    MANUAL, SUGGESTED, AUTOMATIC
 }

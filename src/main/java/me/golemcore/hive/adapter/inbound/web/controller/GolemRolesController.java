@@ -38,7 +38,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
@@ -54,7 +53,8 @@ public class GolemRolesController {
     public Mono<ResponseEntity<List<GolemRoleResponse>>> listRoles(Principal principal) {
         return Mono.fromCallable(() -> {
             requireOperatorActor(principal);
-            List<GolemRoleResponse> roles = golemRegistryService.listRoles().stream().map(this::toRoleResponse).toList();
+            List<GolemRoleResponse> roles = golemRegistryService.listRoles().stream().map(this::toRoleResponse)
+                    .toList();
             return ResponseEntity.ok(roles);
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -98,7 +98,8 @@ public class GolemRolesController {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = requirePrivilegedOperator(principal);
             Golem golem = golemRegistryService.assignRoles(golemId, request.roleSlugs(), actor);
-            return ResponseEntity.ok(golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList());
+            return ResponseEntity
+                    .ok(golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -110,7 +111,8 @@ public class GolemRolesController {
         return Mono.fromCallable(() -> {
             requirePrivilegedOperator(principal);
             Golem golem = golemRegistryService.unassignRoles(golemId, request.roleSlugs());
-            return ResponseEntity.ok(golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList());
+            return ResponseEntity
+                    .ok(golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -144,7 +146,8 @@ public class GolemRolesController {
         if (principal instanceof AuthenticatedActor actor) {
             return actor;
         }
-        if (principal instanceof Authentication authentication && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
+        if (principal instanceof Authentication authentication
+                && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
             return actor;
         }
         return null;

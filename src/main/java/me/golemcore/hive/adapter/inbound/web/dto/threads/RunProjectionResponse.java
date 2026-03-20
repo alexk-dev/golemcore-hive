@@ -20,25 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.threads;
 
 import java.time.Instant;
 
-public record RunProjectionResponse(
-        String id,
-        String threadId,
-        String cardId,
-        String commandId,
-        String golemId,
-        String approvalRequestId,
-        String status,
-        String summary,
-        String lastRuntimeEventType,
-        String lastSignalType,
-        int eventCount,
-        long inputTokens,
-        long outputTokens,
-        long accumulatedCostMicros,
-        Instant createdAt,
-        Instant updatedAt,
-        Instant startedAt,
-        Instant completedAt,
-        Instant cancelRequestedAt,
-        String cancelRequestedByActorName) {
-}
+public record RunProjectionResponse(String id,String threadId,String cardId,String commandId,String golemId,String approvalRequestId,String status,String summary,String lastRuntimeEventType,String lastSignalType,int eventCount,long inputTokens,long outputTokens,long accumulatedCostMicros,Instant createdAt,Instant updatedAt,Instant startedAt,Instant completedAt,Instant cancelRequestedAt,String cancelRequestedByActorName){}

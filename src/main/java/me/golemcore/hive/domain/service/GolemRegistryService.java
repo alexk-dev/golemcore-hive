@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -58,12 +59,12 @@ public class GolemRegistryService {
     private final AuditService auditService;
 
     public Golem registerGolem(String displayName,
-                               String hostLabel,
-                               String runtimeVersion,
-                               String buildVersion,
-                               Set<String> supportedChannels,
-                               GolemCapabilitySnapshot capabilitySnapshot,
-                               String enrollmentTokenId) {
+            String hostLabel,
+            String runtimeVersion,
+            String buildVersion,
+            Set<String> supportedChannels,
+            GolemCapabilitySnapshot capabilitySnapshot,
+            String enrollmentTokenId) {
         Instant now = Instant.now();
         String golemId = "golem_" + UUID.randomUUID().toString().replace("-", "");
         Golem golem = Golem.builder()
@@ -81,7 +82,8 @@ public class GolemRegistryService {
                 .enrollmentTokenId(enrollmentTokenId)
                 .heartbeatIntervalSeconds(properties.getFleet().getHeartbeatIntervalSeconds())
                 .missedHeartbeatCount(0)
-                .supportedChannels(supportedChannels != null ? new LinkedHashSet<>(supportedChannels) : new LinkedHashSet<>())
+                .supportedChannels(
+                        supportedChannels != null ? new LinkedHashSet<>(supportedChannels) : new LinkedHashSet<>())
                 .capabilitySnapshot(capabilitySnapshot)
                 .build();
         saveGolem(golem);
@@ -116,7 +118,7 @@ public class GolemRegistryService {
     }
 
     public List<Golem> listGolems(String query, String state, String roleSlug) {
-        String normalizedQuery = query != null ? query.trim().toLowerCase() : "";
+        String normalizedQuery = query != null ? query.trim().toLowerCase(Locale.ROOT) : "";
         List<String> files = storagePort.listObjects(GOLEMS_DIR, "");
         List<Golem> golems = new ArrayList<>();
         for (String file : files) {
@@ -273,7 +275,8 @@ public class GolemRegistryService {
         GolemRole existing = findRole(slug).orElseThrow(() -> new IllegalArgumentException("Unknown role: " + slug));
         existing.setName(name != null && !name.isBlank() ? name : existing.getName());
         existing.setDescription(description);
-        existing.setCapabilityTags(capabilityTags != null ? new LinkedHashSet<>(capabilityTags) : new LinkedHashSet<>());
+        existing.setCapabilityTags(
+                capabilityTags != null ? new LinkedHashSet<>(capabilityTags) : new LinkedHashSet<>());
         existing.setUpdatedAt(Instant.now());
         saveRole(existing);
         auditService.record(AuditEvent.builder()
@@ -292,7 +295,8 @@ public class GolemRegistryService {
         Instant now = Instant.now();
         List<GolemRoleBinding> bindings = new ArrayList<>(golem.getRoleBindings());
         for (String roleSlug : roleSlugs) {
-            GolemRole role = findRole(roleSlug).orElseThrow(() -> new IllegalArgumentException("Unknown role: " + roleSlug));
+            GolemRole role = findRole(roleSlug)
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown role: " + roleSlug));
             boolean exists = bindings.stream().map(GolemRoleBinding::getRoleSlug).anyMatch(role.getSlug()::equals);
             if (!exists) {
                 bindings.add(GolemRoleBinding.builder()
@@ -365,7 +369,8 @@ public class GolemRegistryService {
             storagePort.putTextAtomic(HEARTBEATS_DIR, heartbeatPing.getGolemId() + ".json",
                     objectMapper.writeValueAsString(heartbeatPing));
         } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize heartbeat for " + heartbeatPing.getGolemId(), exception);
+            throw new IllegalStateException("Failed to serialize heartbeat for " + heartbeatPing.getGolemId(),
+                    exception);
         }
     }
 
@@ -384,7 +389,7 @@ public class GolemRegistryService {
     }
 
     private boolean containsIgnoreCase(String value, String normalizedQuery) {
-        return value != null && value.toLowerCase().contains(normalizedQuery);
+        return value != null && value.toLowerCase(Locale.ROOT).contains(normalizedQuery);
     }
 
     private void validateRoleSlug(String slug) {

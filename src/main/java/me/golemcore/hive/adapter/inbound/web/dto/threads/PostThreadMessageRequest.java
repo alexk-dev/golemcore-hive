@@ -20,5 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.threads;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record PostThreadMessageRequest(@NotBlank String body) {
-}
+public record PostThreadMessageRequest(@NotBlank String body){}

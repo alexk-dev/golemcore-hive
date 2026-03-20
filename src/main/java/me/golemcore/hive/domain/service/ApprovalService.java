@@ -73,10 +73,10 @@ public class ApprovalService {
     }
 
     public ApprovalRequest createApproval(CommandRecord command,
-                                          RunProjection run,
-                                          Card card,
-                                          String actorId,
-                                          String actorName) {
+            RunProjection run,
+            Card card,
+            String actorId,
+            String actorName) {
         Instant now = Instant.now();
         ApprovalRequest approval = ApprovalRequest.builder()
                 .id("apr_" + UUID.randomUUID().toString().replace("-", ""))
@@ -161,8 +161,9 @@ public class ApprovalService {
             }
             approvals.add(approval);
         }
-        approvals.sort(Comparator.comparing(ApprovalRequest::getRequestedAt, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(ApprovalRequest::getId, Comparator.reverseOrder()));
+        approvals.sort(
+                Comparator.comparing(ApprovalRequest::getRequestedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(ApprovalRequest::getId, Comparator.reverseOrder()));
         return approvals;
     }
 
@@ -313,7 +314,8 @@ public class ApprovalService {
 
     private void saveApproval(ApprovalRequest approval) {
         try {
-            storagePort.putTextAtomic(APPROVALS_DIR, approval.getId() + ".json", objectMapper.writeValueAsString(approval));
+            storagePort.putTextAtomic(APPROVALS_DIR, approval.getId() + ".json",
+                    objectMapper.writeValueAsString(approval));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize approval " + approval.getId(), exception);
         }
@@ -321,7 +323,8 @@ public class ApprovalService {
 
     private void saveCommand(CommandRecord command) {
         try {
-            storagePort.putTextAtomic(COMMANDS_DIR, command.getId() + ".json", objectMapper.writeValueAsString(command));
+            storagePort.putTextAtomic(COMMANDS_DIR, command.getId() + ".json",
+                    objectMapper.writeValueAsString(command));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize command " + command.getId(), exception);
         }

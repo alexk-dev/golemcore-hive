@@ -8,7 +8,7 @@ type AssigneePickerProps = {
   allGolems: GolemSummary[];
   currentAssigneeId: string | null;
   isPending: boolean;
-  onAssign: (assigneeGolemId: string | null) => Promise<void>;
+  onAssign: (assigneeGolemId: string | null) => void | Promise<void>;
 };
 
 type PickerTab = 'team' | 'all';

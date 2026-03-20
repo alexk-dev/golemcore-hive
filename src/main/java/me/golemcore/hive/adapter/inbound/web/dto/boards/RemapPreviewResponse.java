@@ -21,5 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 import java.util.List;
 import java.util.Map;
 
-public record RemapPreviewResponse(List<String> removedColumnIds, Map<String, Integer> affectedCardCounts) {
-}
+public record RemapPreviewResponse(List<String>removedColumnIds,Map<String,Integer>affectedCardCounts){}

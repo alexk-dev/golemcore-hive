@@ -19,7 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum BoardSignalDecision {
-    AUTO_APPLY,
-    SUGGEST_ONLY,
-    IGNORE
+    AUTO_APPLY, SUGGEST_ONLY, IGNORE
 }

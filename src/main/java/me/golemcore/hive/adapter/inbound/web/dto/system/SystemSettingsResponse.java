@@ -20,25 +20,8 @@ package me.golemcore.hive.adapter.inbound.web.dto.system;
 
 import java.util.List;
 
-public record SystemSettingsResponse(
-        boolean productionMode,
-        String storageBasePath,
-        boolean secureRefreshCookie,
-        long highCostThresholdMicros,
-        RetentionDefaults retention,
-        NotificationDefaults notifications,
-        List<NotificationEventResponse> recentNotifications) {
+public record SystemSettingsResponse(boolean productionMode,String storageBasePath,boolean secureRefreshCookie,long highCostThresholdMicros,RetentionDefaults retention,NotificationDefaults notifications,List<NotificationEventResponse>recentNotifications){
 
-    public record RetentionDefaults(
-            int approvalsDays,
-            int auditDays,
-            int notificationsDays) {
-    }
+public record RetentionDefaults(int approvalsDays,int auditDays,int notificationsDays){}
 
-    public record NotificationDefaults(
-            boolean approvalRequested,
-            boolean blockerRaised,
-            boolean golemOffline,
-            boolean commandFailed) {
-    }
-}
+public record NotificationDefaults(boolean approvalRequested,boolean blockerRaised,boolean golemOffline,boolean commandFailed){}}

@@ -20,5 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import java.util.Map;
 
-public record UpdateBoardFlowRequest(BoardFlowPayload flow, Map<String, String> columnRemap) {
-}
+public record UpdateBoardFlowRequest(BoardFlowPayload flow,Map<String,String>columnRemap){}

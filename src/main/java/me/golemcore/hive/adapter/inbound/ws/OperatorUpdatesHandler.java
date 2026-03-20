@@ -55,7 +55,8 @@ public class OperatorUpdatesHandler implements WebSocketHandler {
         if (query != null) {
             for (String pair : query.split("&")) {
                 if (pair.startsWith("access_token=")) {
-                    return java.net.URLDecoder.decode(pair.substring("access_token=".length()), java.nio.charset.StandardCharsets.UTF_8);
+                    return java.net.URLDecoder.decode(pair.substring("access_token=".length()),
+                            java.nio.charset.StandardCharsets.UTF_8);
                 }
             }
         }

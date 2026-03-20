@@ -51,12 +51,12 @@ public class AuditService {
     }
 
     public List<AuditEvent> listEvents(String actorId,
-                                       String golemId,
-                                       String boardId,
-                                       String cardId,
-                                       Instant from,
-                                       Instant to,
-                                       String eventType) {
+            String golemId,
+            String boardId,
+            String cardId,
+            Instant from,
+            Instant to,
+            String eventType) {
         List<AuditEvent> events = new ArrayList<>();
         for (String path : storagePort.listObjects(AUDIT_DIR, "")) {
             Optional<AuditEvent> eventOptional = loadEvent(path);

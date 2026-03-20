@@ -125,7 +125,8 @@ class BoardControllerIntegrationTest {
         JsonNode autoAssignedCardPayload = objectMapper.readTree(autoAssignedCardResult.getResponseBody());
         String autoAssignedCardId = autoAssignedCardPayload.get("id").asText();
         Assertions.assertEquals(developer.golemId(), autoAssignedCardPayload.get("assigneeGolemId").asText());
-        Assertions.assertEquals("Implement board filters against the board team routing rules.", autoAssignedCardPayload.get("prompt").asText());
+        Assertions.assertEquals("Implement board filters against the board team routing rules.",
+                autoAssignedCardPayload.get("prompt").asText());
         Assertions.assertTrue(autoAssignedCardPayload.get("threadId").asText().startsWith("thread_"));
 
         webTestClient.get()
@@ -311,7 +312,8 @@ class BoardControllerIntegrationTest {
                 .expectStatus().isCreated();
     }
 
-    private RegisteredGolem registerOnlineGolem(String operatorToken, String displayName, String hostLabel, String roleSlug) throws Exception {
+    private RegisteredGolem registerOnlineGolem(String operatorToken, String displayName, String hostLabel,
+            String roleSlug) throws Exception {
         EntityExchangeResult<String> enrollmentTokenResult = webTestClient.post()
                 .uri("/api/v1/enrollment-tokens")
                 .header(HttpHeaders.AUTHORIZATION, operatorToken)

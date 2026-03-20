@@ -140,13 +140,18 @@ abstract class BoardMappingSupport {
 
     protected BoardTeam toBoardTeam(BoardTeamPayload payload) {
         return BoardTeam.builder()
-                .explicitGolemIds(payload != null && payload.explicitGolemIds() != null ? payload.explicitGolemIds() : Set.of())
-                .filters(payload != null && payload.filters() != null ? payload.filters().stream().map(this::toBoardTeamFilter).toList() : List.of())
+                .explicitGolemIds(
+                        payload != null && payload.explicitGolemIds() != null ? payload.explicitGolemIds() : Set.of())
+                .filters(payload != null && payload.filters() != null
+                        ? payload.filters().stream().map(this::toBoardTeamFilter).toList()
+                        : List.of())
                 .build();
     }
 
     protected CardAssignmentPolicy parseAssignmentPolicy(String value) {
-        return value != null && !value.isBlank() ? CardAssignmentPolicy.valueOf(value.toUpperCase(java.util.Locale.ROOT)) : null;
+        return value != null && !value.isBlank()
+                ? CardAssignmentPolicy.valueOf(value.toUpperCase(java.util.Locale.ROOT))
+                : null;
     }
 
     protected RemapPreviewResponse toRemapPreviewResponse(FlowRemapService.RemapPreview preview) {
@@ -218,7 +223,8 @@ abstract class BoardMappingSupport {
         for (Card card : cards) {
             counts.merge(card.getColumnId(), 1, Integer::sum);
         }
-        return counts.entrySet().stream().map(entry -> new BoardCountsResponse(entry.getKey(), entry.getValue())).toList();
+        return counts.entrySet().stream().map(entry -> new BoardCountsResponse(entry.getKey(), entry.getValue()))
+                .toList();
     }
 
     private CardTransitionResponse toCardTransitionResponse(CardTransitionEvent event) {

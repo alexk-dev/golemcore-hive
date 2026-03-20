@@ -19,6 +19,5 @@
 package me.golemcore.hive.adapter.inbound.web.security;
 
 public enum SubjectType {
-    OPERATOR,
-    GOLEM
+    OPERATOR, GOLEM
 }

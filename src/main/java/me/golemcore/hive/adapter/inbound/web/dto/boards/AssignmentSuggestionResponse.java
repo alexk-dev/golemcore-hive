@@ -20,12 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import java.util.List;
 
-public record AssignmentSuggestionResponse(
-        String golemId,
-        String displayName,
-        String state,
-        int score,
-        List<String> reasons,
-        List<String> roleSlugs,
-        boolean inBoardTeam) {
-}
+public record AssignmentSuggestionResponse(String golemId,String displayName,String state,int score,List<String>reasons,List<String>roleSlugs,boolean inBoardTeam){}

@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.domain.service;
 
-public record ApprovalApprovedEvent(String approvalId, String commandId) {
-}
+public record ApprovalApprovedEvent(String approvalId,String commandId){}

@@ -20,11 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import java.util.List;
 
-public record BoardFlowPayload(
-        String flowId,
-        String name,
-        String defaultColumnId,
-        List<BoardColumnPayload> columns,
-        List<BoardTransitionPayload> transitions,
-        List<BoardSignalMappingPayload> signalMappings) {
-}
+public record BoardFlowPayload(String flowId,String name,String defaultColumnId,List<BoardColumnPayload>columns,List<BoardTransitionPayload>transitions,List<BoardSignalMappingPayload>signalMappings){}

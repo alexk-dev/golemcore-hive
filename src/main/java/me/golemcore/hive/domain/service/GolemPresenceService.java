@@ -78,7 +78,8 @@ public class GolemPresenceService {
         if (golem.getLastHeartbeatAt() == null) {
             return 0;
         }
-        int heartbeatInterval = Math.max(golem.getHeartbeatIntervalSeconds(), properties.getFleet().getHeartbeatIntervalSeconds());
+        int heartbeatInterval = Math.max(golem.getHeartbeatIntervalSeconds(),
+                properties.getFleet().getHeartbeatIntervalSeconds());
         long secondsSinceHeartbeat = Duration.between(golem.getLastHeartbeatAt(), now).getSeconds();
         if (secondsSinceHeartbeat <= 0) {
             return 0;

@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.approvals;
 
-public record ApprovalDecisionRequest(String comment) {
-}
+public record ApprovalDecisionRequest(String comment){}

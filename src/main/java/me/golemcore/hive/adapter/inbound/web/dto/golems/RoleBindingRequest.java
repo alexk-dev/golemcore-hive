@@ -21,5 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.golems;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
-public record RoleBindingRequest(@NotEmpty List<String> roleSlugs) {
-}
+public record RoleBindingRequest(@NotEmpty List<String>roleSlugs){}

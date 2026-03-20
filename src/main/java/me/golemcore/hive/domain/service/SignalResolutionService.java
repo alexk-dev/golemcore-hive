@@ -49,7 +49,8 @@ public class SignalResolutionService {
         Board board = boardService.getBoard(card.getBoardId());
         ThreadRecord thread = threadService.getThreadByCardId(card.getId());
         BoardSignalMapping mapping = resolveMapping(board, signal.getSignalType());
-        BoardSignalDecision decision = mapping != null ? mapping.getDecision() : defaultDecision(signal.getSignalType());
+        BoardSignalDecision decision = mapping != null ? mapping.getDecision()
+                : defaultDecision(signal.getSignalType());
         String targetColumnId = mapping != null ? mapping.getTargetColumnId() : null;
 
         signal.setDecision(decision);

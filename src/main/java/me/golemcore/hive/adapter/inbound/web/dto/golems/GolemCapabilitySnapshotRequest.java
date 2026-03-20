@@ -20,13 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
 import java.util.Set;
 
-public record GolemCapabilitySnapshotRequest(
-        Set<String> providers,
-        Set<String> modelFamilies,
-        Set<String> enabledTools,
-        Set<String> enabledAutonomyFeatures,
-        Set<String> capabilityTags,
-        Set<String> supportedChannels,
-        String snapshotHash,
-        String defaultModel) {
-}
+public record GolemCapabilitySnapshotRequest(Set<String>providers,Set<String>modelFamilies,Set<String>enabledTools,Set<String>enabledAutonomyFeatures,Set<String>capabilityTags,Set<String>supportedChannels,String snapshotHash,String defaultModel){}

@@ -21,12 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.golems;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Set;
 
-public record RegisterGolemRequest(
-        @NotBlank String enrollmentToken,
-        String displayName,
-        String hostLabel,
-        String runtimeVersion,
-        String buildVersion,
-        Set<String> supportedChannels,
-        GolemCapabilitySnapshotRequest capabilities) {
-}
+public record RegisterGolemRequest(@NotBlank String enrollmentToken,String displayName,String hostLabel,String runtimeVersion,String buildVersion,Set<String>supportedChannels,GolemCapabilitySnapshotRequest capabilities){}

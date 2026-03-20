@@ -48,9 +48,9 @@ public class AssignmentService {
                 : Set.of();
         Set<String> includedRoles = board.getTeam().getFilters() != null
                 ? board.getTeam().getFilters().stream()
-                    .filter(filter -> filter.getType() == BoardTeamFilterType.ROLE_SLUG)
-                    .map(BoardTeamFilter::getValue)
-                    .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))
+                        .filter(filter -> filter.getType() == BoardTeamFilterType.ROLE_SLUG)
+                        .map(BoardTeamFilter::getValue)
+                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new))
                 : Set.of();
 
         List<AssignmentSuggestion> suggestions = new ArrayList<>();
@@ -61,7 +61,8 @@ public class AssignmentService {
                 reasons.add("Explicit board team member");
                 score += 100;
             }
-            List<String> golemRoles = golem.getRoleBindings().stream().map(GolemRoleBinding::getRoleSlug).sorted().toList();
+            List<String> golemRoles = golem.getRoleBindings().stream().map(GolemRoleBinding::getRoleSlug).sorted()
+                    .toList();
             for (String roleSlug : includedRoles) {
                 if (golemRoles.contains(roleSlug)) {
                     reasons.add("Matches role filter: " + roleSlug);
@@ -118,12 +119,12 @@ public class AssignmentService {
 
     private int stateScore(GolemState state) {
         return switch (state) {
-            case ONLINE -> 60;
-            case DEGRADED -> 40;
-            case PAUSED -> 10;
-            case PENDING_ENROLLMENT -> 5;
-            case OFFLINE -> 0;
-            case REVOKED -> -100;
+        case ONLINE -> 60;
+        case DEGRADED -> 40;
+        case PAUSED -> 10;
+        case PENDING_ENROLLMENT -> 5;
+        case OFFLINE -> 0;
+        case REVOKED -> -100;
         };
     }
 }

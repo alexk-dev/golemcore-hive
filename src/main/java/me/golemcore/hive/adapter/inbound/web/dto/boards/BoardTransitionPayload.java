@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
-public record BoardTransitionPayload(String fromColumnId, String toColumnId) {
-}
+public record BoardTransitionPayload(String fromColumnId,String toColumnId){}

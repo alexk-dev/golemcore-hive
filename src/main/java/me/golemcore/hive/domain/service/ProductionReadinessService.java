@@ -36,7 +36,8 @@ public class ProductionReadinessService {
         if (!properties.getDeployment().isProductionMode()) {
             return;
         }
-        if (properties.getSecurity().getJwt().getSecret() == null || properties.getSecurity().getJwt().getSecret().isBlank()) {
+        if (properties.getSecurity().getJwt().getSecret() == null
+                || properties.getSecurity().getJwt().getSecret().isBlank()) {
             throw new IllegalStateException("Production mode requires hive.security.jwt.secret");
         }
         if (!properties.getSecurity().getCookie().isSecure()) {

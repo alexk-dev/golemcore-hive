@@ -18,15 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
-public record CardSummaryResponse(
-        String id,
-        String boardId,
-        String threadId,
-        String title,
-        String columnId,
-        String assigneeGolemId,
-        String assignmentPolicy,
-        Integer position,
-        boolean archived,
-        CardControlStateResponse controlState) {
-}
+public record CardSummaryResponse(String id,String boardId,String threadId,String title,String columnId,String assigneeGolemId,String assignmentPolicy,Integer position,boolean archived,CardControlStateResponse controlState){}

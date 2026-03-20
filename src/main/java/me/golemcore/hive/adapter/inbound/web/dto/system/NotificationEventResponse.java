@@ -20,19 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.system;
 
 import java.time.Instant;
 
-public record NotificationEventResponse(
-        String id,
-        String type,
-        String severity,
-        String title,
-        String message,
-        String boardId,
-        String cardId,
-        String threadId,
-        String golemId,
-        String commandId,
-        String approvalId,
-        boolean acknowledged,
-        Instant createdAt,
-        Instant acknowledgedAt) {
-}
+public record NotificationEventResponse(String id,String type,String severity,String title,String message,String boardId,String cardId,String threadId,String golemId,String commandId,String approvalId,boolean acknowledged,Instant createdAt,Instant acknowledgedAt){}

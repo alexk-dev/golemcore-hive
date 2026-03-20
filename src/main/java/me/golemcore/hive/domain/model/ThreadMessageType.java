@@ -19,10 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum ThreadMessageType {
-    NOTE,
-    COMMAND_REQUEST,
-    COMMAND_STATUS,
-    GOLEM_RESPONSE,
-    RUNTIME_EVENT,
-    SIGNAL
+    NOTE, COMMAND_REQUEST, COMMAND_STATUS, GOLEM_RESPONSE, RUNTIME_EVENT, SIGNAL
 }

@@ -21,22 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.threads;
 import java.time.Instant;
 import java.util.List;
 
-public record CardLifecycleSignalResponse(
-        String id,
-        String cardId,
-        String golemId,
-        String commandId,
-        String runId,
-        String threadId,
-        String signalType,
-        String summary,
-        String details,
-        String blockerCode,
-        List<EvidenceRefResponse> evidenceRefs,
-        Instant createdAt,
-        String decision,
-        String resolvedTargetColumnId,
-        String resolutionOutcome,
-        String resolutionSummary,
-        Instant resolvedAt) {
-}
+public record CardLifecycleSignalResponse(String id,String cardId,String golemId,String commandId,String runId,String threadId,String signalType,String summary,String details,String blockerCode,List<EvidenceRefResponse>evidenceRefs,Instant createdAt,String decision,String resolvedTargetColumnId,String resolutionOutcome,String resolutionSummary,Instant resolvedAt){}

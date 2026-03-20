@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
-public record ActionReasonRequest(String reason) {
-}
+public record ActionReasonRequest(String reason){}

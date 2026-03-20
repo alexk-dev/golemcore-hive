@@ -90,15 +90,15 @@ public class ThreadService {
     }
 
     public ThreadMessage appendMessage(ThreadRecord thread,
-                                       String commandId,
-                                       String runId,
-                                       String signalId,
-                                       ThreadMessageType type,
-                                       ThreadParticipantType participantType,
-                                       String authorId,
-                                       String authorName,
-                                       String body,
-                                       Instant createdAt) {
+            String commandId,
+            String runId,
+            String signalId,
+            ThreadMessageType type,
+            ThreadParticipantType participantType,
+            String authorId,
+            String authorName,
+            String body,
+            Instant createdAt) {
         if (body == null || body.isBlank()) {
             throw new IllegalArgumentException("Thread message body is required");
         }
@@ -196,7 +196,8 @@ public class ThreadService {
 
     private void saveMessage(ThreadMessage message) {
         try {
-            storagePort.putTextAtomic(THREAD_MESSAGES_DIR, message.getId() + ".json", objectMapper.writeValueAsString(message));
+            storagePort.putTextAtomic(THREAD_MESSAGES_DIR, message.getId() + ".json",
+                    objectMapper.writeValueAsString(message));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize thread message " + message.getId(), exception);
         }

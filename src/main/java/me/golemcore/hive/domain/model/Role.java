@@ -19,7 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum Role {
-    ADMIN,
-    OPERATOR,
-    VIEWER
+    ADMIN, OPERATOR, VIEWER
 }

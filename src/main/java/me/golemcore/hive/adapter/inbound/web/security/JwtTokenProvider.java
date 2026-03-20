@@ -174,7 +174,8 @@ public class JwtTokenProvider {
         return builder.signWith(signingKey).compact();
     }
 
-    private String buildGolemToken(Golem golem, List<String> scopes, String type, Duration expiration, String sessionId) {
+    private String buildGolemToken(Golem golem, List<String> scopes, String type, Duration expiration,
+            String sessionId) {
         Instant now = Instant.now();
         io.jsonwebtoken.JwtBuilder builder = Jwts.builder()
                 .subject(golem.getId())

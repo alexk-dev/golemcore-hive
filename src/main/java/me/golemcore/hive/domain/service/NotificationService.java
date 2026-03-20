@@ -50,7 +50,8 @@ public class NotificationService {
         NotificationEvent event = builder
                 .id("ntf_" + UUID.randomUUID().toString().replace("-", ""))
                 .createdAt(builder.build().getCreatedAt() != null ? builder.build().getCreatedAt() : now)
-                .severity(builder.build().getSeverity() != null ? builder.build().getSeverity() : NotificationSeverity.INFO)
+                .severity(builder.build().getSeverity() != null ? builder.build().getSeverity()
+                        : NotificationSeverity.INFO)
                 .build();
         saveEvent(event);
         notificationPort.deliver(event);
@@ -63,8 +64,9 @@ public class NotificationService {
             Optional<NotificationEvent> eventOptional = loadEvent(path);
             eventOptional.ifPresent(events::add);
         }
-        events.sort(Comparator.comparing(NotificationEvent::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(NotificationEvent::getId, Comparator.reverseOrder()));
+        events.sort(
+                Comparator.comparing(NotificationEvent::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(NotificationEvent::getId, Comparator.reverseOrder()));
         return events;
     }
 
@@ -107,7 +109,8 @@ public class NotificationService {
 
     private void saveEvent(NotificationEvent event) {
         try {
-            storagePort.putTextAtomic(NOTIFICATIONS_DIR, event.getId() + ".json", objectMapper.writeValueAsString(event));
+            storagePort.putTextAtomic(NOTIFICATIONS_DIR, event.getId() + ".json",
+                    objectMapper.writeValueAsString(event));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize notification " + event.getId(), exception);
         }

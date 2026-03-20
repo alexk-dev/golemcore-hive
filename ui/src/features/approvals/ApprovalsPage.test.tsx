@@ -2,11 +2,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+import type * as ApprovalsApiModule from '../../lib/api/approvalsApi';
 import { listApprovals } from '../../lib/api/approvalsApi';
 import { ApprovalsPage } from './ApprovalsPage';
 
 vi.mock('../../lib/api/approvalsApi', async () => {
-  const actual = await vi.importActual<typeof import('../../lib/api/approvalsApi')>('../../lib/api/approvalsApi');
+  const actual = await vi.importActual<typeof ApprovalsApiModule>('../../lib/api/approvalsApi');
   return {
     ...actual,
     approveApproval: vi.fn(),

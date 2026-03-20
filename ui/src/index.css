@@ -51,7 +51,7 @@
   }
 
   .section-surface {
-    @apply border border-border/70 bg-white/82;
+    @apply border border-border/70 bg-white/80;
   }
 
   .dense-row {

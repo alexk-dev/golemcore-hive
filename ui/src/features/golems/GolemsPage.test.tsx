@@ -2,11 +2,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+import type * as GolemsApiModule from '../../lib/api/golemsApi';
 import { getGolem, listEnrollmentTokens, listGolemRoles, listGolems } from '../../lib/api/golemsApi';
 import { GolemsPage } from './GolemsPage';
 
 vi.mock('../../lib/api/golemsApi', async () => {
-  const actual = await vi.importActual<typeof import('../../lib/api/golemsApi')>('../../lib/api/golemsApi');
+  const actual = await vi.importActual<typeof GolemsApiModule>('../../lib/api/golemsApi');
   return {
     ...actual,
     getGolem: vi.fn(),

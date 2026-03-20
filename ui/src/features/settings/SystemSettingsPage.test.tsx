@@ -2,11 +2,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+import type * as SystemApiModule from '../../lib/api/systemApi';
 import { getSystemSettings } from '../../lib/api/systemApi';
 import { SystemSettingsPage } from './SystemSettingsPage';
 
 vi.mock('../../lib/api/systemApi', async () => {
-  const actual = await vi.importActual<typeof import('../../lib/api/systemApi')>('../../lib/api/systemApi');
+  const actual = await vi.importActual<typeof SystemApiModule>('../../lib/api/systemApi');
   return {
     ...actual,
     acknowledgeNotification: vi.fn(),

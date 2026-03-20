@@ -111,28 +111,51 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
             <SortableCard key={card.id} card={card} onOpenCard={onOpenCard} />
           ))}
         </SortableContext>
-        {hasCards ? (
-          <div
-            ref={endDrop.setNodeRef}
-            className={[
-              'flex min-h-8 items-center justify-center border border-dashed px-3 py-2 text-[11px] font-medium uppercase tracking-[0.14em] transition',
-              endDrop.isOver ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-white/60 text-muted-foreground',
-            ].join(' ')}
-          >
-            Drop to add at end
-          </div>
-        ) : (
-          <div
-            className={[
-              'flex items-center justify-center border border-dashed px-4 py-4 text-center text-xs transition',
-              isLaneActive ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-white/45 text-muted-foreground',
-            ].join(' ')}
-          >
-            {isLaneActive ? 'Drop here' : 'No cards yet'}
-          </div>
-        )}
+        <ColumnDropZone
+          endDropIsOver={endDrop.isOver}
+          hasCards={hasCards}
+          isLaneActive={isLaneActive}
+          setEndDropNodeRef={endDrop.setNodeRef}
+        />
       </div>
     </section>
+  );
+}
+
+function ColumnDropZone({
+  endDropIsOver,
+  hasCards,
+  isLaneActive,
+  setEndDropNodeRef,
+}: {
+  endDropIsOver: boolean;
+  hasCards: boolean;
+  isLaneActive: boolean;
+  setEndDropNodeRef: (element: HTMLElement | null) => void;
+}) {
+  if (hasCards) {
+    return (
+      <div
+        ref={setEndDropNodeRef}
+        className={[
+          'flex min-h-8 items-center justify-center border border-dashed px-3 py-2 text-[11px] font-medium uppercase tracking-[0.14em] transition',
+          endDropIsOver ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-white/60 text-muted-foreground',
+        ].join(' ')}
+      >
+        Drop to add at end
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={[
+        'flex items-center justify-center border border-dashed px-4 py-4 text-center text-xs transition',
+        isLaneActive ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-white/45 text-muted-foreground',
+      ].join(' ')}
+    >
+      {isLaneActive ? 'Drop here' : 'No cards yet'}
+    </div>
   );
 }
 

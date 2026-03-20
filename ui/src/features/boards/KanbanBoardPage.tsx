@@ -11,6 +11,7 @@ import { CardDetailsDrawer } from '../cards/CardDetailsDrawer';
 import { KanbanBoardHeader } from './KanbanBoardHeader';
 import { KanbanColumn } from './KanbanColumn';
 import { getMoveInput } from './kanbanDrag';
+import { useKanbanAutoScroll } from './useKanbanAutoScroll';
 
 const KANBAN_BACKGROUND_REFRESH_MS = 10_000;
 
@@ -206,6 +207,7 @@ export function KanbanBoardPage() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [controlError, setControlError] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const autoScroll = useKanbanAutoScroll();
   const data = useKanbanBoardData({
     boardId,
     selectedCardId,
@@ -227,11 +229,10 @@ export function KanbanBoardPage() {
   const activeCards = cards.filter((card) => card.controlState?.runStatus === 'RUNNING' || card.columnId === 'in_progress').length;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4">
       <KanbanBoardHeader
         boardId={boardId}
         boardName={data.boardQuery.data.name}
-        boardDescription={data.boardQuery.data.description}
         templateKey={data.boardQuery.data.templateKey}
         columnCount={data.boardQuery.data.flow.columns.length}
         totalCards={totalCards}
@@ -242,7 +243,11 @@ export function KanbanBoardPage() {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
+        onDragStart={autoScroll.handleDragStart}
+        onDragMove={autoScroll.handleDragMove}
+        onDragCancel={autoScroll.resetAutoScroll}
         onDragEnd={(event) => {
+          autoScroll.resetAutoScroll();
           const moveInput = getMoveInput(cards, event);
           if (!moveInput) {
             return;
@@ -250,8 +255,8 @@ export function KanbanBoardPage() {
           void data.moveCardMutation.mutateAsync(moveInput);
         }}
       >
-        <section className="overflow-x-auto pb-3">
-          <div className="flex min-w-max gap-3">
+        <section ref={autoScroll.scrollerRef} className="overflow-x-auto pb-2">
+          <div className="flex min-w-max items-start gap-3">
             {data.boardQuery.data.flow.columns.map((column) => (
               <KanbanColumn
                 key={column.id}

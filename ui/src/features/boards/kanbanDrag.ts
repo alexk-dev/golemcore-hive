@@ -14,11 +14,12 @@ export function getMoveInput(cards: CardSummary[], event: DragEndEvent) {
   }
 
   let targetColumnId = movingCard.columnId;
-  let targetIndex = cards.filter((card) => card.columnId === movingCard.columnId).length;
+  let targetIndex = getColumnCardCount(cards, movingCard.columnId, movingCard.id);
+  const columnDropTargetId = parseColumnDropTargetId(overId);
 
-  if (overId.startsWith('column:')) {
-    targetColumnId = overId.replace('column:', '');
-    targetIndex = cards.filter((card) => card.columnId === targetColumnId).length;
+  if (columnDropTargetId) {
+    targetColumnId = columnDropTargetId;
+    targetIndex = getColumnCardCount(cards, targetColumnId, movingCard.id);
   } else {
     const overCard = cards.find((card) => card.id === overId);
     if (!overCard) {
@@ -52,4 +53,17 @@ export function getMoveInput(cards: CardSummary[], event: DragEndEvent) {
       summary: 'Card moved from kanban board',
     },
   };
+}
+
+function getColumnCardCount(cards: CardSummary[], columnId: string, movingCardId: string) {
+  return cards.filter((card) => card.columnId === columnId && card.id !== movingCardId).length;
+}
+
+function parseColumnDropTargetId(overId: string) {
+  if (!overId.startsWith('column:')) {
+    return null;
+  }
+
+  const laneId = overId.slice('column:'.length);
+  return laneId.endsWith(':end') ? laneId.slice(0, -':end'.length) : laneId;
 }

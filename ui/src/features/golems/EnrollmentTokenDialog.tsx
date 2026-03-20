@@ -59,16 +59,16 @@ export function EnrollmentTokenDialog({
       <div className="panel w-full max-w-2xl p-6 md:p-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <span className="pill">Enrollment</span>
-            <h2 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">Mint a reusable bot token</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Hive reveals the secret once and also prepares a ready-to-paste join code for `golemcore-bot`.
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Enrollment</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-foreground">Create enrollment token</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Hive shows the secret once and prepares a join code for `golemcore-bot`.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-border bg-white/70 px-3 py-2 text-sm font-semibold text-foreground"
+            className="border border-border bg-white/70 px-3 py-2 text-sm font-semibold text-foreground"
           >
             Close
           </button>
@@ -76,30 +76,28 @@ export function EnrollmentTokenDialog({
 
         {createdToken ? (
           <div className="mt-6 space-y-4">
-            <div className="rounded-[24px] border border-primary/20 bg-primary/5 p-5">
+            <div className="border border-primary/20 bg-primary/5 p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Join code</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Paste this value into the bot Hive settings and press `Join`.
-                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">Paste this value into the bot Hive settings and press `Join`.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => void handleCopyJoinCode()}
-                  className="rounded-full border border-primary/20 bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+                  className="border border-primary/20 bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
                 >
                   {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy join code'}
                 </button>
               </div>
-              <pre className="mt-3 overflow-x-auto rounded-[20px] bg-foreground px-4 py-4 text-sm text-primary-foreground">
+              <pre className="mt-3 overflow-x-auto bg-foreground px-4 py-4 text-sm text-primary-foreground">
                 {createdToken.joinCode}
               </pre>
               <p className="mt-3 text-sm text-muted-foreground">
                 Expires at {new Date(createdToken.expiresAt).toLocaleString()} and can be reused until it is revoked or expires.
               </p>
               <p className="mt-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">Raw token segment</p>
-              <pre className="mt-2 overflow-x-auto rounded-[20px] border border-border/70 bg-white/90 px-4 py-4 text-sm text-foreground">
+              <pre className="mt-2 overflow-x-auto border border-border/70 bg-white/90 px-4 py-4 text-sm text-foreground">
                 {createdToken.token}
               </pre>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -115,7 +113,7 @@ export function EnrollmentTokenDialog({
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 placeholder="staging bot, research box, review node"
-                className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none ring-0 transition focus:border-primary"
+                className="border border-border bg-white/90 px-3 py-2 text-sm outline-none ring-0 transition focus:border-primary"
               />
             </label>
             <label className="grid gap-2">
@@ -124,13 +122,13 @@ export function EnrollmentTokenDialog({
                 value={expiresInMinutes}
                 onChange={(event) => setExpiresInMinutes(event.target.value)}
                 inputMode="numeric"
-                className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none ring-0 transition focus:border-primary"
+                className="border border-border bg-white/90 px-3 py-2 text-sm outline-none ring-0 transition focus:border-primary"
               />
             </label>
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-[20px] bg-foreground px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="bg-foreground px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending ? 'Minting token...' : 'Create enrollment token'}
             </button>

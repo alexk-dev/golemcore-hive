@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { EnrollmentToken, GolemRole, GolemSummary } from '../../lib/api/golemsApi';
+import { PageHeader } from '../layout/PageHeader';
 import { GolemStatusBadge } from './GolemStatusBadge';
 
 const fleetStates = ['', 'ONLINE', 'DEGRADED', 'OFFLINE', 'PAUSED', 'REVOKED', 'PENDING_ENROLLMENT'];
@@ -18,33 +19,28 @@ export function GolemsHero({
 }) {
   return (
     <section className="panel p-6 md:p-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <span className="pill">Phase 2 live</span>
-          <h2 className="mt-4 text-3xl font-bold tracking-[-0.04em] text-foreground">
-            Register runtimes, bind roles, and watch fleet presence in one place.
-          </h2>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            Hive now exposes reusable enrollment tokens, copy-ready join codes, machine JWT onboarding, heartbeat-aware
-            status, and role assignment.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            to="/fleet/roles"
-            className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
-          >
-            Manage roles
-          </Link>
-          <button
-            type="button"
-            onClick={onCreateEnrollmentToken}
-            className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white"
-          >
-            Create enrollment token
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Fleet"
+        title="Fleet registry"
+        description="Track active runtimes, bind roles, and issue enrollment tokens from one workspace."
+        actions={
+          <>
+            <Link
+              to="/fleet/roles"
+              className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+            >
+              Manage roles
+            </Link>
+            <button
+              type="button"
+              onClick={onCreateEnrollmentToken}
+              className="bg-foreground px-4 py-2 text-sm font-semibold text-white"
+            >
+              Create token
+            </button>
+          </>
+        }
+      />
     </section>
   );
 }
@@ -67,18 +63,18 @@ export function GolemFiltersPanel({
   onRoleFilterChange: (value: string) => void;
 }) {
   return (
-    <section className="panel p-5 md:p-6">
+    <section className="section-surface p-4 md:p-5">
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Search by golem name, host, or id"
-          className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
         />
         <select
           value={stateFilter}
           onChange={(event) => onStateFilterChange(event.target.value)}
-          className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
         >
           {fleetStates.map((state) => (
             <option key={state || 'all'} value={state}>
@@ -89,7 +85,7 @@ export function GolemFiltersPanel({
         <select
           value={roleFilter}
           onChange={(event) => onRoleFilterChange(event.target.value)}
-          className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
         >
           <option value="">All roles</option>
           {roles.map((role) => (
@@ -114,13 +110,13 @@ export function GolemRegistryPanel({
 }) {
   return (
     <article className="panel p-5 md:p-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-4">
         <div>
-          <span className="pill">Fleet registry</span>
-          <h3 className="mt-3 text-2xl font-bold tracking-[-0.04em] text-foreground">{golems.length} registered golems</h3>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Registry</p>
+          <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-foreground">{golems.length} golems</h2>
         </div>
       </div>
-      <div className="mt-5 grid gap-3">
+      <div className="mt-4 grid gap-3">
         {golems.length ? (
           golems.map((golem) => {
             const selected = golem.id === selectedGolemId;
@@ -130,20 +126,18 @@ export function GolemRegistryPanel({
                 type="button"
                 onClick={() => onSelect(golem.id)}
                 className={[
-                  'rounded-[22px] border p-4 text-left transition',
-                  selected
-                    ? 'border-primary/40 bg-primary/5 shadow-[0_10px_30px_rgba(238,109,52,0.12)]'
-                    : 'border-border/70 bg-white/70 hover:bg-white',
+                  'border p-4 text-left transition',
+                  selected ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-white/70 hover:bg-white',
                 ].join(' ')}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-lg font-bold tracking-[-0.03em] text-foreground">{golem.displayName}</p>
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold tracking-[-0.02em] text-foreground">{golem.displayName}</p>
                     <p className="mt-1 text-sm text-muted-foreground">{golem.hostLabel || golem.id}</p>
                   </div>
                   <GolemStatusBadge state={golem.state} />
                 </div>
-                <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
+                <div className="mt-3 grid gap-1 text-sm text-muted-foreground">
                   <div>Last seen: {formatTimestamp(golem.lastSeenAt)}</div>
                   <div>Roles: {golem.roleSlugs.length ? golem.roleSlugs.join(', ') : 'none'}</div>
                 </div>
@@ -151,9 +145,8 @@ export function GolemRegistryPanel({
             );
           })
         ) : (
-          <div className="rounded-[24px] border border-dashed border-border p-6 text-sm leading-6 text-muted-foreground">
-            No golems have enrolled yet. Create an enrollment token, copy its join code into `golemcore-bot`, then let the
-            bot join and register itself.
+          <div className="border border-dashed border-border p-4 text-sm text-muted-foreground">
+            No golems yet. Create an enrollment token, copy the join code into `golemcore-bot`, and let the runtime register.
           </div>
         )}
       </div>
@@ -172,22 +165,27 @@ export function EnrollmentTokensPanel({
 }) {
   return (
     <section className="panel p-6 md:p-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <span className="pill">Enrollment tokens</span>
-          <h3 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">Reusable join tokens</h3>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Enrollment"
+        title="Reusable join tokens"
+        description="Keep token management compact; revoke only when a join path should stop accepting new runtimes."
+        meta={<span>{tokens.length} active records</span>}
+      />
 
-      <div className="mt-5 grid gap-3">
+      <div className="mt-4">
         {tokens.length ? (
-          tokens.map((token) => (
-            <div key={token.id} className="rounded-[22px] border border-border/70 bg-white/70 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">{token.id}</p>
-                  <p className="mt-2 text-sm leading-6 text-foreground">{token.note || token.preview}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
+          <div className="section-surface px-4">
+            {tokens.map((token) => (
+              <div key={token.id} className="dense-row">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-foreground">{token.id}</p>
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      {token.revoked ? 'Revoked' : 'Active'}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{token.note || token.preview}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Created by {token.createdByUsername || 'operator'} · expires {formatTimestamp(token.expiresAt)}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -195,23 +193,22 @@ export function EnrollmentTokensPanel({
                     {token.lastUsedAt ? ` · last used ${formatTimestamp(token.lastUsedAt)}` : ' · never used'}
                     {token.lastRegisteredGolemId ? ` · last golem ${token.lastRegisteredGolemId}` : ''}
                   </p>
-                  <p className="mt-1 text-sm text-muted-foreground">{token.revoked ? 'Revoked' : 'Active'}</p>
                 </div>
                 {!token.revoked ? (
                   <button
                     type="button"
                     disabled={isRevoking}
                     onClick={() => onRevoke(token.id)}
-                    className="rounded-full border border-rose-300 bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-900"
+                    className="border border-rose-300 bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-900"
                   >
                     Revoke
                   </button>
                 ) : null}
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ) : (
-          <p className="text-sm leading-6 text-muted-foreground">No enrollment tokens have been minted yet.</p>
+          <p className="text-sm text-muted-foreground">No enrollment tokens have been minted yet.</p>
         )}
       </div>
     </section>

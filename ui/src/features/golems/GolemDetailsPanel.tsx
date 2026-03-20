@@ -20,7 +20,7 @@ function formatTimestamp(value: string | null) {
 
 function PresenceCard({ golem }: { golem: GolemDetails }) {
   return (
-    <div className="soft-card p-4">
+    <div className="section-surface p-4">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Presence</p>
       <dl className="mt-4 grid gap-3 text-sm">
         <div className="flex items-center justify-between gap-3">
@@ -46,7 +46,7 @@ function PresenceCard({ golem }: { golem: GolemDetails }) {
 
 function RuntimeCard({ golem }: { golem: GolemDetails }) {
   return (
-    <div className="soft-card p-4">
+    <div className="section-surface p-4">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Runtime</p>
       <dl className="mt-4 grid gap-3 text-sm">
         <div className="flex items-center justify-between gap-3">
@@ -84,7 +84,7 @@ function RolesCard({
   onToggleRole: (roleSlug: string, nextAssigned: boolean) => Promise<void>;
 }) {
   return (
-    <section className="soft-card p-4">
+    <section className="section-surface p-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Assigned roles</p>
         <span className="text-sm font-medium text-muted-foreground">{golem.roleSlugs.length} bound</span>
@@ -96,7 +96,7 @@ function RolesCard({
             return (
               <label
                 key={role.slug}
-                className="flex items-start gap-3 rounded-[18px] border border-border/70 bg-white/70 p-3"
+                className="flex items-start gap-3 border border-border/70 bg-white/70 p-3"
               >
                 <input
                   type="checkbox"
@@ -125,7 +125,7 @@ function RolesCard({
 
 function CapabilitiesCard({ golem }: { golem: GolemDetails }) {
   return (
-    <section className="soft-card p-4">
+    <section className="section-surface p-4">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Capabilities</p>
       <div className="mt-4 space-y-4 text-sm">
         <div>
@@ -157,6 +157,24 @@ function CapabilitiesCard({ golem }: { golem: GolemDetails }) {
   );
 }
 
+function hasVisibleCapabilities(golem: GolemDetails) {
+  const capabilities = golem.capabilities;
+  if (!capabilities) {
+    return false;
+  }
+
+  return Boolean(
+    capabilities.providers.length ||
+      capabilities.modelFamilies.length ||
+      capabilities.enabledTools.length ||
+      capabilities.enabledAutonomyFeatures.length ||
+      capabilities.capabilityTags.length ||
+      capabilities.supportedChannels.length ||
+      capabilities.snapshotHash ||
+      capabilities.defaultModel,
+  );
+}
+
 function LifecycleActions({
   golem,
   isBusy,
@@ -171,7 +189,7 @@ function LifecycleActions({
   onRevoke: () => void | Promise<void>;
 }) {
   return (
-    <section className="mt-6 rounded-[24px] border border-border/80 bg-muted/40 p-4">
+    <section className="mt-6 border border-border/80 bg-muted/40 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Lifecycle actions</p>
@@ -185,7 +203,7 @@ function LifecycleActions({
               type="button"
               onClick={() => void onResume()}
               disabled={isBusy}
-              className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-60"
+              className="bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground disabled:opacity-60"
             >
               Resume
             </button>
@@ -194,7 +212,7 @@ function LifecycleActions({
               type="button"
               onClick={() => void onPause()}
               disabled={isBusy || golem.state === 'REVOKED'}
-              className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="bg-foreground px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               Pause
             </button>
@@ -203,7 +221,7 @@ function LifecycleActions({
             type="button"
             onClick={() => void onRevoke()}
             disabled={isBusy || golem.state === 'REVOKED'}
-            className="rounded-full border border-rose-300 bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-900 disabled:opacity-60"
+            className="border border-rose-300 bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-900 disabled:opacity-60"
           >
             Revoke
           </button>
@@ -227,9 +245,9 @@ export function GolemDetailsPanel({
   if (!golem) {
     return (
       <article className="panel p-6 md:p-8">
-        <span className="pill">Fleet detail</span>
-        <h2 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">No golem selected</h2>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Fleet detail</p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-foreground">No golem selected</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           Pick a registered runtime from the fleet list or mint an enrollment token to bootstrap a new one.
         </p>
       </article>
@@ -240,8 +258,8 @@ export function GolemDetailsPanel({
     <article className="panel p-6 md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <span className="pill">Fleet detail</span>
-          <h2 className="mt-4 text-3xl font-bold tracking-[-0.04em] text-foreground">{golem.displayName}</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Fleet detail</p>
+          <h2 className="mt-2 text-3xl font-bold tracking-[-0.04em] text-foreground">{golem.displayName}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {golem.hostLabel || 'No host label'} · {golem.runtimeVersion || 'runtime n/a'}
           </p>
@@ -256,7 +274,7 @@ export function GolemDetailsPanel({
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <RolesCard golem={golem} roles={roles} isBusy={isBusy} onToggleRole={onToggleRole} />
-        <CapabilitiesCard golem={golem} />
+        {hasVisibleCapabilities(golem) ? <CapabilitiesCard golem={golem} /> : null}
       </div>
 
       <LifecycleActions golem={golem} isBusy={isBusy} onPause={onPause} onResume={onResume} onRevoke={onRevoke} />

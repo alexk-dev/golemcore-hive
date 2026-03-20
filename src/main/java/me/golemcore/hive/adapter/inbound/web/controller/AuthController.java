@@ -107,7 +107,8 @@ public class AuthController {
                         .summary("Refresh token rejected"));
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
             }
-            OperatorAccount operator = authService.getOperatorByUsername(jwtTokenProvider.getUsername(tokens.getAccessToken()));
+            OperatorAccount operator = authService
+                    .getOperatorByUsername(jwtTokenProvider.getUsername(tokens.getAccessToken()));
             auditService.record(AuditEvent.builder()
                     .eventType("auth.refresh")
                     .severity("INFO")

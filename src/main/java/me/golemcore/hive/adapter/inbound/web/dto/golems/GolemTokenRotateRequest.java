@@ -20,5 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record GolemTokenRotateRequest(@NotBlank String refreshToken) {
-}
+public record GolemTokenRotateRequest(@NotBlank String refreshToken){}

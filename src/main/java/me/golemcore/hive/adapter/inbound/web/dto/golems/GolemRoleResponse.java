@@ -21,11 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.golems;
 import java.time.Instant;
 import java.util.Set;
 
-public record GolemRoleResponse(
-        String slug,
-        String name,
-        String description,
-        Set<String> capabilityTags,
-        Instant createdAt,
-        Instant updatedAt) {
-}
+public record GolemRoleResponse(String slug,String name,String description,Set<String>capabilityTags,Instant createdAt,Instant updatedAt){}

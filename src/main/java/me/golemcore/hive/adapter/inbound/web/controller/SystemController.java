@@ -73,7 +73,8 @@ public class SystemController {
                             properties.getGovernance().getNotifications().isBlockerRaised(),
                             properties.getGovernance().getNotifications().isGolemOffline(),
                             properties.getGovernance().getNotifications().isCommandFailed()),
-                    notificationService.listNotifications().stream().limit(20).map(this::toNotificationResponse).toList());
+                    notificationService.listNotifications().stream().limit(20).map(this::toNotificationResponse)
+                            .toList());
             return ResponseEntity.ok(response);
         }).subscribeOn(Schedulers.boundedElastic());
     }

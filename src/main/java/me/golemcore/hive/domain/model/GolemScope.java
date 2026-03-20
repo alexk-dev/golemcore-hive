@@ -19,17 +19,15 @@
 package me.golemcore.hive.domain.model;
 
 public enum GolemScope {
-    HEARTBEAT("golems:heartbeat"),
-    EVENTS_WRITE("golems:events:write"),
-    CONTROL_CONNECT("golems:control:connect");
+    HEARTBEAT("golems:heartbeat"), EVENTS_WRITE("golems:events:write"), CONTROL_CONNECT("golems:control:connect");
 
-    private final String value;
+    private final String scopeValue;
 
-    GolemScope(String value) {
-        this.value = value;
+    GolemScope(String scopeValue) {
+        this.scopeValue = scopeValue;
     }
 
     public String value() {
-        return value;
+        return scopeValue;
     }
 }

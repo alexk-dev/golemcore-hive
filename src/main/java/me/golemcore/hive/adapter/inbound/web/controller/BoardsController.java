@@ -22,7 +22,6 @@ import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import me.golemcore.hive.adapter.inbound.web.dto.boards.BoardCountsResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.BoardDetailResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.BoardFlowPayload;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.BoardSummaryResponse;
@@ -33,7 +32,6 @@ import me.golemcore.hive.adapter.inbound.web.dto.boards.UpdateBoardFlowRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.UpdateBoardRequest;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.Board;
-import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.service.BoardService;
 import me.golemcore.hive.domain.service.CardService;
 import org.springframework.http.HttpStatus;
@@ -133,7 +131,8 @@ public class BoardsController extends BoardMappingSupport {
             @RequestBody BoardFlowPayload request) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(toRemapPreviewResponse(boardService.previewFlowRemap(boardId, toBoardFlowDefinition(request))));
+            return ResponseEntity
+                    .ok(toRemapPreviewResponse(boardService.previewFlowRemap(boardId, toBoardFlowDefinition(request))));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 

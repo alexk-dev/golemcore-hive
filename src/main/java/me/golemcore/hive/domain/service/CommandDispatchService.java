@@ -25,7 +25,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -48,7 +50,6 @@ import me.golemcore.hive.domain.model.OperatorUpdate;
 import me.golemcore.hive.domain.model.RunProjection;
 import me.golemcore.hive.domain.model.RunStatus;
 import me.golemcore.hive.domain.model.RuntimeEventType;
-import me.golemcore.hive.domain.model.ThreadMessage;
 import me.golemcore.hive.domain.model.ThreadMessageType;
 import me.golemcore.hive.domain.model.ThreadParticipantType;
 import me.golemcore.hive.domain.model.ThreadRecord;
@@ -78,12 +79,12 @@ public class CommandDispatchService {
     private final NotificationService notificationService;
 
     public DispatchResult createCommand(String threadId,
-                                        String body,
-                                        ApprovalRiskLevel requestedRiskLevel,
-                                        long estimatedCostMicros,
-                                        String approvalReason,
-                                        String operatorId,
-                                        String operatorName) {
+            String body,
+            ApprovalRiskLevel requestedRiskLevel,
+            long estimatedCostMicros,
+            String approvalReason,
+            String operatorId,
+            String operatorName) {
         if (body == null || body.isBlank()) {
             throw new IllegalArgumentException("Command body is required");
         }
@@ -94,7 +95,8 @@ public class CommandDispatchService {
             throw new IllegalArgumentException("Card must be assigned before dispatching commands");
         }
         Golem golem = golemRegistryService.findGolem(card.getAssigneeGolemId())
-                .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + card.getAssigneeGolemId()));
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Unknown assignee golem: " + card.getAssigneeGolemId()));
 
         Instant now = Instant.now();
         String commandId = "cmd_" + UUID.randomUUID().toString().replace("-", "");
@@ -111,7 +113,8 @@ public class CommandDispatchService {
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
-        ApprovalRiskLevel approvalRiskLevel = approvalService.resolveApprovalRisk(requestedRiskLevel, estimatedCostMicros);
+        ApprovalRiskLevel approvalRiskLevel = approvalService.resolveApprovalRisk(requestedRiskLevel,
+                estimatedCostMicros);
         if (approvalRiskLevel != null) {
             run.setStatus(RunStatus.PENDING_APPROVAL);
         }
@@ -138,9 +141,8 @@ public class CommandDispatchService {
         threadService.appendMessage(thread, commandId, runId, null, ThreadMessageType.COMMAND_REQUEST,
                 ThreadParticipantType.OPERATOR, operatorId, operatorName, body, now);
 
-        ApprovalRequest approval = null;
         if (approvalRiskLevel != null) {
-            approval = approvalService.createApproval(command, run, card, operatorId, operatorName);
+            ApprovalRequest approval = approvalService.createApproval(command, run, card, operatorId, operatorName);
             command.setApprovalRequestId(approval.getId());
             run.setApprovalRequestId(approval.getId());
             saveCommand(command);
@@ -259,9 +261,9 @@ public class CommandDispatchService {
     }
 
     public RunProjection requestRunCancellation(String threadId,
-                                                String runId,
-                                                String operatorId,
-                                                String operatorName) {
+            String runId,
+            String operatorId,
+            String operatorName) {
         RunProjection run = findRun(runId)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown run: " + runId));
         if (!threadId.equals(run.getThreadId())) {
@@ -385,17 +387,17 @@ public class CommandDispatchService {
     }
 
     public void applyRuntimeEvent(String golemId,
-                                  RuntimeEventType runtimeEventType,
-                                  String threadId,
-                                  String cardId,
-                                  String commandId,
-                                  String runId,
-                                  String summary,
-                                  String details,
-                                  Instant createdAt,
-                                  Long inputTokens,
-                                  Long outputTokens,
-                                  Long accumulatedCostMicros) {
+            RuntimeEventType runtimeEventType,
+            String threadId,
+            String cardId,
+            String commandId,
+            String runId,
+            String summary,
+            String details,
+            Instant createdAt,
+            Long inputTokens,
+            Long outputTokens,
+            Long accumulatedCostMicros) {
         Instant eventTime = createdAt != null ? createdAt : Instant.now();
         RunProjection run = resolveRunProjection(commandId, runId, threadId, cardId, golemId, eventTime);
         CommandRecord command = resolveCommand(commandId, run);
@@ -422,54 +424,55 @@ public class CommandDispatchService {
         }
 
         switch (runtimeEventType) {
-            case COMMAND_ACKNOWLEDGED -> {
-                if (command != null && command.getStatus() == CommandStatus.QUEUED) {
-                    command.setStatus(CommandStatus.DELIVERED);
-                    command.setDeliveredAt(eventTime);
-                }
+        case COMMAND_ACKNOWLEDGED -> {
+            if (command != null && command.getStatus() == CommandStatus.QUEUED) {
+                command.setStatus(CommandStatus.DELIVERED);
+                command.setDeliveredAt(eventTime);
             }
-            case THREAD_MESSAGE -> threadService.appendMessage(thread, command != null ? command.getId() : commandId, run.getId(),
+        }
+        case THREAD_MESSAGE ->
+            threadService.appendMessage(thread, command != null ? command.getId() : commandId, run.getId(),
                     null, ThreadMessageType.GOLEM_RESPONSE, ThreadParticipantType.GOLEM, golemId, golemId,
                     firstNonBlank(details, summary, "Golem response"), eventTime);
-            case RUN_STARTED, RUN_PROGRESS -> {
-                run.setStatus(RunStatus.RUNNING);
-                if (run.getStartedAt() == null) {
-                    run.setStartedAt(eventTime);
-                }
-                if (command != null) {
-                    command.setStatus(CommandStatus.RUNNING);
-                    if (command.getStartedAt() == null) {
-                        command.setStartedAt(eventTime);
-                    }
-                }
+        case RUN_STARTED, RUN_PROGRESS -> {
+            run.setStatus(RunStatus.RUNNING);
+            if (run.getStartedAt() == null) {
+                run.setStartedAt(eventTime);
             }
-            case RUN_COMPLETED -> {
-                run.setStatus(RunStatus.COMPLETED);
-                run.setCompletedAt(eventTime);
-                if (command != null) {
-                    command.setStatus(CommandStatus.COMPLETED);
-                    command.setCompletedAt(eventTime);
+            if (command != null) {
+                command.setStatus(CommandStatus.RUNNING);
+                if (command.getStartedAt() == null) {
+                    command.setStartedAt(eventTime);
                 }
             }
-            case RUN_FAILED -> {
-                run.setStatus(RunStatus.FAILED);
-                run.setCompletedAt(eventTime);
-                if (command != null) {
-                    command.setStatus(CommandStatus.FAILED);
-                    command.setCompletedAt(eventTime);
-                }
+        }
+        case RUN_COMPLETED -> {
+            run.setStatus(RunStatus.COMPLETED);
+            run.setCompletedAt(eventTime);
+            if (command != null) {
+                command.setStatus(CommandStatus.COMPLETED);
+                command.setCompletedAt(eventTime);
             }
-            case RUN_CANCELLED -> {
-                run.setStatus(RunStatus.CANCELLED);
-                run.setCompletedAt(eventTime);
-                if (command != null) {
-                    command.setStatus(CommandStatus.CANCELLED);
-                    command.setCompletedAt(eventTime);
-                }
+        }
+        case RUN_FAILED -> {
+            run.setStatus(RunStatus.FAILED);
+            run.setCompletedAt(eventTime);
+            if (command != null) {
+                command.setStatus(CommandStatus.FAILED);
+                command.setCompletedAt(eventTime);
             }
-            case USAGE_REPORTED -> {
-                // Usage counters were already applied above.
+        }
+        case RUN_CANCELLED -> {
+            run.setStatus(RunStatus.CANCELLED);
+            run.setCompletedAt(eventTime);
+            if (command != null) {
+                command.setStatus(CommandStatus.CANCELLED);
+                command.setCompletedAt(eventTime);
             }
+        }
+        case USAGE_REPORTED -> {
+            // Usage counters were already applied above.
+        }
         }
 
         if (summary != null && !summary.isBlank() && runtimeEventType != RuntimeEventType.THREAD_MESSAGE) {
@@ -500,7 +503,7 @@ public class CommandDispatchService {
                 || runtimeEventType == RuntimeEventType.RUN_COMPLETED
                 || runtimeEventType == RuntimeEventType.RUN_CANCELLED) {
             auditService.record(AuditEvent.builder()
-                    .eventType("run." + runtimeEventType.name().toLowerCase())
+                    .eventType("run." + runtimeEventType.name().toLowerCase(Locale.ROOT))
                     .severity(runtimeEventType == RuntimeEventType.RUN_FAILED ? "WARN" : "INFO")
                     .actorType("GOLEM")
                     .actorId(golemId)
@@ -542,60 +545,60 @@ public class CommandDispatchService {
 
         LifecycleSignalType signalType = signal.getSignalType();
         switch (signalType) {
-            case WORK_STARTED, PROGRESS_REPORTED, REVIEW_REQUESTED -> {
-                run.setStatus(RunStatus.RUNNING);
-                if (run.getStartedAt() == null) {
-                    run.setStartedAt(eventTime);
-                }
-                if (command != null) {
-                    command.setStatus(CommandStatus.RUNNING);
-                    if (command.getStartedAt() == null) {
-                        command.setStartedAt(eventTime);
-                    }
-                    command.setUpdatedAt(eventTime);
-                }
+        case WORK_STARTED, PROGRESS_REPORTED, REVIEW_REQUESTED -> {
+            run.setStatus(RunStatus.RUNNING);
+            if (run.getStartedAt() == null) {
+                run.setStartedAt(eventTime);
             }
-            case BLOCKER_RAISED -> {
-                run.setStatus(RunStatus.BLOCKED);
-                if (command != null) {
-                    command.setStatus(CommandStatus.RUNNING);
-                    command.setUpdatedAt(eventTime);
+            if (command != null) {
+                command.setStatus(CommandStatus.RUNNING);
+                if (command.getStartedAt() == null) {
+                    command.setStartedAt(eventTime);
                 }
+                command.setUpdatedAt(eventTime);
             }
-            case BLOCKER_CLEARED -> {
-                run.setStatus(RunStatus.RUNNING);
-                if (command != null) {
-                    command.setStatus(CommandStatus.RUNNING);
-                    command.setUpdatedAt(eventTime);
-                }
+        }
+        case BLOCKER_RAISED -> {
+            run.setStatus(RunStatus.BLOCKED);
+            if (command != null) {
+                command.setStatus(CommandStatus.RUNNING);
+                command.setUpdatedAt(eventTime);
             }
-            case WORK_COMPLETED -> {
-                run.setStatus(RunStatus.COMPLETED);
-                run.setCompletedAt(eventTime);
-                if (command != null) {
-                    command.setStatus(CommandStatus.COMPLETED);
-                    command.setCompletedAt(eventTime);
-                    command.setUpdatedAt(eventTime);
-                }
+        }
+        case BLOCKER_CLEARED -> {
+            run.setStatus(RunStatus.RUNNING);
+            if (command != null) {
+                command.setStatus(CommandStatus.RUNNING);
+                command.setUpdatedAt(eventTime);
             }
-            case WORK_FAILED -> {
-                run.setStatus(RunStatus.FAILED);
-                run.setCompletedAt(eventTime);
-                if (command != null) {
-                    command.setStatus(CommandStatus.FAILED);
-                    command.setCompletedAt(eventTime);
-                    command.setUpdatedAt(eventTime);
-                }
+        }
+        case WORK_COMPLETED -> {
+            run.setStatus(RunStatus.COMPLETED);
+            run.setCompletedAt(eventTime);
+            if (command != null) {
+                command.setStatus(CommandStatus.COMPLETED);
+                command.setCompletedAt(eventTime);
+                command.setUpdatedAt(eventTime);
             }
-            case WORK_CANCELLED -> {
-                run.setStatus(RunStatus.CANCELLED);
-                run.setCompletedAt(eventTime);
-                if (command != null) {
-                    command.setStatus(CommandStatus.CANCELLED);
-                    command.setCompletedAt(eventTime);
-                    command.setUpdatedAt(eventTime);
-                }
+        }
+        case WORK_FAILED -> {
+            run.setStatus(RunStatus.FAILED);
+            run.setCompletedAt(eventTime);
+            if (command != null) {
+                command.setStatus(CommandStatus.FAILED);
+                command.setCompletedAt(eventTime);
+                command.setUpdatedAt(eventTime);
             }
+        }
+        case WORK_CANCELLED -> {
+            run.setStatus(RunStatus.CANCELLED);
+            run.setCompletedAt(eventTime);
+            if (command != null) {
+                command.setStatus(CommandStatus.CANCELLED);
+                command.setCompletedAt(eventTime);
+                command.setUpdatedAt(eventTime);
+            }
+        }
         }
 
         saveRun(run);
@@ -630,10 +633,11 @@ public class CommandDispatchService {
         }
 
         auditService.record(AuditEvent.builder()
-                .eventType("signal." + signalType.name().toLowerCase())
-                .severity(signalType == LifecycleSignalType.BLOCKER_RAISED || signalType == LifecycleSignalType.WORK_FAILED
-                        ? "WARN"
-                        : "INFO")
+                .eventType("signal." + signalType.name().toLowerCase(Locale.ROOT))
+                .severity(signalType == LifecycleSignalType.BLOCKER_RAISED
+                        || signalType == LifecycleSignalType.WORK_FAILED
+                                ? "WARN"
+                                : "INFO")
                 .actorType("GOLEM")
                 .actorId(signal.getGolemId())
                 .actorName(signal.getGolemId())
@@ -705,7 +709,8 @@ public class CommandDispatchService {
         command.setUpdatedAt(now);
         command.setQueueReason(null);
 
-        ControlCommandEnvelope envelope = buildControlEnvelope(CONTROL_EVENT_TYPE_COMMAND, command, now, command.getBody());
+        ControlCommandEnvelope envelope = buildControlEnvelope(CONTROL_EVENT_TYPE_COMMAND, command, now,
+                command.getBody());
         boolean delivered = golemControlChannelService.send(golem.getId(), toJson(envelope));
         if (delivered) {
             command.setStatus(CommandStatus.DELIVERED);
@@ -723,9 +728,9 @@ public class CommandDispatchService {
     }
 
     private ControlCommandEnvelope buildControlEnvelope(String eventType,
-                                                        CommandRecord command,
-                                                        Instant createdAt,
-                                                        String body) {
+            CommandRecord command,
+            Instant createdAt,
+            String body) {
         return ControlCommandEnvelope.builder()
                 .eventType(eventType)
                 .commandId(command.getId())
@@ -739,10 +744,10 @@ public class CommandDispatchService {
     }
 
     private void recordDispatchAudit(CommandRecord command,
-                                     RunProjection run,
-                                     Card card,
-                                     String actorId,
-                                     String actorName) {
+            RunProjection run,
+            Card card,
+            String actorId,
+            String actorName) {
         String summary = command.getStatus() == CommandStatus.DELIVERED
                 ? "Command dispatched"
                 : "Command queued for delivery";
@@ -766,29 +771,30 @@ public class CommandDispatchService {
     }
 
     private CardControlStateSnapshot toCardControlStateSnapshot(RunProjection run, CommandRecord command) {
+        RunProjection currentRun = Objects.requireNonNull(run, "run");
         Instant cancelRequestedAt = latestInstant(
-                run != null ? run.getCancelRequestedAt() : null,
+                currentRun.getCancelRequestedAt(),
                 command != null ? command.getCancelRequestedAt() : null);
         String cancelRequestedByActorName = firstNonBlank(
-                run != null ? run.getCancelRequestedByActorName() : null,
+                currentRun.getCancelRequestedByActorName(),
                 command != null ? command.getCancelRequestedByActorName() : null);
         boolean cancelRequestedPending = cancelRequestedAt != null
-                && !isTerminal(run.getStatus())
+                && !isTerminal(currentRun.getStatus())
                 && (command == null || !isTerminal(command.getStatus()));
         boolean canCancel = command != null
                 && command.getStatus() != CommandStatus.PENDING_APPROVAL
                 && !isTerminal(command.getStatus())
-                && !isTerminal(run.getStatus())
+                && !isTerminal(currentRun.getStatus())
                 && !cancelRequestedPending;
         return new CardControlStateSnapshot(
-                command != null ? command.getId() : run.getCommandId(),
-                run.getId(),
-                firstNonBlank(run.getGolemId(), command != null ? command.getGolemId() : null),
+                command != null ? command.getId() : currentRun.getCommandId(),
+                currentRun.getId(),
+                firstNonBlank(currentRun.getGolemId(), command != null ? command.getGolemId() : null),
                 command != null ? command.getStatus() : null,
-                run.getStatus(),
-                firstNonBlank(run.getSummary(), command != null ? command.getBody() : null),
+                currentRun.getStatus(),
+                firstNonBlank(currentRun.getSummary(), command != null ? command.getBody() : null),
                 command != null ? command.getQueueReason() : null,
-                controlStateUpdatedAt(run),
+                controlStateUpdatedAt(currentRun),
                 cancelRequestedAt,
                 cancelRequestedByActorName,
                 cancelRequestedPending,
@@ -839,7 +845,8 @@ public class CommandDispatchService {
 
     private void saveCommand(CommandRecord command) {
         try {
-            storagePort.putTextAtomic(COMMANDS_DIR, command.getId() + ".json", objectMapper.writeValueAsString(command));
+            storagePort.putTextAtomic(COMMANDS_DIR, command.getId() + ".json",
+                    objectMapper.writeValueAsString(command));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize command " + command.getId(), exception);
         }
@@ -854,11 +861,11 @@ public class CommandDispatchService {
     }
 
     private RunProjection resolveRunProjection(String commandId,
-                                               String runId,
-                                               String threadId,
-                                               String cardId,
-                                               String golemId,
-                                               Instant createdAt) {
+            String runId,
+            String threadId,
+            String cardId,
+            String golemId,
+            Instant createdAt) {
         Optional<RunProjection> byRunId = findRun(runId);
         if (byRunId.isPresent()) {
             return byRunId.get();
@@ -915,11 +922,11 @@ public class CommandDispatchService {
     }
 
     private void publishThreadUpdate(Card card,
-                                     ThreadRecord thread,
-                                     CommandRecord command,
-                                     RunProjection run,
-                                     Instant createdAt,
-                                     List<String> kinds) {
+            ThreadRecord thread,
+            CommandRecord command,
+            RunProjection run,
+            Instant createdAt,
+            List<String> kinds) {
         operatorUpdatesService.publish(OperatorUpdate.builder()
                 .eventType("thread_updated")
                 .cardId(card.getId())
@@ -938,6 +945,7 @@ public class CommandDispatchService {
                 || status == CommandStatus.CANCELLED;
     }
 
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
     private boolean isTerminal(RunStatus status) {
         return status == RunStatus.COMPLETED
                 || status == RunStatus.REJECTED

@@ -49,8 +49,10 @@ public class JwtAuthenticationFilter implements WebFilter {
 
         SubjectType subjectType = jwtTokenProvider.getSubjectType(token);
         List<SimpleGrantedAuthority> authorities = subjectType == SubjectType.OPERATOR
-                ? jwtTokenProvider.getRoles(token).stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role)).toList()
-                : jwtTokenProvider.getScopes(token).stream().map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope)).toList();
+                ? jwtTokenProvider.getRoles(token).stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                        .toList()
+                : jwtTokenProvider.getScopes(token).stream().map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope))
+                        .toList();
         AuthenticatedActor actor = new AuthenticatedActor(
                 subjectType,
                 jwtTokenProvider.getSubjectId(token),

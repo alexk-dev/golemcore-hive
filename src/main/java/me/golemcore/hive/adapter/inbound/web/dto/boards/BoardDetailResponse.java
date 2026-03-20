@@ -21,16 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 import java.time.Instant;
 import java.util.List;
 
-public record BoardDetailResponse(
-        String id,
-        String slug,
-        String name,
-        String description,
-        String templateKey,
-        String defaultAssignmentPolicy,
-        BoardFlowPayload flow,
-        BoardTeamPayload team,
-        Instant createdAt,
-        Instant updatedAt,
-        List<BoardCountsResponse> cardCounts) {
-}
+public record BoardDetailResponse(String id,String slug,String name,String description,String templateKey,String defaultAssignmentPolicy,BoardFlowPayload flow,BoardTeamPayload team,Instant createdAt,Instant updatedAt,List<BoardCountsResponse>cardCounts){}

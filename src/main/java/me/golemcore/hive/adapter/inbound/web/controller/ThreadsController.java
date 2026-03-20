@@ -67,7 +67,8 @@ public class ThreadsController {
     }
 
     @GetMapping("/threads/{threadId}/messages")
-    public Mono<ResponseEntity<List<ThreadMessageResponse>>> listThreadMessages(Principal principal, @PathVariable String threadId) {
+    public Mono<ResponseEntity<List<ThreadMessageResponse>>> listThreadMessages(Principal principal,
+            @PathVariable String threadId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             List<ThreadMessageResponse> response = threadService.listMessages(threadId).stream()
@@ -84,7 +85,8 @@ public class ThreadsController {
             @Valid @RequestBody PostThreadMessageRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            ThreadMessage message = threadService.postOperatorMessage(threadId, request.body(), actor.getSubjectId(), actor.getName());
+            ThreadMessage message = threadService.postOperatorMessage(threadId, request.body(), actor.getSubjectId(),
+                    actor.getName());
             return ResponseEntity.ok(toThreadMessageResponse(message));
         }).subscribeOn(Schedulers.boundedElastic());
     }

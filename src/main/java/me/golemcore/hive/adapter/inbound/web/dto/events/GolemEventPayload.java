@@ -22,23 +22,4 @@ import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.util.List;
 
-public record GolemEventPayload(
-        Integer schemaVersion,
-        @NotBlank String eventType,
-        String golemId,
-        String runtimeEventType,
-        String signalId,
-        String cardId,
-        String commandId,
-        String runId,
-        String threadId,
-        String signalType,
-        String summary,
-        String details,
-        String blockerCode,
-        List<EvidenceRefPayload> evidenceRefs,
-        Long inputTokens,
-        Long outputTokens,
-        Long accumulatedCostMicros,
-        Instant createdAt) {
-}
+public record GolemEventPayload(Integer schemaVersion,@NotBlank String eventType,String golemId,String runtimeEventType,String signalId,String cardId,String commandId,String runId,String threadId,String signalType,String summary,String details,String blockerCode,List<EvidenceRefPayload>evidenceRefs,Long inputTokens,Long outputTokens,Long accumulatedCostMicros,Instant createdAt){}

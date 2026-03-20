@@ -53,7 +53,8 @@ public class CommandsController {
     private final EventIngestionService eventIngestionService;
 
     @GetMapping("/commands")
-    public Mono<ResponseEntity<List<CommandRecordResponse>>> listCommands(Principal principal, @PathVariable String threadId) {
+    public Mono<ResponseEntity<List<CommandRecordResponse>>> listCommands(Principal principal,
+            @PathVariable String threadId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             List<CommandRecordResponse> response = commandDispatchService.listCommands(threadId).stream()
@@ -102,7 +103,8 @@ public class CommandsController {
     }
 
     @GetMapping("/runs")
-    public Mono<ResponseEntity<List<RunProjectionResponse>>> listRuns(Principal principal, @PathVariable String threadId) {
+    public Mono<ResponseEntity<List<RunProjectionResponse>>> listRuns(Principal principal,
+            @PathVariable String threadId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             List<RunProjectionResponse> response = commandDispatchService.listRuns(threadId).stream()
@@ -113,7 +115,8 @@ public class CommandsController {
     }
 
     @GetMapping("/signals")
-    public Mono<ResponseEntity<List<CardLifecycleSignalResponse>>> listSignals(Principal principal, @PathVariable String threadId) {
+    public Mono<ResponseEntity<List<CardLifecycleSignalResponse>>> listSignals(Principal principal,
+            @PathVariable String threadId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             List<CardLifecycleSignalResponse> response = eventIngestionService.listSignals(threadId).stream()
@@ -184,7 +187,8 @@ public class CommandsController {
                 signal.getSummary(),
                 signal.getDetails(),
                 signal.getBlockerCode(),
-                signal.getEvidenceRefs().stream().map(ref -> new EvidenceRefResponse(ref.getKind(), ref.getRef())).toList(),
+                signal.getEvidenceRefs().stream().map(ref -> new EvidenceRefResponse(ref.getKind(), ref.getRef()))
+                        .toList(),
                 signal.getCreatedAt(),
                 signal.getDecision() != null ? signal.getDecision().name() : null,
                 signal.getResolvedTargetColumnId(),

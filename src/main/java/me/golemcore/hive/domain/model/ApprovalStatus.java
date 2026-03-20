@@ -19,7 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum ApprovalStatus {
-    PENDING,
-    APPROVED,
-    REJECTED
+    PENDING, APPROVED, REJECTED
 }

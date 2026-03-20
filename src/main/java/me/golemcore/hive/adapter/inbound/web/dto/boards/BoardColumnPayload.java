@@ -18,10 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
-public record BoardColumnPayload(
-        String id,
-        String name,
-        String description,
-        Integer wipLimit,
-        boolean terminal) {
-}
+public record BoardColumnPayload(String id,String name,String description,Integer wipLimit,boolean terminal){}

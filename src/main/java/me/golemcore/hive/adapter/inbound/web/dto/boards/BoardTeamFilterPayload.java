@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
-public record BoardTeamFilterPayload(String type, String value) {
-}
+public record BoardTeamFilterPayload(String type,String value){}

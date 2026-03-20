@@ -20,23 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.audit;
 
 import java.time.Instant;
 
-public record AuditEventResponse(
-        String id,
-        String eventType,
-        String severity,
-        String actorType,
-        String actorId,
-        String actorName,
-        String targetType,
-        String targetId,
-        String boardId,
-        String cardId,
-        String threadId,
-        String golemId,
-        String commandId,
-        String runId,
-        String approvalId,
-        String summary,
-        String details,
-        Instant createdAt) {
-}
+public record AuditEventResponse(String id,String eventType,String severity,String actorType,String actorId,String actorName,String targetType,String targetId,String boardId,String cardId,String threadId,String golemId,String commandId,String runId,String approvalId,String summary,String details,Instant createdAt){}

@@ -19,8 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum BudgetScopeType {
-    SYSTEM,
-    BOARD,
-    GOLEM,
-    CARD
+    SYSTEM, BOARD, GOLEM, CARD
 }

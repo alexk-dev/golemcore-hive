@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.events;
 
-public record EvidenceRefPayload(String kind, String ref) {
-}
+public record EvidenceRefPayload(String kind,String ref){}

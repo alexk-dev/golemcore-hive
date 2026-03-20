@@ -20,17 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.threads;
 
 import java.time.Instant;
 
-public record ThreadMessageResponse(
-        String id,
-        String threadId,
-        String cardId,
-        String commandId,
-        String runId,
-        String signalId,
-        String type,
-        String participantType,
-        String authorId,
-        String authorName,
-        String body,
-        Instant createdAt) {
-}
+public record ThreadMessageResponse(String id,String threadId,String cardId,String commandId,String runId,String signalId,String type,String participantType,String authorId,String authorName,String body,Instant createdAt){}

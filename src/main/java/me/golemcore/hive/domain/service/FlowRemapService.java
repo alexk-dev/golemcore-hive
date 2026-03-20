@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.domain.model.Board;
 import me.golemcore.hive.domain.model.BoardFlowDefinition;
@@ -50,7 +51,8 @@ public class FlowRemapService {
         Set<String> currentColumnIds = board.getFlow().getColumns().stream()
                 .map(column -> column.getId())
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        Set<String> nextColumnIds = newFlow.getColumns().stream().map(column -> column.getId()).collect(java.util.stream.Collectors.toSet());
+        Set<String> nextColumnIds = newFlow.getColumns().stream().map(column -> column.getId())
+                .collect(java.util.stream.Collectors.toSet());
         Set<String> removedColumnIds = new LinkedHashSet<>(currentColumnIds);
         removedColumnIds.removeAll(nextColumnIds);
 
@@ -71,23 +73,26 @@ public class FlowRemapService {
     }
 
     public void apply(Board board,
-                      BoardFlowDefinition newFlow,
-                      Map<String, String> columnRemap,
-                      String actorId,
-                      String actorName) {
+            BoardFlowDefinition newFlow,
+            Map<String, String> columnRemap,
+            String actorId,
+            String actorName) {
         RemapPreview preview = preview(board, newFlow);
         if (preview.getRemovedColumnIds().isEmpty()) {
             return;
         }
 
-        Set<String> validTargetColumns = newFlow.getColumns().stream().map(column -> column.getId()).collect(java.util.stream.Collectors.toSet());
+        Set<String> validTargetColumns = newFlow.getColumns().stream().map(column -> column.getId())
+                .collect(java.util.stream.Collectors.toSet());
         for (String removedColumnId : preview.getRemovedColumnIds()) {
             Integer affectedCount = preview.getAffectedCardCounts().getOrDefault(removedColumnId, 0);
             if (affectedCount > 0 && (columnRemap == null || !columnRemap.containsKey(removedColumnId))) {
                 throw new IllegalArgumentException("Flow remap is required for column " + removedColumnId);
             }
-            if (columnRemap != null && columnRemap.containsKey(removedColumnId) && !validTargetColumns.contains(columnRemap.get(removedColumnId))) {
-                throw new IllegalArgumentException("Flow remap target does not exist: " + columnRemap.get(removedColumnId));
+            if (columnRemap != null && columnRemap.containsKey(removedColumnId)
+                    && !validTargetColumns.contains(columnRemap.get(removedColumnId))) {
+                throw new IllegalArgumentException(
+                        "Flow remap target does not exist: " + columnRemap.get(removedColumnId));
             }
         }
 
@@ -155,7 +160,8 @@ public class FlowRemapService {
         for (String columnId : affectedTargetColumns) {
             List<Card> columnCards = boardCards.stream()
                     .filter(card -> !card.isArchived() && columnId.equals(card.getColumnId()))
-                    .sorted(java.util.Comparator.comparing(Card::getPosition, java.util.Comparator.nullsLast(Integer::compareTo))
+                    .sorted(java.util.Comparator
+                            .comparing(Card::getPosition, java.util.Comparator.nullsLast(Integer::compareTo))
                             .thenComparing(Card::getCreatedAt, java.util.Comparator.nullsLast(Instant::compareTo))
                             .thenComparing(Card::getId))
                     .toList();
@@ -167,8 +173,8 @@ public class FlowRemapService {
         }
     }
 
-    @lombok.Getter
-    @lombok.RequiredArgsConstructor
+    @Getter
+    @RequiredArgsConstructor
     public static class RemapPreview {
         private final List<String> removedColumnIds;
         private final Map<String, Integer> affectedCardCounts;

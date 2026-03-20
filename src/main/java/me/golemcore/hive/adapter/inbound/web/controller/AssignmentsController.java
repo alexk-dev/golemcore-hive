@@ -30,7 +30,6 @@ import me.golemcore.hive.domain.service.CardService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -44,18 +43,21 @@ public class AssignmentsController extends BoardMappingSupport {
     private final CardService cardService;
 
     @GetMapping("/api/v1/boards/{boardId}/team")
-    public Mono<ResponseEntity<BoardTeamResolvedResponse>> getBoardTeam(Principal principal, @PathVariable String boardId) {
+    public Mono<ResponseEntity<BoardTeamResolvedResponse>> getBoardTeam(Principal principal,
+            @PathVariable String boardId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             Board board = boardService.getBoard(boardId);
             return ResponseEntity.ok(new BoardTeamResolvedResponse(
                     boardId,
-                    assignmentService.getTeamCandidates(board).stream().map(this::toAssignmentSuggestionResponse).toList()));
+                    assignmentService.getTeamCandidates(board).stream().map(this::toAssignmentSuggestionResponse)
+                            .toList()));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
     @GetMapping("/api/v1/cards/{cardId}/assignees")
-    public Mono<ResponseEntity<CardAssigneeOptionsResponse>> getCardAssignees(Principal principal, @PathVariable String cardId) {
+    public Mono<ResponseEntity<CardAssigneeOptionsResponse>> getCardAssignees(Principal principal,
+            @PathVariable String cardId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             Card card = cardService.getCard(cardId);
@@ -63,8 +65,10 @@ public class AssignmentsController extends BoardMappingSupport {
             return ResponseEntity.ok(new CardAssigneeOptionsResponse(
                     cardId,
                     board.getId(),
-                    assignmentService.getTeamCandidates(board).stream().map(this::toAssignmentSuggestionResponse).toList(),
-                    assignmentService.getAllCandidates(board).stream().map(this::toAssignmentSuggestionResponse).toList()));
+                    assignmentService.getTeamCandidates(board).stream().map(this::toAssignmentSuggestionResponse)
+                            .toList(),
+                    assignmentService.getAllCandidates(board).stream().map(this::toAssignmentSuggestionResponse)
+                            .toList()));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }

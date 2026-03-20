@@ -21,9 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.golems;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Set;
 
-public record CreateGolemRoleRequest(
-        @NotBlank String slug,
-        String name,
-        String description,
-        Set<String> capabilityTags) {
-}
+public record CreateGolemRoleRequest(@NotBlank String slug,String name,String description,Set<String>capabilityTags){}

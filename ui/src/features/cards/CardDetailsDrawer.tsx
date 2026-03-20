@@ -47,9 +47,14 @@ export function CardDetailsDrawer({
   const [approvalRiskLevel, setApprovalRiskLevel] = useState<'NONE' | 'DESTRUCTIVE' | 'HIGH_COST'>('NONE');
   const [estimatedCostMicros, setEstimatedCostMicros] = useState('');
   const [approvalReason, setApprovalReason] = useState('');
+  const [hydratedCardId, setHydratedCardId] = useState<string | null>(null);
+  const cancelableControlState = card?.controlState?.canCancel ? card.controlState : null;
 
   useEffect(() => {
     if (!card) {
+      return;
+    }
+    if (hydratedCardId === card.id) {
       return;
     }
     setTitle(card.title);
@@ -60,7 +65,8 @@ export function CardDetailsDrawer({
     setApprovalRiskLevel('NONE');
     setEstimatedCostMicros('');
     setApprovalReason('');
-  }, [card?.id]);
+    setHydratedCardId(card.id);
+  }, [card, hydratedCardId]);
 
   if (!open || !card) {
     return null;
@@ -289,14 +295,14 @@ export function CardDetailsDrawer({
                       : 'No active run is attached to this card right now.'}
                   </p>
                 </div>
-                {card.controlState?.canCancel ? (
+                {cancelableControlState ? (
                   <button
                     type="button"
                     disabled={isCancelPending}
-                    onClick={() => void onCancelRun(card.controlState!.runId)}
+                    onClick={() => void onCancelRun(cancelableControlState.runId)}
                     className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
                   >
-                    {isCancelPending ? 'Sending stop...' : controlActionLabel(card.controlState)}
+                    {isCancelPending ? 'Sending stop...' : controlActionLabel(cancelableControlState)}
                   </button>
                 ) : null}
               </div>

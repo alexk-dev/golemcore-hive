@@ -72,9 +72,10 @@ class FleetControllerIntegrationTest {
                 .uri("/api/v1/golem-roles")
                 .header(HttpHeaders.AUTHORIZATION, operatorToken)
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
-                .bodyValue("""
-                        {"slug":"developer","name":"Developer","description":"Ships code","capabilityTags":["java","spring"]}
-                        """)
+                .bodyValue(
+                        """
+                                {"slug":"developer","name":"Developer","description":"Ships code","capabilityTags":["java","spring"]}
+                                """)
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody()

@@ -20,11 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import java.time.Instant;
 
-public record CardTransitionResponse(
-        String fromColumnId,
-        String toColumnId,
-        String origin,
-        String summary,
-        Instant occurredAt,
-        String actorName) {
-}
+public record CardTransitionResponse(String fromColumnId,String toColumnId,String origin,String summary,Instant occurredAt,String actorName){}

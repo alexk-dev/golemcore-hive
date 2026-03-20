@@ -64,7 +64,8 @@ public class CardsController extends BoardMappingSupport {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             List<Card> cards = cardService.listCards(boardId, includeArchived);
-            Map<String, CardControlStateSnapshot> controlStates = commandDispatchService.listActiveCardControlStates(cards);
+            Map<String, CardControlStateSnapshot> controlStates = commandDispatchService
+                    .listActiveCardControlStates(cards);
             List<CardSummaryResponse> response = cards.stream()
                     .map(card -> toCardSummaryResponse(card, controlStates.get(card.getId())))
                     .toList();
@@ -128,7 +129,8 @@ public class CardsController extends BoardMappingSupport {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
             Card existingCard = cardService.getCard(cardId);
             boolean shouldAutoDispatchPrompt = shouldAutoDispatchPromptOnMove(existingCard, request.targetColumnId());
-            if (shouldAutoDispatchPrompt && (existingCard.getAssigneeGolemId() == null || existingCard.getAssigneeGolemId().isBlank())) {
+            if (shouldAutoDispatchPrompt
+                    && (existingCard.getAssigneeGolemId() == null || existingCard.getAssigneeGolemId().isBlank())) {
                 throw new IllegalArgumentException("Card must be assigned before the first move to in_progress");
             }
             Card card = cardService.moveCard(

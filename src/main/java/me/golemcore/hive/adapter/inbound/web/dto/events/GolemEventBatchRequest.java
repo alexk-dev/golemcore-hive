@@ -23,8 +23,4 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
-public record GolemEventBatchRequest(
-        Integer schemaVersion,
-        @NotBlank String golemId,
-        @Valid @NotEmpty List<GolemEventPayload> events) {
-}
+public record GolemEventBatchRequest(Integer schemaVersion,@NotBlank String golemId,@Valid @NotEmpty List<GolemEventPayload>events){}

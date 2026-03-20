@@ -53,7 +53,8 @@ public class ApprovalsController {
             @RequestParam(required = false) String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<ApprovalRequestResponse> response = approvalService.listApprovals(status, boardId, cardId, golemId).stream()
+            List<ApprovalRequestResponse> response = approvalService.listApprovals(status, boardId, cardId, golemId)
+                    .stream()
                     .map(this::toResponse)
                     .toList();
             return ResponseEntity.ok(response);
@@ -61,7 +62,8 @@ public class ApprovalsController {
     }
 
     @GetMapping("/{approvalId}")
-    public Mono<ResponseEntity<ApprovalRequestResponse>> getApproval(Principal principal, @PathVariable String approvalId) {
+    public Mono<ResponseEntity<ApprovalRequestResponse>> getApproval(Principal principal,
+            @PathVariable String approvalId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             return ResponseEntity.ok(toResponse(approvalService.getApproval(approvalId)));

@@ -21,7 +21,6 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 import java.security.Principal;
 import java.util.List;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
-import me.golemcore.hive.domain.model.GolemScope;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ResponseStatusException;
@@ -62,7 +61,8 @@ final class ControllerActorSupport {
         if (principal instanceof AuthenticatedActor actor) {
             return actor;
         }
-        if (principal instanceof Authentication authentication && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
+        if (principal instanceof Authentication authentication
+                && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
             return actor;
         }
         return null;

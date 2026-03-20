@@ -19,12 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum CommandStatus {
-    PENDING_APPROVAL,
-    QUEUED,
-    DELIVERED,
-    RUNNING,
-    COMPLETED,
-    REJECTED,
-    FAILED,
-    CANCELLED
+    PENDING_APPROVAL, QUEUED, DELIVERED, RUNNING, COMPLETED, REJECTED, FAILED, CANCELLED
 }

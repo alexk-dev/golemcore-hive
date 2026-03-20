@@ -19,6 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum ApprovalRiskLevel {
-    DESTRUCTIVE,
-    HIGH_COST
+    DESTRUCTIVE, HIGH_COST
 }

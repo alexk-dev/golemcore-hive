@@ -61,7 +61,8 @@ public class EnrollmentService {
     private final JwtTokenProvider jwtTokenProvider;
     private final GolemRegistryService golemRegistryService;
 
-    public CreatedEnrollmentToken createEnrollmentToken(AuthenticatedActor actor, String note, Integer expiresInMinutes) {
+    public CreatedEnrollmentToken createEnrollmentToken(AuthenticatedActor actor, String note,
+            Integer expiresInMinutes) {
         Instant now = Instant.now();
         String tokenId = "et_" + UUID.randomUUID().toString().replace("-", "");
         String secret = generateSecret();
@@ -101,12 +102,12 @@ public class EnrollmentService {
     }
 
     public RegistrationResult registerGolem(String enrollmentTokenValue,
-                                            String displayName,
-                                            String hostLabel,
-                                            String runtimeVersion,
-                                            String buildVersion,
-                                            Set<String> supportedChannels,
-                                            GolemCapabilitySnapshot capabilitySnapshot) {
+            String displayName,
+            String hostLabel,
+            String runtimeVersion,
+            String buildVersion,
+            Set<String> supportedChannels,
+            GolemCapabilitySnapshot capabilitySnapshot) {
         EnrollmentToken enrollmentToken = validateEnrollmentToken(enrollmentTokenValue);
         Golem golem = golemRegistryService.registerGolem(displayName, hostLabel, runtimeVersion, buildVersion,
                 supportedChannels, capabilitySnapshot, enrollmentToken.getId());
@@ -171,7 +172,8 @@ public class EnrollmentService {
 
     private MachineTokenPair issueMachineTokens(Golem golem, List<String> scopes, GolemAuthSession existingSession) {
         Instant now = Instant.now();
-        String sessionId = existingSession != null ? existingSession.getId() : "gs_" + UUID.randomUUID().toString().replace("-", "");
+        String sessionId = existingSession != null ? existingSession.getId()
+                : "gs_" + UUID.randomUUID().toString().replace("-", "");
         String accessToken = jwtTokenProvider.generateGolemAccessToken(golem, scopes);
         String refreshToken = jwtTokenProvider.generateGolemRefreshToken(golem, scopes, sessionId);
         GolemAuthSession golemAuthSession = GolemAuthSession.builder()
@@ -180,7 +182,8 @@ public class EnrollmentService {
                 .tokenHash(hashToken(refreshToken))
                 .scopes(Set.copyOf(scopes))
                 .createdAt(existingSession != null ? existingSession.getCreatedAt() : now)
-                .expiresAt(now.plusSeconds(properties.getSecurity().getJwt().getGolemRefreshExpirationDays() * 24L * 60L * 60L))
+                .expiresAt(now.plusSeconds(
+                        properties.getSecurity().getJwt().getGolemRefreshExpirationDays() * 24L * 60L * 60L))
                 .rotatedAt(now)
                 .build();
         saveGolemAuthSession(golemAuthSession);
@@ -231,7 +234,8 @@ public class EnrollmentService {
             storagePort.putTextAtomic(ENROLLMENT_TOKENS_DIR, enrollmentToken.getId() + ".json",
                     objectMapper.writeValueAsString(enrollmentToken));
         } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize enrollment token " + enrollmentToken.getId(), exception);
+            throw new IllegalStateException("Failed to serialize enrollment token " + enrollmentToken.getId(),
+                    exception);
         }
     }
 

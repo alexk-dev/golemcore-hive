@@ -20,5 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record MoveCardRequest(@NotBlank String targetColumnId, Integer targetIndex, String summary) {
-}
+public record MoveCardRequest(@NotBlank String targetColumnId,Integer targetIndex,String summary){}

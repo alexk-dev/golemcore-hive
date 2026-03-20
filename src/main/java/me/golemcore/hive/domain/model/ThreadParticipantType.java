@@ -19,7 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum ThreadParticipantType {
-    OPERATOR,
-    GOLEM,
-    SYSTEM
+    OPERATOR, GOLEM, SYSTEM
 }

@@ -20,5 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
 import java.util.Set;
 
-public record UpdateGolemRoleRequest(String name, String description, Set<String> capabilityTags) {
-}
+public record UpdateGolemRoleRequest(String name,String description,Set<String>capabilityTags){}

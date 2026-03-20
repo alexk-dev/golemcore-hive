@@ -70,7 +70,8 @@ public class OperatorBootstrapService {
                 .updatedAt(now)
                 .build();
         try {
-            storagePort.putTextAtomic(OPERATORS_DIR, operator.getId() + ".json", objectMapper.writeValueAsString(operator));
+            storagePort.putTextAtomic(OPERATORS_DIR, operator.getId() + ".json",
+                    objectMapper.writeValueAsString(operator));
             log.info("[Auth] Bootstrapped default admin operator '{}'", operator.getUsername());
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize bootstrap operator", exception);

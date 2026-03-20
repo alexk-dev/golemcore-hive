@@ -53,7 +53,8 @@ public class AuditController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<AuditEventResponse> response = auditService.listEvents(actorId, golemId, boardId, cardId, from, to, eventType)
+            List<AuditEventResponse> response = auditService
+                    .listEvents(actorId, golemId, boardId, cardId, from, to, eventType)
                     .stream()
                     .map(this::toResponse)
                     .toList();

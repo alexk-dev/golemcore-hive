@@ -94,7 +94,8 @@ public class EnrollmentController {
             @RequestBody(required = false) ActionReasonRequest request) {
         return Mono.fromCallable(() -> {
             requireOperatorActor(principal);
-            EnrollmentToken token = enrollmentService.revokeEnrollmentToken(tokenId, request != null ? request.reason() : null);
+            EnrollmentToken token = enrollmentService.revokeEnrollmentToken(tokenId,
+                    request != null ? request.reason() : null);
             return ResponseEntity.ok(toResponse(token));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -157,7 +158,8 @@ public class EnrollmentController {
         if (principal instanceof AuthenticatedActor actor) {
             return actor;
         }
-        if (principal instanceof Authentication authentication && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
+        if (principal instanceof Authentication authentication
+                && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
             return actor;
         }
         return null;

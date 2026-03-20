@@ -20,9 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record CreateBoardRequest(
-        @NotBlank String name,
-        String description,
-        String templateKey,
-        String defaultAssignmentPolicy) {
-}
+public record CreateBoardRequest(@NotBlank String name,String description,String templateKey,String defaultAssignmentPolicy){}

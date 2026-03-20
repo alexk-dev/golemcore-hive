@@ -19,8 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum SignalResolutionOutcome {
-    AUTO_APPLIED,
-    SUGGESTED,
-    IGNORED,
-    REJECTED
+    AUTO_APPLIED, SUGGESTED, IGNORED, REJECTED
 }

@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
-public record UpdateCardRequest(String title, String description, String prompt, String assignmentPolicy) {
-}
+public record UpdateCardRequest(String title,String description,String prompt,String assignmentPolicy){}

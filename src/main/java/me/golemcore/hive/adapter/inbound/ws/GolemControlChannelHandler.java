@@ -28,7 +28,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
@@ -67,7 +66,8 @@ public class GolemControlChannelHandler implements WebSocketHandler {
                 : "";
         for (String pair : accessToken.split("&")) {
             if (pair.startsWith("access_token=")) {
-                return java.net.URLDecoder.decode(pair.substring("access_token=".length()), java.nio.charset.StandardCharsets.UTF_8);
+                return java.net.URLDecoder.decode(pair.substring("access_token=".length()),
+                        java.nio.charset.StandardCharsets.UTF_8);
             }
         }
         String authorizationHeader = session.getHandshakeInfo().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);

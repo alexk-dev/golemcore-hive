@@ -18,10 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.events;
 
-public record GolemEventBatchResponse(
-        int acceptedEvents,
-        int runtimeEvents,
-        int lifecycleSignals,
-        int autoAppliedTransitions,
-        int suggestedTransitions) {
-}
+public record GolemEventBatchResponse(int acceptedEvents,int runtimeEvents,int lifecycleSignals,int autoAppliedTransitions,int suggestedTransitions){}

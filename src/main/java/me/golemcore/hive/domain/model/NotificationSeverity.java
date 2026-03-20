@@ -19,7 +19,5 @@
 package me.golemcore.hive.domain.model;
 
 public enum NotificationSeverity {
-    INFO,
-    WARN,
-    CRITICAL
+    INFO, WARN, CRITICAL
 }

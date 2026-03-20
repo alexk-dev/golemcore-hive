@@ -76,18 +76,22 @@ public class EventIngestionService {
                 acceptedEvents++;
                 lifecycleSignals++;
                 switch (signal.getResolutionOutcome()) {
-                    case AUTO_APPLIED -> autoAppliedTransitions++;
-                    case SUGGESTED -> suggestedTransitions++;
-                    default -> {
-                        // No additional counters.
-                    }
+                case AUTO_APPLIED:
+                    autoAppliedTransitions = autoAppliedTransitions + 1;
+                    break;
+                case SUGGESTED:
+                    suggestedTransitions = suggestedTransitions + 1;
+                    break;
+                default:
+                    break;
                 }
             } else {
                 throw new IllegalArgumentException("Unsupported eventType: " + event.eventType());
             }
         }
 
-        return new BatchResult(acceptedEvents, runtimeEvents, lifecycleSignals, autoAppliedTransitions, suggestedTransitions);
+        return new BatchResult(acceptedEvents, runtimeEvents, lifecycleSignals, autoAppliedTransitions,
+                suggestedTransitions);
     }
 
     public List<CardLifecycleSignal> listSignals(String threadId) {
@@ -158,7 +162,8 @@ public class EventIngestionService {
 
     private void saveSignal(CardLifecycleSignal signal) {
         try {
-            storagePort.putTextAtomic(LIFECYCLE_SIGNALS_DIR, signal.getId() + ".json", objectMapper.writeValueAsString(signal));
+            storagePort.putTextAtomic(LIFECYCLE_SIGNALS_DIR, signal.getId() + ".json",
+                    objectMapper.writeValueAsString(signal));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize lifecycle signal " + signal.getId(), exception);
         }

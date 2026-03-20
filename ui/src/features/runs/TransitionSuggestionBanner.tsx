@@ -5,7 +5,7 @@ type TransitionSuggestionBannerProps = {
 };
 
 export function TransitionSuggestionBanner({ signal }: TransitionSuggestionBannerProps) {
-  if (!signal || signal.resolutionOutcome !== 'SUGGESTED') {
+  if (signal?.resolutionOutcome !== 'SUGGESTED') {
     return null;
   }
 

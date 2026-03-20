@@ -2,7 +2,7 @@ type AccessTokenProvider = () => string | null;
 type RefreshHandler = () => Promise<string | null>;
 
 let accessTokenProvider: AccessTokenProvider = () => null;
-let refreshHandler: RefreshHandler = async () => null;
+let refreshHandler: RefreshHandler = () => Promise.resolve(null);
 
 export class HttpError extends Error {
   readonly status: number;

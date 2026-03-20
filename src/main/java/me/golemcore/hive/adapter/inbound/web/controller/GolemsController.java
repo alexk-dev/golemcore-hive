@@ -23,7 +23,6 @@ import java.security.Principal;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.ActionReasonRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemAuthResponse;
@@ -74,7 +73,8 @@ public class GolemsController {
                     request.buildVersion(),
                     request.supportedChannels(),
                     toCapabilitySnapshot(request.capabilities()));
-            return ResponseEntity.status(HttpStatus.CREATED).body(toAuthResponse(result.getGolem(), result.getTokens()));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(toAuthResponse(result.getGolem(), result.getTokens()));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -83,7 +83,8 @@ public class GolemsController {
             @PathVariable String golemId,
             @Valid @RequestBody GolemTokenRotateRequest request) {
         return Mono.fromCallable(() -> {
-            EnrollmentService.MachineTokenPair tokens = enrollmentService.rotateMachineTokens(golemId, request.refreshToken());
+            EnrollmentService.MachineTokenPair tokens = enrollmentService.rotateMachineTokens(golemId,
+                    request.refreshToken());
             Golem golem = golemRegistryService.findGolem(golemId).orElse(null);
             if (tokens == null || golem == null) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
@@ -238,14 +239,20 @@ public class GolemsController {
             return null;
         }
         return GolemCapabilitySnapshot.builder()
-                .providers(request.providers() != null ? new LinkedHashSet<>(request.providers()) : new LinkedHashSet<>())
-                .modelFamilies(request.modelFamilies() != null ? new LinkedHashSet<>(request.modelFamilies()) : new LinkedHashSet<>())
-                .enabledTools(request.enabledTools() != null ? new LinkedHashSet<>(request.enabledTools()) : new LinkedHashSet<>())
+                .providers(
+                        request.providers() != null ? new LinkedHashSet<>(request.providers()) : new LinkedHashSet<>())
+                .modelFamilies(request.modelFamilies() != null ? new LinkedHashSet<>(request.modelFamilies())
+                        : new LinkedHashSet<>())
+                .enabledTools(request.enabledTools() != null ? new LinkedHashSet<>(request.enabledTools())
+                        : new LinkedHashSet<>())
                 .enabledAutonomyFeatures(request.enabledAutonomyFeatures() != null
                         ? new LinkedHashSet<>(request.enabledAutonomyFeatures())
                         : new LinkedHashSet<>())
-                .capabilityTags(request.capabilityTags() != null ? new LinkedHashSet<>(request.capabilityTags()) : new LinkedHashSet<>())
-                .supportedChannels(request.supportedChannels() != null ? new LinkedHashSet<>(request.supportedChannels()) : new LinkedHashSet<>())
+                .capabilityTags(request.capabilityTags() != null ? new LinkedHashSet<>(request.capabilityTags())
+                        : new LinkedHashSet<>())
+                .supportedChannels(
+                        request.supportedChannels() != null ? new LinkedHashSet<>(request.supportedChannels())
+                                : new LinkedHashSet<>())
                 .snapshotHash(request.snapshotHash())
                 .defaultModel(request.defaultModel())
                 .build();
@@ -317,7 +324,8 @@ public class GolemsController {
         if (principal instanceof AuthenticatedActor actor) {
             return actor;
         }
-        if (principal instanceof Authentication authentication && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
+        if (principal instanceof Authentication authentication
+                && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
             return actor;
         }
         return null;

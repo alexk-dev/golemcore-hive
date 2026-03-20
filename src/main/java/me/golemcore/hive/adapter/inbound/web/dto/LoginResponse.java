@@ -18,7 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto;
 
-public record LoginResponse(
-        String accessToken,
-        OperatorResponse operator) {
-}
+public record LoginResponse(String accessToken,OperatorResponse operator){}

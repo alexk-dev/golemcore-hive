@@ -21,15 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.golems;
 import java.time.Instant;
 import java.util.List;
 
-public record GolemAuthResponse(
-        String golemId,
-        String accessToken,
-        String refreshToken,
-        Instant accessTokenExpiresAt,
-        Instant refreshTokenExpiresAt,
-        String issuer,
-        String audience,
-        String controlChannelUrl,
-        int heartbeatIntervalSeconds,
-        List<String> scopes) {
-}
+public record GolemAuthResponse(String golemId,String accessToken,String refreshToken,Instant accessTokenExpiresAt,Instant refreshTokenExpiresAt,String issuer,String audience,String controlChannelUrl,int heartbeatIntervalSeconds,List<String>scopes){}

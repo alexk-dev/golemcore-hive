@@ -68,7 +68,8 @@ public class CardService {
             }
             cards.add(card);
         }
-        cards.sort(Comparator.comparing(Card::getColumnId).thenComparing(Card::getPosition, Comparator.nullsLast(Integer::compareTo)));
+        cards.sort(Comparator.comparing(Card::getColumnId).thenComparing(Card::getPosition,
+                Comparator.nullsLast(Integer::compareTo)));
         return cards;
     }
 
@@ -89,15 +90,15 @@ public class CardService {
     }
 
     public Card createCard(String boardId,
-                           String title,
-                           String description,
-                           String prompt,
-                           String columnId,
-                           String assigneeGolemId,
-                           CardAssignmentPolicy assignmentPolicy,
-                           boolean autoAssign,
-                           String actorId,
-                           String actorName) {
+            String title,
+            String description,
+            String prompt,
+            String columnId,
+            String assigneeGolemId,
+            CardAssignmentPolicy assignmentPolicy,
+            boolean autoAssign,
+            String actorId,
+            String actorName) {
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("Card title is required");
         }
@@ -105,8 +106,10 @@ public class CardService {
             throw new IllegalArgumentException("Card prompt is required");
         }
         Board board = boardService.getBoard(boardId);
-        String targetColumnId = columnId != null && !columnId.isBlank() ? columnId : board.getFlow().getDefaultColumnId();
-        boolean columnExists = board.getFlow().getColumns().stream().anyMatch(column -> column.getId().equals(targetColumnId));
+        String targetColumnId = columnId != null && !columnId.isBlank() ? columnId
+                : board.getFlow().getDefaultColumnId();
+        boolean columnExists = board.getFlow().getColumns().stream()
+                .anyMatch(column -> column.getId().equals(targetColumnId));
         if (!columnExists) {
             throw new IllegalArgumentException("Target column does not exist in board flow");
         }
@@ -114,7 +117,8 @@ public class CardService {
         Instant now = Instant.now();
         String cardId = "card_" + UUID.randomUUID().toString().replace("-", "");
         String threadId = "thread_" + UUID.randomUUID().toString().replace("-", "");
-        CardAssignmentPolicy effectivePolicy = assignmentPolicy != null ? assignmentPolicy : board.getDefaultAssignmentPolicy();
+        CardAssignmentPolicy effectivePolicy = assignmentPolicy != null ? assignmentPolicy
+                : board.getDefaultAssignmentPolicy();
         String effectiveAssigneeId = assigneeGolemId;
 
         if (effectiveAssigneeId != null && !effectiveAssigneeId.isBlank()) {
@@ -123,7 +127,9 @@ public class CardService {
                     .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + requestedAssigneeId));
         } else if (autoAssign && effectivePolicy == CardAssignmentPolicy.AUTOMATIC) {
             AssignmentSuggestion suggestion = assignmentService.suggestDefaultAssignee(board);
-            effectiveAssigneeId = suggestion != null ? suggestion.getGolemId() : null;
+            if (suggestion != null) {
+                effectiveAssigneeId = suggestion.getGolemId();
+            }
         }
 
         Card card = Card.builder()
@@ -180,10 +186,10 @@ public class CardService {
     }
 
     public Card updateCard(String cardId,
-                           String title,
-                           String description,
-                           String prompt,
-                           CardAssignmentPolicy assignmentPolicy) {
+            String title,
+            String description,
+            String prompt,
+            CardAssignmentPolicy assignmentPolicy) {
         Card card = getCard(cardId);
         if (title != null && !title.isBlank()) {
             card.setTitle(title);
@@ -219,15 +225,16 @@ public class CardService {
     }
 
     public Card moveCard(String cardId,
-                         String targetColumnId,
-                         Integer targetIndex,
-                         CardTransitionOrigin origin,
-                         String actorId,
-                         String actorName,
-                         String summary) {
+            String targetColumnId,
+            Integer targetIndex,
+            CardTransitionOrigin origin,
+            String actorId,
+            String actorName,
+            String summary) {
         Card card = getCard(cardId);
         Board board = boardService.getBoard(card.getBoardId());
-        boolean targetExists = board.getFlow().getColumns().stream().anyMatch(column -> column.getId().equals(targetColumnId));
+        boolean targetExists = board.getFlow().getColumns().stream()
+                .anyMatch(column -> column.getId().equals(targetColumnId));
         if (!targetExists) {
             throw new IllegalArgumentException("Target column does not exist in board flow");
         }
@@ -240,11 +247,13 @@ public class CardService {
 
         List<Card> boardCards = listCards(card.getBoardId(), false);
         List<Card> targetColumnCards = boardCards.stream()
-                .filter(existing -> !existing.getId().equals(card.getId()) && targetColumnId.equals(existing.getColumnId()))
+                .filter(existing -> !existing.getId().equals(card.getId())
+                        && targetColumnId.equals(existing.getColumnId()))
                 .sorted(Comparator.comparing(Card::getPosition, Comparator.nullsLast(Integer::compareTo)))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
-        int insertIndex = targetIndex != null ? Math.max(0, Math.min(targetIndex, targetColumnCards.size())) : targetColumnCards.size();
+        int insertIndex = targetIndex != null ? Math.max(0, Math.min(targetIndex, targetColumnCards.size()))
+                : targetColumnCards.size();
         card.getTransitionEvents().add(CardTransitionEvent.builder()
                 .fromColumnId(card.getColumnId())
                 .toColumnId(targetColumnId)
@@ -261,10 +270,12 @@ public class CardService {
         targetColumnCards.add(insertIndex, card);
         renumberAndSave(targetColumnCards);
 
-        String previousColumnId = card.getTransitionEvents().get(card.getTransitionEvents().size() - 1).getFromColumnId();
+        String previousColumnId = card.getTransitionEvents().get(card.getTransitionEvents().size() - 1)
+                .getFromColumnId();
         if (previousColumnId != null && !previousColumnId.equals(targetColumnId)) {
             List<Card> previousColumnCards = boardCards.stream()
-                    .filter(existing -> !existing.getId().equals(card.getId()) && previousColumnId.equals(existing.getColumnId()))
+                    .filter(existing -> !existing.getId().equals(card.getId())
+                            && previousColumnId.equals(existing.getColumnId()))
                     .sorted(Comparator.comparing(Card::getPosition, Comparator.nullsLast(Integer::compareTo)))
                     .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
             renumberAndSave(previousColumnCards);

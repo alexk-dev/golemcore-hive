@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.threads;
 
-public record EvidenceRefResponse(String kind, String ref) {
-}
+public record EvidenceRefResponse(String kind,String ref){}

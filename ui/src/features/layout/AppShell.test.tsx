@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { AppShell } from './AppShell';
@@ -49,6 +49,25 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: 'All boards' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Current board' })).not.toBeInTheDocument();
     expect(screen.getByText('Thread page')).toBeInTheDocument();
+  });
+
+  it('opens and closes the mobile navigation drawer', () => {
+    renderShell('/');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
+    expect(screen.getByRole('dialog', { name: 'Navigation menu' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close navigation' }));
+    expect(screen.queryByRole('dialog', { name: 'Navigation menu' })).not.toBeInTheDocument();
+  });
+
+  it('closes the mobile drawer after selecting a link', () => {
+    renderShell('/fleet');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Roles' }));
+
+    expect(screen.queryByRole('dialog', { name: 'Navigation menu' })).not.toBeInTheDocument();
   });
 });
 

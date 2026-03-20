@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../app/providers/useAuth';
 import { buildAppShellNavigation, type AppShellSection } from './appShellNavigation';
@@ -5,13 +6,21 @@ import { buildAppShellNavigation, type AppShellSection } from './appShellNavigat
 export function AppShell() {
   const { logout, user } = useAuth();
   const location = useLocation();
+  const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
   const navigation = buildAppShellNavigation(location.pathname);
   const userRoles = formatUserRoles(user?.roles ?? []);
+
+  useEffect(() => {
+    setIsMobileNavigationOpen(false);
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen px-3 py-3 md:px-4 md:py-4">
       <div className="mx-auto grid min-h-screen max-w-[1800px] gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="panel hidden border-white/70 bg-[rgba(255,251,245,0.92)] lg:flex lg:min-h-[calc(100vh-2rem)] lg:flex-col lg:px-4 lg:py-5">
+        <aside
+          aria-hidden={isMobileNavigationOpen ? 'true' : undefined}
+          className="panel hidden border-white/70 bg-[rgba(255,251,245,0.92)] lg:flex lg:min-h-[calc(100vh-2rem)] lg:flex-col lg:px-4 lg:py-5"
+        >
           <div className="border-b border-border/70 pb-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Operator workspace</p>
             <h1 className="mt-3 text-2xl font-bold tracking-[-0.05em] text-foreground">Golemcore Hive</h1>
@@ -19,39 +28,88 @@ export function AppShell() {
 
           <SidebarNavigation sections={navigation.sections} className="mt-5 flex-1" />
 
-          <div className="mt-6 border-t border-border/70 pt-4">
-            <div className="soft-card border border-primary/10 bg-[linear-gradient(135deg,rgba(238,109,52,0.12),rgba(11,164,124,0.08))] px-4 py-3">
-              <p className="text-sm font-semibold text-foreground">{user?.displayName}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                @{user?.username}
-                {userRoles}
+          <AccountPanel displayName={user?.displayName} username={user?.username} userRoles={userRoles} onLogout={() => void logout()} />
+        </aside>
+
+        <main className="min-w-0">
+          <div className="panel mb-4 flex items-center justify-between border-white/70 bg-[rgba(255,251,245,0.92)] px-4 py-3 lg:hidden">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Operator workspace</p>
+              <p className="mt-1 text-lg font-bold tracking-[-0.04em] text-foreground">
+                Hive
               </p>
             </div>
             <button
               type="button"
-              onClick={() => void logout()}
-              className="mt-3 w-full rounded-[18px] border border-foreground/10 bg-white/90 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-white"
+              aria-controls="mobile-navigation-menu"
+              aria-expanded={isMobileNavigationOpen}
+              onClick={() => setIsMobileNavigationOpen(true)}
+              className="rounded-[16px] border border-foreground/10 bg-white/90 px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-white"
             >
-              Sign out
+              Open navigation
             </button>
           </div>
-        </aside>
-
-        <main className="min-w-0">
           <Outlet />
         </main>
       </div>
+
+      {isMobileNavigationOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setIsMobileNavigationOpen(false)}
+            className="absolute inset-0 bg-foreground/30"
+          />
+          <div
+            id="mobile-navigation-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+            className="panel absolute inset-y-3 left-3 flex w-[min(320px,calc(100vw-1.5rem))] flex-col border-white/70 bg-[rgba(255,251,245,0.98)] px-4 py-5"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-border/70 pb-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Operator workspace</p>
+                <h2 className="mt-3 text-2xl font-bold tracking-[-0.05em] text-foreground">Golemcore Hive</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileNavigationOpen(false)}
+                className="rounded-[16px] border border-foreground/10 bg-white/90 px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-white"
+              >
+                Close navigation
+              </button>
+            </div>
+
+            <SidebarNavigation
+              sections={navigation.sections}
+              className="mt-5 flex-1 overflow-y-auto"
+              onNavigate={() => setIsMobileNavigationOpen(false)}
+            />
+
+            <AccountPanel displayName={user?.displayName} username={user?.username} userRoles={userRoles} onLogout={() => void logout()} />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function SidebarNavigation({ className, sections }: { className?: string; sections: AppShellSection[] }) {
+function SidebarNavigation({
+  className,
+  onNavigate,
+  sections,
+}: {
+  className?: string;
+  onNavigate?: () => void;
+  sections: AppShellSection[];
+}) {
   return (
     <nav aria-label="Primary navigation" className={className}>
       <div className="grid gap-1.5">
         {sections.map((section) => (
           <div key={section.id} className="grid gap-1">
-            <Link to={section.to} className={sectionLinkClassName(section.isActive)}>
+            <Link to={section.to} onClick={onNavigate} className={sectionLinkClassName(section.isActive)}>
               <span>{section.label}</span>
               {section.children.length ? (
                 <span
@@ -69,7 +127,7 @@ function SidebarNavigation({ className, sections }: { className?: string; sectio
             {section.isActive && section.children.length ? (
               <div className="ml-4 grid gap-1 border-l border-border/60 pl-3">
                 {section.children.map((child) => (
-                  <NavLink key={child.to} to={child.to} end className={({ isActive }) => childLinkClassName(isActive)}>
+                  <NavLink key={child.to} to={child.to} end onClick={onNavigate} className={({ isActive }) => childLinkClassName(isActive)}>
                     {child.label}
                   </NavLink>
                 ))}
@@ -79,6 +137,37 @@ function SidebarNavigation({ className, sections }: { className?: string; sectio
         ))}
       </div>
     </nav>
+  );
+}
+
+function AccountPanel({
+  displayName,
+  onLogout,
+  userRoles,
+  username,
+}: {
+  displayName: string | undefined;
+  onLogout: () => void;
+  userRoles: string;
+  username: string | undefined;
+}) {
+  return (
+    <div className="mt-6 border-t border-border/70 pt-4">
+      <div className="soft-card border border-primary/10 bg-[linear-gradient(135deg,rgba(238,109,52,0.12),rgba(11,164,124,0.08))] px-4 py-3">
+        <p className="text-sm font-semibold text-foreground">{displayName}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          @{username}
+          {userRoles}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onLogout}
+        className="mt-3 w-full rounded-[18px] border border-foreground/10 bg-white/90 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-white"
+      >
+        Sign out
+      </button>
+    </div>
   );
 }
 

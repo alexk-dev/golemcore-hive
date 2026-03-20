@@ -81,7 +81,7 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
   return (
     <section
       className={[
-        'flex min-h-[250px] flex-col rounded-[18px] border p-3 transition',
+        'flex min-h-[210px] flex-col border p-3 transition',
         hasCards ? 'min-w-[292px]' : 'min-w-[228px]',
         isPrimaryLane ? 'border-border bg-white/88 shadow-[0_10px_26px_rgba(24,18,14,0.05)]' : 'border-border/70 bg-white/55',
         isLaneActive ? 'border-primary/40 bg-primary/5 shadow-[0_12px_30px_rgba(234,88,12,0.08)]' : '',
@@ -102,7 +102,7 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
       <div
         ref={laneDrop.setNodeRef}
         className={[
-          'mt-3 flex flex-1 flex-col gap-2 rounded-[14px] border border-dashed p-1 transition',
+          'mt-3 flex flex-1 flex-col gap-2 border border-dashed p-1 transition',
           isLaneActive ? 'border-primary/35 bg-primary/5' : 'border-transparent',
         ].join(' ')}
       >
@@ -115,15 +115,20 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
           <div
             ref={endDrop.setNodeRef}
             className={[
-              'flex min-h-8 items-center justify-center rounded-[12px] border border-dashed px-3 py-2 text-[11px] font-medium uppercase tracking-[0.14em] transition',
+              'flex min-h-8 items-center justify-center border border-dashed px-3 py-2 text-[11px] font-medium uppercase tracking-[0.14em] transition',
               endDrop.isOver ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-white/60 text-muted-foreground',
             ].join(' ')}
           >
             Drop to add at end
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-center rounded-[14px] border border-dashed border-border/70 bg-white/45 px-4 py-8 text-center text-xs text-muted-foreground">
-            Drop here
+          <div
+            className={[
+              'flex items-center justify-center border border-dashed px-4 py-4 text-center text-xs transition',
+              isLaneActive ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-white/45 text-muted-foreground',
+            ].join(' ')}
+          >
+            {isLaneActive ? 'Drop here' : 'No cards yet'}
           </div>
         )}
       </div>

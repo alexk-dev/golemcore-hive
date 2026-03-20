@@ -40,4 +40,25 @@ describe('KanbanColumn', () => {
     expect(screen.queryByText(/card /i)).not.toBeInTheDocument();
     expect(screen.getByText(/drop to add at end/i)).toBeInTheDocument();
   });
+
+  it('keeps empty columns quiet until drag interaction starts', () => {
+    render(
+      <DndContext>
+        <KanbanColumn
+          column={{
+            id: 'ready',
+            name: 'Ready',
+            description: 'Ready to start',
+            wipLimit: null,
+            terminal: false,
+          }}
+          cards={[]}
+          onOpenCard={vi.fn()}
+        />
+      </DndContext>,
+    );
+
+    expect(screen.getByText('No cards yet')).toBeInTheDocument();
+    expect(screen.queryByText('Drop here')).not.toBeInTheDocument();
+  });
 });

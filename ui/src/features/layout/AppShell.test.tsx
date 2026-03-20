@@ -86,6 +86,16 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: 'Fleet' })).not.toHaveClass('rounded-[18px]');
     expect(screen.getByRole('button', { name: 'Open navigation' })).not.toHaveClass('rounded-[16px]');
   });
+
+  it('keeps a compact account strip instead of a stacked footer card', () => {
+    renderShell('/');
+
+    const signOutButton = screen.getByRole('button', { name: 'Sign out' });
+
+    expect(screen.getByText('@admin · ADMIN')).toBeInTheDocument();
+    expect(signOutButton).not.toHaveClass('w-full');
+    expect(signOutButton).not.toHaveClass('mt-3');
+  });
 });
 
 function renderShell(initialEntry: string) {

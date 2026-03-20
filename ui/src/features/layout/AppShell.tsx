@@ -153,20 +153,22 @@ function AccountPanel({
 }) {
   return (
     <div className="mt-6 border-t border-border/70 pt-4">
-      <div className="border border-primary/10 bg-[linear-gradient(135deg,rgba(238,109,52,0.12),rgba(11,164,124,0.08))] px-4 py-3">
-        <p className="text-sm font-semibold text-foreground">{displayName}</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          @{username}
-          {userRoles}
-        </p>
+      <div className="section-surface flex items-center justify-between gap-3 px-3 py-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            @{username}
+            {userRoles}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onLogout}
+          className="shrink-0 border border-foreground/10 bg-white/90 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-foreground transition hover:bg-white"
+        >
+          Sign out
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={onLogout}
-        className="mt-3 w-full border border-foreground/10 bg-white/90 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-white"
-      >
-        Sign out
-      </button>
     </div>
   );
 }

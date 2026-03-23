@@ -67,6 +67,52 @@ public class ThreadService {
         return getOrCreateThreadForCard(card);
     }
 
+    public ThreadRecord getOrCreateDirectThread(String golemId, String golemDisplayName) {
+        String threadId = "dm_" + golemId;
+        Optional<ThreadRecord> existing = findThread(threadId);
+        if (existing.isPresent()) {
+            ThreadRecord thread = existing.get();
+            if (!java.util.Objects.equals(thread.getTitle(), golemDisplayName)) {
+                thread.setTitle(golemDisplayName);
+                thread.setUpdatedAt(Instant.now());
+                saveThread(thread);
+            }
+            return thread;
+        }
+        Instant now = Instant.now();
+        ThreadRecord thread = ThreadRecord.builder()
+                .id(threadId)
+                .title(golemDisplayName)
+                .assignedGolemId(golemId)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        saveThread(thread);
+        return thread;
+    }
+
+    public List<ThreadRecord> listDirectThreads() {
+        List<ThreadRecord> threads = new ArrayList<>();
+        for (String path : storagePort.listObjects(THREADS_DIR, "")) {
+            if (!path.startsWith("dm_")) {
+                continue;
+            }
+            String content = storagePort.getText(THREADS_DIR, path);
+            if (content == null) {
+                continue;
+            }
+            try {
+                threads.add(objectMapper.readValue(content, ThreadRecord.class));
+            } catch (JsonProcessingException exception) {
+                throw new IllegalStateException("Failed to deserialize thread " + path, exception);
+            }
+        }
+        threads.sort(Comparator.comparing(
+                ThreadRecord::getLastMessageAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return threads;
+    }
+
     public List<ThreadMessage> listMessages(String threadId) {
         List<ThreadMessage> messages = new ArrayList<>();
         for (String path : storagePort.listObjects(THREAD_MESSAGES_DIR, "")) {

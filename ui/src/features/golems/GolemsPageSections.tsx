@@ -1,5 +1,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import type { GolemRole, GolemSummary } from '../../lib/api/golemsApi';
 import { GolemStatusBadge } from './GolemStatusBadge';
 import { formatTimestamp } from '../../lib/format';
@@ -122,6 +123,13 @@ export function GolemRegistryPanel({
                     <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{golem.hostLabel || golem.id}</span>
                     <span className="hidden shrink-0 text-xs text-muted-foreground md:inline">{golem.roleSlugs.join(', ') || '—'}</span>
                     <span className="shrink-0 text-xs text-muted-foreground">{formatTimestamp(golem.lastSeenAt)}</span>
+                    <Link
+                      to={`/fleet/chat/${golem.id}`}
+                      onClick={(event) => event.stopPropagation()}
+                      className="shrink-0 text-xs font-semibold text-primary hover:underline"
+                    >
+                      Chat
+                    </Link>
                   </button>
                 );
               })}

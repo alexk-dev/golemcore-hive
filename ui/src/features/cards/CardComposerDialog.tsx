@@ -72,63 +72,56 @@ export function CardComposerDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4 py-6 backdrop-blur-sm">
-      <div className="panel max-h-[90vh] w-full max-w-5xl overflow-auto p-6 md:p-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <span className="pill">New card</span>
-            <h2 className="mt-4 text-3xl font-bold tracking-[-0.04em] text-foreground">Create card in {board.name}</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Every card creates a canonical Hive thread immediately. The saved prompt is auto-dispatched the first time you
-              move the card into In Progress.
-            </p>
-          </div>
+      <div className="panel max-h-[90vh] w-full max-w-4xl overflow-auto p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold tracking-tight text-foreground">New card in {board.name}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-border bg-white/70 px-3 py-2 text-sm font-semibold text-foreground"
+            className="rounded-full border border-border bg-white/70 px-3 py-1.5 text-sm font-semibold text-foreground"
           >
             Close
           </button>
         </div>
 
-        <form className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]" onSubmit={(event) => void handleSubmit(event)}>
-          <div className="grid gap-4">
-            <label className="grid gap-2">
+        <form className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]" onSubmit={(event) => void handleSubmit(event)}>
+          <div className="grid gap-3">
+            <label className="grid gap-1.5">
               <span className="text-sm font-semibold text-foreground">Title</span>
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+                className="rounded-xl border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
                 placeholder="Implement board filters"
               />
             </label>
-            <label className="grid gap-2">
+            <label className="grid gap-1.5">
               <span className="text-sm font-semibold text-foreground">Prompt</span>
               <textarea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
-                rows={6}
-                className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
-                placeholder="The exact starting instruction Hive should dispatch the first time you move this card into In Progress."
+                rows={5}
+                className="rounded-xl border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                placeholder="Starting instruction dispatched when moved to In Progress."
               />
             </label>
-            <label className="grid gap-2">
+            <label className="grid gap-1.5">
               <span className="text-sm font-semibold text-foreground">Description</span>
               <textarea
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                rows={8}
-                className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
-                placeholder="Context, acceptance criteria, links, and operating constraints."
+                rows={6}
+                className="rounded-xl border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                placeholder="Context, acceptance criteria, links."
               />
             </label>
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2">
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="grid gap-1.5">
                 <span className="text-sm font-semibold text-foreground">Initial column</span>
                 <select
                   value={columnId}
                   onChange={(event) => setColumnId(event.target.value)}
-                  className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+                  className="rounded-xl border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
                 >
                   {board.flow.columns.map((column) => (
                     <option key={column.id} value={column.id}>
@@ -137,12 +130,12 @@ export function CardComposerDialog({
                   ))}
                 </select>
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-foreground">Assignee routing</span>
+              <label className="grid gap-1.5">
+                <span className="text-sm font-semibold text-foreground">Routing</span>
                 <select
                   value={assignmentPolicy}
                   onChange={(event) => setAssignmentPolicy(event.target.value)}
-                  className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+                  className="rounded-xl border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
                 >
                   <option value="MANUAL">MANUAL</option>
                   <option value="SUGGESTED">SUGGESTED</option>
@@ -150,43 +143,32 @@ export function CardComposerDialog({
                 </select>
               </label>
             </div>
-            <div className="soft-card p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Selected routing</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Routing controls who gets the work. Card status still follows lifecycle signals and board flow.
-                  </p>
-                </div>
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-white/70 p-3">
+              <div className="flex items-center gap-3">
                 <AssignmentPolicyBadge policy={assignmentPolicy} />
+                <label className="flex items-center gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={autoAssign}
+                    disabled={assignmentPolicy !== 'AUTOMATIC'}
+                    onChange={(event) => setAutoAssign(event.target.checked)}
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  Auto-assign on create
+                </label>
               </div>
-              <label className="mt-4 flex items-center gap-3 text-sm text-foreground">
-                <input
-                  type="checkbox"
-                  checked={autoAssign}
-                  disabled={assignmentPolicy !== 'AUTOMATIC'}
-                  onChange={(event) => setAutoAssign(event.target.checked)}
-                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                />
-                Auto-assign on create
-              </label>
             </div>
             <button
               type="submit"
               disabled={isPending || !title.trim() || !prompt.trim()}
-              className="rounded-[20px] bg-foreground px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isPending ? 'Creating card...' : 'Create card'}
+              {isPending ? 'Creating...' : 'Create card'}
             </button>
           </div>
 
-          <div className="grid gap-3">
-            <div>
-              <p className="text-sm font-semibold text-foreground">Assignee routing</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Two tabs mirror the Hive assignment model: quick team-local routing and full-fleet fallback.
-              </p>
-            </div>
+          <div className="grid gap-2">
+            <p className="text-sm font-semibold text-foreground">Assignee</p>
             <AssigneePicker
               options={assigneeOptions}
               allGolems={allGolems}

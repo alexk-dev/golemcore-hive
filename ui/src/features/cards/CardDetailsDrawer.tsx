@@ -28,31 +28,21 @@ interface CardDetailsDrawerProps {
   controlError: string | null;
 }
 
-type ApprovalRiskLevel = 'NONE' | 'DESTRUCTIVE' | 'HIGH_COST';
-
 function useCardDetailsDrafts(card: CardDetail | null) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [prompt, setPrompt] = useState('');
   const [assignmentPolicy, setAssignmentPolicy] = useState('MANUAL');
-  const [dispatchBody, setDispatchBody] = useState('');
-  const [approvalRiskLevel, setApprovalRiskLevel] = useState<ApprovalRiskLevel>('NONE');
-  const [estimatedCostMicros, setEstimatedCostMicros] = useState('');
-  const [approvalReason, setApprovalReason] = useState('');
   const [hydratedCardId, setHydratedCardId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!card || hydratedCardId === card.id) {
       return;
     }
-    setTitle(normalizeText(card.title));
-    setDescription(normalizeText(card.description));
-    setPrompt(normalizeText(card.prompt));
-    setAssignmentPolicy(normalizeText(card.assignmentPolicy) || 'MANUAL');
-    setDispatchBody('');
-    setApprovalRiskLevel('NONE');
-    setEstimatedCostMicros('');
-    setApprovalReason('');
+    setTitle(card.title ?? '');
+    setDescription(card.description ?? '');
+    setPrompt(card.prompt ?? '');
+    setAssignmentPolicy(card.assignmentPolicy || 'MANUAL');
     setHydratedCardId(card.id);
   }, [card, hydratedCardId]);
 
@@ -61,24 +51,10 @@ function useCardDetailsDrafts(card: CardDetail | null) {
     description,
     prompt,
     assignmentPolicy,
-    dispatchBody,
-    approvalRiskLevel,
-    estimatedCostMicros,
-    approvalReason,
     setTitle,
     setDescription,
     setPrompt,
     setAssignmentPolicy,
-    setDispatchBody,
-    setApprovalRiskLevel,
-    setEstimatedCostMicros,
-    setApprovalReason,
-    resetDispatchForm() {
-      setDispatchBody('');
-      setApprovalRiskLevel('NONE');
-      setEstimatedCostMicros('');
-      setApprovalReason('');
-    },
   };
 }
 
@@ -110,28 +86,17 @@ export function CardDetailsDrawer({
         <CardDetailsHeader card={card} onClose={onClose} />
 
         {controlError ? (
-          <div className="mt-4 rounded-[18px] border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+          <div className="mt-3 rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm text-rose-900">
             {controlError}
           </div>
         ) : null}
 
-        <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_300px]">
-          <div className="grid gap-5">
+        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_300px]">
+          <div className="grid gap-4">
             <CardDispatchPanel
               card={card}
-              dispatchBody={drafts.dispatchBody}
-              approvalRiskLevel={drafts.approvalRiskLevel}
-              estimatedCostMicros={drafts.estimatedCostMicros}
-              approvalReason={drafts.approvalReason}
               isDispatchPending={isDispatchPending}
-              onDispatchBodyChange={drafts.setDispatchBody}
-              onApprovalRiskLevelChange={drafts.setApprovalRiskLevel}
-              onEstimatedCostMicrosChange={drafts.setEstimatedCostMicros}
-              onApprovalReasonChange={drafts.setApprovalReason}
-              onSubmit={async (input) => {
-                await onDispatchCommand(input);
-                drafts.resetDispatchForm();
-              }}
+              onSubmit={onDispatchCommand}
             />
 
             <CardEditorPanel
@@ -174,8 +139,4 @@ export function CardDetailsDrawer({
       </div>
     </div>
   );
-}
-
-function normalizeText(value: string | null | undefined) {
-  return value ?? '';
 }

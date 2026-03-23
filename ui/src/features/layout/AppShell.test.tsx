@@ -16,19 +16,18 @@ vi.mock('../../app/providers/useAuth', () => ({
 }));
 
 describe('AppShell', () => {
-  it('keeps the descriptive subtitle on non-board routes', () => {
+  it('renders the navigation and child route on non-board routes', () => {
     renderShell('/');
 
-    expect(screen.getByText('Operator workbench for boards, golems, and governed dispatch')).toBeInTheDocument();
+    expect(screen.getByText('Hive')).toBeInTheDocument();
     expect(screen.getByText('Overview page')).toBeInTheDocument();
   });
 
-  it('uses a quieter compact shell on board routes', () => {
+  it('renders the navigation and child route on board routes', () => {
     renderShell('/boards/board_1');
 
-    expect(screen.queryByText('Operator workbench for boards, golems, and governed dispatch')).not.toBeInTheDocument();
     expect(screen.getByText('Board page')).toBeInTheDocument();
-    expect(screen.getByText('Golemcore Hive')).toBeInTheDocument();
+    expect(screen.getByText('Hive')).toBeInTheDocument();
   });
 });
 

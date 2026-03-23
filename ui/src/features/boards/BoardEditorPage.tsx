@@ -80,7 +80,7 @@ export function BoardEditorPage() {
   }, [boardQuery.data]);
 
   if (!boardQuery.data) {
-    return <div className="panel p-6 md:p-8 text-sm text-muted-foreground">Loading board settings…</div>;
+    return <div className="panel p-6 text-sm text-muted-foreground">Loading board settings…</div>;
   }
 
   async function handleMetadataSubmit(event: FormEvent<HTMLFormElement>) {
@@ -89,47 +89,36 @@ export function BoardEditorPage() {
   }
 
   return (
-    <div className="grid gap-6">
-      <section className="panel p-6 md:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <span className="pill">Board settings</span>
-            <h2 className="mt-4 text-3xl font-bold tracking-[-0.04em] text-foreground">{boardQuery.data.name}</h2>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">
-              Update metadata, team composition, and flow behavior without touching other boards.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link to="/boards" className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
-              All boards
-            </Link>
-            <Link to={`/boards/${boardId}`} className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white">
-              Open kanban
-            </Link>
-          </div>
+    <div className="grid gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-bold tracking-tight text-foreground">{boardQuery.data.name} settings</h2>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/boards" className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
+            All boards
+          </Link>
+          <Link to={`/boards/${boardId}`} className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white">
+            Open kanban
+          </Link>
         </div>
-      </section>
+      </div>
 
-      <form className="panel grid gap-4 p-6 md:p-8" onSubmit={(event) => void handleMetadataSubmit(event)}>
-        <div>
-          <span className="pill">Metadata</span>
-          <h3 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">Board identity</h3>
-        </div>
+      <form className="panel grid gap-4 p-5" onSubmit={(event) => void handleMetadataSubmit(event)}>
+        <h3 className="text-base font-bold tracking-tight text-foreground">Metadata</h3>
         <div className="grid gap-4 md:grid-cols-[1fr_220px]">
-          <label className="grid gap-2">
+          <label className="grid gap-1.5">
             <span className="text-sm font-semibold text-foreground">Name</span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+              className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
             />
           </label>
-          <label className="grid gap-2">
+          <label className="grid gap-1.5">
             <span className="text-sm font-semibold text-foreground">Default assignment</span>
             <select
               value={defaultAssignmentPolicy}
               onChange={(event) => setDefaultAssignmentPolicy(event.target.value)}
-              className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+              className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
             >
               <option value="MANUAL">MANUAL</option>
               <option value="SUGGESTED">SUGGESTED</option>
@@ -137,19 +126,19 @@ export function BoardEditorPage() {
             </select>
           </label>
         </div>
-        <label className="grid gap-2">
+        <label className="grid gap-1.5">
           <span className="text-sm font-semibold text-foreground">Description</span>
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            rows={4}
-            className="rounded-[20px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+            rows={3}
+            className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
           />
         </label>
         <button
           type="submit"
           disabled={updateBoardMutation.isPending}
-          className="rounded-[20px] bg-foreground px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+          className="rounded-xl bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
         >
           Save metadata
         </button>

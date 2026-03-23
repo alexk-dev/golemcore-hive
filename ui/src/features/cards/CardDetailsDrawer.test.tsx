@@ -59,10 +59,8 @@ describe('CardDetailsDrawer', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: /dispatch to assignee/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /dispatch command/i })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/ask the assigned golem/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/assignee routing/i)).toHaveLength(2);
+    expect(screen.getByRole('heading', { name: /dispatch/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /dispatch/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/prompt/i)).toHaveDisplayValue('Start with the saved card prompt before sending manual follow-ups.');
   });
 

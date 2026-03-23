@@ -38,6 +38,6 @@ describe('KanbanColumn', () => {
     expect(screen.getByText('golem_1')).toBeInTheDocument();
     expect(screen.queryByText('AUTOMATIC')).not.toBeInTheDocument();
     expect(screen.queryByText(/card /i)).not.toBeInTheDocument();
-    expect(screen.getByText(/drop to add at end/i)).toBeInTheDocument();
+    expect(screen.getByText(/drop to end/i)).toBeInTheDocument();
   });
 });

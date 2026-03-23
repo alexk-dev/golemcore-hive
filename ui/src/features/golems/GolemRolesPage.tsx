@@ -48,33 +48,22 @@ export function GolemRolesPage() {
   }
 
   return (
-    <div className="grid gap-6">
-      <section className="panel p-6 md:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <span className="pill">Role catalog</span>
-            <h2 className="mt-4 text-3xl font-bold tracking-[-0.04em] text-foreground">Model the work modes your fleet needs</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-              Roles stay free-form slug identifiers so later board teams and assignment policies can reuse them without schema churn.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <NavLink
-              to="/fleet"
-              className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
-            >
-              Back to fleet
-            </NavLink>
-            <button
-              type="button"
-              onClick={openCreateDialog}
-              className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white"
-            >
-              Create role
-            </button>
-          </div>
-        </div>
-      </section>
+    <div className="grid gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <NavLink
+          to="/fleet"
+          className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+        >
+          Back to fleet
+        </NavLink>
+        <button
+          type="button"
+          onClick={openCreateDialog}
+          className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white"
+        >
+          Create role
+        </button>
+      </div>
 
       <section className="grid gap-4 lg:grid-cols-2">
         {rolesQuery.data?.length ? (
@@ -82,38 +71,31 @@ export function GolemRolesPage() {
             <article key={role.slug} className="panel p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{role.slug}</p>
-                  <h3 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-foreground">{role.name}</h3>
+                  <p className="text-xs text-muted-foreground">{role.slug}</p>
+                  <h3 className="mt-1 text-lg font-bold tracking-tight text-foreground">{role.name}</h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => openEditDialog(role)}
-                  className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+                  className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
                 >
                   Edit
                 </button>
               </div>
-              <p className="mt-4 text-sm leading-6 text-muted-foreground">{role.description || 'No description yet.'}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {role.capabilityTags.length ? (
-                  role.capabilityTags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-muted px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              {role.description ? <p className="mt-2 text-sm text-muted-foreground">{role.description}</p> : null}
+              {role.capabilityTags.length ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {role.capabilityTags.map((tag) => (
+                    <span key={tag} className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                       {tag}
                     </span>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">No capability tags</span>
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : null}
             </article>
           ))
         ) : (
-          <article className="panel p-6 md:p-8">
-            <h3 className="text-2xl font-bold tracking-[-0.04em] text-foreground">No roles yet</h3>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Create a catalog entry like `developer`, `reviewer`, or `ops`, then assign it from the fleet detail panel.
-            </p>
-          </article>
+          <p className="text-sm text-muted-foreground">No roles yet.</p>
         )}
       </section>
 

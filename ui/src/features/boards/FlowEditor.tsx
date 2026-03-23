@@ -82,12 +82,9 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
   }
 
   return (
-    <section className="panel p-6 md:p-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <span className="pill">Flow editor</span>
-          <h3 className="mt-4 text-2xl font-bold tracking-[-0.04em] text-foreground">Own the board flow per board</h3>
-        </div>
+    <section className="panel p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-base font-bold tracking-tight text-foreground">Flow</h3>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -107,13 +104,13 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6">
-        <label className="grid gap-2">
+      <div className="mt-4 grid gap-5">
+        <label className="grid gap-1.5">
           <span className="text-sm font-semibold text-foreground">Flow name</span>
           <input
             value={flow.name}
             onChange={(event) => setFlow((current) => ({ ...current, name: event.target.value }))}
-            className="rounded-[18px] border border-border bg-white px-4 py-3 text-sm outline-none transition focus:border-primary"
+            className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm outline-none transition focus:border-primary"
             placeholder="Engineering"
           />
         </label>

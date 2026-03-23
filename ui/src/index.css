@@ -47,11 +47,11 @@
 
 @layer components {
   .panel {
-    @apply rounded-[22px] border border-border/80 bg-white/85 shadow-[0_10px_30px_rgba(34,29,24,0.06)] backdrop-blur;
+    @apply rounded-xl border border-border/80 bg-white/85 shadow-[0_10px_30px_rgba(34,29,24,0.06)] backdrop-blur;
   }
 
   .soft-card {
-    @apply rounded-[18px] border border-white/60 bg-white/70 shadow-[0_8px_24px_rgba(34,29,24,0.05)];
+    @apply rounded-lg border border-white/60 bg-white/70 shadow-[0_8px_24px_rgba(34,29,24,0.05)];
   }
 
   .pill {

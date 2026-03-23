@@ -14,9 +14,10 @@ import { getCard } from '../../lib/api/cardsApi';
 import { buildOperatorUpdatesUrl, type OperatorUpdateEvent } from '../../lib/api/eventsApi';
 import { getCardThread, listThreadMessages } from '../../lib/api/threadsApi';
 import { useAuth } from '../../app/providers/useAuth';
+import { readErrorMessage } from '../../lib/format';
+import { GolemStatusBadge } from '../golems/GolemStatusBadge';
 import { RunTimeline } from '../runs/RunTimeline';
 import { TransitionSuggestionBanner } from '../runs/TransitionSuggestionBanner';
-import { GolemSwitcher } from './GolemSwitcher';
 import { ThreadComposer } from './ThreadComposer';
 import { ThreadMessageList } from './ThreadMessageList';
 
@@ -201,83 +202,68 @@ function useCardThreadData(cardId: string) {
   };
 }
 
-function CardThreadHero({
-  cardId,
-  boardId,
+function CardThreadHeader({
   title,
   columnId,
-  threadId,
+  boardId,
   liveState,
-  latestControllableRun,
-  latestControllableCommand,
+  targetGolem,
+  controllableRun,
   cancelActionLabel,
   cancelRequestedPending,
-  actionError,
   isCancelPending,
+  actionError,
   onCancelRun,
 }: {
-  cardId: string;
-  boardId: string;
   title: string;
   columnId: string;
-  threadId: string;
-  liveState: 'connecting' | 'connected' | 'disconnected';
-  latestControllableRun: { id: string; status: string; cancelRequestedAt: string | null; cancelRequestedByActorName?: string | null } | null;
-  latestControllableCommand: { status: string } | null;
+  boardId: string;
+  liveState: string;
+  targetGolem: { displayName: string; state: string } | null;
+  controllableRun: { id: string; cancelRequestedByActorName?: string | null } | null;
   cancelActionLabel: string;
   cancelRequestedPending: boolean;
-  actionError: string | null;
   isCancelPending: boolean;
+  actionError: string | null;
   onCancelRun: (runId: string) => void;
 }) {
   return (
-    <section className="panel px-5 py-4 md:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <span className="pill">Card thread</span>
-          <h2 className="mt-3 text-2xl font-bold tracking-[-0.04em] text-foreground">{title}</h2>
-          <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-            Card {cardId} · thread {threadId} · column {columnId}
-          </p>
+    <section className="panel px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold tracking-tight text-foreground">{title}</h2>
+          <span className="text-xs text-muted-foreground">{columnId} · {liveState}</span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {threadId && latestControllableRun ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {targetGolem ? (
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <GolemStatusBadge state={targetGolem.state} />
+              {targetGolem.displayName}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">Unassigned</span>
+          )}
+          {controllableRun ? (
             <button
               type="button"
               disabled={isCancelPending || cancelRequestedPending}
-              onClick={() => onCancelRun(latestControllableRun.id)}
-              className="rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
+              onClick={() => onCancelRun(controllableRun.id)}
+              className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
             >
               {isCancelPending ? 'Sending stop...' : cancelRequestedPending ? 'Stop requested' : cancelActionLabel}
             </button>
           ) : null}
-          <span className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
-            Live: {liveState}
-          </span>
-          <Link to={`/boards/${boardId}`} className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
+          <Link to={`/boards/${boardId}`} className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground">
             Back to board
           </Link>
         </div>
       </div>
-      {latestControllableRun ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          Active control target: run {latestControllableRun.id} with status {latestControllableRun.status}
-          {latestControllableCommand ? ` · command ${latestControllableCommand.status.toLowerCase()}` : ''}
+      {cancelRequestedPending && controllableRun ? (
+        <p className="mt-2 text-xs text-rose-900">
+          Stop requested{controllableRun.cancelRequestedByActorName ? ` by ${controllableRun.cancelRequestedByActorName}` : ''}. Waiting for bot confirmation.
         </p>
       ) : null}
-      {latestControllableRun && cancelRequestedPending ? (
-        <div className="mt-4 rounded-[18px] border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-          Stop requested
-          {latestControllableRun.cancelRequestedByActorName ? ` by ${latestControllableRun.cancelRequestedByActorName}` : ''}
-          {latestControllableRun.cancelRequestedAt ? ` at ${new Date(latestControllableRun.cancelRequestedAt).toLocaleString()}` : ''}.
-          Waiting for bot confirmation.
-        </div>
-      ) : null}
-      {actionError ? (
-        <div className="mt-4 rounded-[18px] border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-          {actionError}
-        </div>
-      ) : null}
+      {actionError ? <p className="mt-2 text-sm text-rose-900">{actionError}</p> : null}
     </section>
   );
 }
@@ -293,7 +279,7 @@ export function CardThreadPage() {
   });
 
   if (!data.cardQuery.data || !data.threadQuery.data) {
-    return <div className="panel p-6 md:p-8 text-sm text-muted-foreground">Loading card thread…</div>;
+    return <div className="panel p-6 text-sm text-muted-foreground">Loading card thread…</div>;
   }
 
   const cancelRequestedPending = data.latestControllableRun
@@ -306,20 +292,18 @@ export function CardThreadPage() {
   const targetGolem = data.threadQuery.data.targetGolem;
 
   return (
-    <div className="grid gap-6">
-      <CardThreadHero
-        cardId={data.cardQuery.data.id}
-        boardId={data.cardQuery.data.boardId}
+    <div className="grid gap-4">
+      <CardThreadHeader
         title={data.cardQuery.data.title}
         columnId={data.cardQuery.data.columnId}
-        threadId={threadId}
+        boardId={data.cardQuery.data.boardId}
         liveState={liveState}
-        latestControllableRun={data.latestControllableRun}
-        latestControllableCommand={data.latestControllableCommand}
+        targetGolem={targetGolem}
+        controllableRun={data.latestControllableRun}
         cancelActionLabel={cancelActionLabel}
         cancelRequestedPending={cancelRequestedPending}
-        actionError={data.actionError}
         isCancelPending={data.cancelRunMutation.isPending}
+        actionError={data.actionError}
         onCancelRun={(runId) => {
           void data.cancelRunMutation.mutateAsync({ threadId, runId });
         }}
@@ -327,8 +311,8 @@ export function CardThreadPage() {
 
       <TransitionSuggestionBanner signal={data.latestSuggestion} />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_360px]">
-        <div className="grid gap-6">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_360px]">
+        <div className="grid gap-4">
           <ThreadMessageList messages={data.messagesQuery.data ?? []} />
           <ThreadComposer
             targetGolem={targetGolem}
@@ -338,8 +322,7 @@ export function CardThreadPage() {
             }}
           />
         </div>
-        <div className="grid gap-6">
-          <GolemSwitcher targetGolem={targetGolem} />
+        <div className="grid gap-4">
           <RunTimeline
             commands={data.commandsQuery.data ?? []}
             runs={data.runsQuery.data ?? []}
@@ -357,11 +340,4 @@ function isRunTerminal(status: string) {
 
 function isCancelRequestedPending(status: string, cancelRequestedAt: string | null) {
   return Boolean(cancelRequestedAt) && !isRunTerminal(status);
-}
-
-function readErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-  return 'The action failed. Check the Hive control channel state and try again.';
 }

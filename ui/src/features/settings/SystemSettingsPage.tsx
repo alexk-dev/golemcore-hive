@@ -1,8 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { acknowledgeNotification, getSystemSettings } from '../../lib/api/systemApi';
+import {
+  createEnrollmentToken,
+  listEnrollmentTokens,
+  revokeEnrollmentToken,
+  type EnrollmentToken,
+} from '../../lib/api/golemsApi';
+import { EnrollmentTokenDialog } from '../golems/EnrollmentTokenDialog';
+import { formatTimestamp } from '../../lib/format';
 
 export function SystemSettingsPage() {
   const queryClient = useQueryClient();
+  const [isEnrollmentDialogOpen, setIsEnrollmentDialogOpen] = useState(false);
+
   const settingsQuery = useQuery({
     queryKey: ['system-settings'],
     queryFn: getSystemSettings,
@@ -12,6 +23,26 @@ export function SystemSettingsPage() {
     mutationFn: acknowledgeNotification,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['system-settings'] });
+    },
+  });
+
+  const tokensQuery = useQuery({
+    queryKey: ['enrollment-tokens'],
+    queryFn: listEnrollmentTokens,
+  });
+
+  const enrollmentMutation = useMutation({
+    mutationFn: async (input: { note: string; expiresInMinutes: number | null }) =>
+      createEnrollmentToken(input.note, input.expiresInMinutes),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['enrollment-tokens'] });
+    },
+  });
+
+  const revokeTokenMutation = useMutation({
+    mutationFn: async (tokenId: string) => revokeEnrollmentToken(tokenId, 'Revoked by operator'),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['enrollment-tokens'] });
     },
   });
 
@@ -31,6 +62,26 @@ export function SystemSettingsPage() {
         <SettingCard label="Audit retention" value={`${settings.retention.auditDays} days`} />
         <SettingCard label="Notifications retention" value={`${settings.retention.notificationsDays} days`} />
       </section>
+
+      <EnrollmentTokensSection
+        tokens={tokensQuery.data ?? []}
+        isRevoking={revokeTokenMutation.isPending}
+        onRevoke={(tokenId) => revokeTokenMutation.mutate(tokenId)}
+        onCreateToken={() => setIsEnrollmentDialogOpen(true)}
+      />
+
+      <EnrollmentTokenDialog
+        open={isEnrollmentDialogOpen}
+        isPending={enrollmentMutation.isPending}
+        createdToken={enrollmentMutation.data ?? null}
+        onClose={() => {
+          setIsEnrollmentDialogOpen(false);
+          enrollmentMutation.reset();
+        }}
+        onCreate={async (input) => {
+          await enrollmentMutation.mutateAsync(input);
+        }}
+      />
 
       <section className="panel p-5">
         <h3 className="text-base font-bold tracking-tight text-foreground">Notification defaults</h3>
@@ -81,6 +132,61 @@ export function SystemSettingsPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+function EnrollmentTokensSection({
+  tokens,
+  isRevoking,
+  onRevoke,
+  onCreateToken,
+}: {
+  tokens: EnrollmentToken[];
+  isRevoking: boolean;
+  onRevoke: (tokenId: string) => void;
+  onCreateToken: () => void;
+}) {
+  return (
+    <section className="panel p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-base font-bold tracking-tight text-foreground">Enrollment tokens</h3>
+        <button
+          type="button"
+          onClick={onCreateToken}
+          className="bg-foreground px-3 py-1.5 text-sm font-semibold text-white"
+        >
+          Create token
+        </button>
+      </div>
+      <div className="mt-4 divide-y divide-border/50">
+        {tokens.length ? (
+          tokens.map((token) => (
+            <div key={token.id} className="flex items-center justify-between gap-3 py-2">
+              <div>
+                <p className="text-sm text-foreground">{token.note || token.preview}</p>
+                <p className="text-xs text-muted-foreground">
+                  By {token.createdByUsername || 'operator'} · expires {formatTimestamp(token.expiresAt)}
+                  {' · '}{token.registrationCount} registrations
+                  {token.revoked ? ' · Revoked' : ''}
+                </p>
+              </div>
+              {!token.revoked ? (
+                <button
+                  type="button"
+                  disabled={isRevoking}
+                  onClick={() => onRevoke(token.id)}
+                  className="shrink-0 border border-rose-300 bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-900"
+                >
+                  Revoke
+                </button>
+              ) : null}
+            </div>
+          ))
+        ) : (
+          <p className="py-2 text-sm text-muted-foreground">No enrollment tokens yet.</p>
+        )}
+      </div>
+    </section>
   );
 }
 

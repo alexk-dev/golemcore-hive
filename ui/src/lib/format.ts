@@ -5,7 +5,7 @@ export function formatTimestamp(value: string | null) {
   return new Date(value).toLocaleString();
 }
 
-export function formatControlLabel(controlState: { runStatus: string; commandStatus?: string; cancelRequestedPending?: boolean }) {
+export function formatControlLabel(controlState: { runStatus: string; commandStatus?: string | null; cancelRequestedPending?: boolean }) {
   if (controlState.cancelRequestedPending) {
     return 'Stop requested';
   }

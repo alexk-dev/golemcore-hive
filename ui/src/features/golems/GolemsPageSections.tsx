@@ -1,29 +1,20 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useRef } from 'react';
-import type { EnrollmentToken, GolemRole, GolemSummary } from '../../lib/api/golemsApi';
+import { useMemo, useRef } from 'react';
+import type { GolemRole, GolemSummary } from '../../lib/api/golemsApi';
 import { GolemStatusBadge } from './GolemStatusBadge';
 import { formatTimestamp } from '../../lib/format';
 
 const fleetStates = ['', 'ONLINE', 'DEGRADED', 'OFFLINE', 'PAUSED', 'REVOKED', 'PENDING_ENROLLMENT'];
 const GOLEM_ROW_HEIGHT = 32;
 
-export function GolemsHero({
-  onCreateEnrollmentToken,
-}: {
-  onCreateEnrollmentToken: () => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <button
-        type="button"
-        onClick={onCreateEnrollmentToken}
-        className="bg-foreground px-3 py-1.5 text-sm font-semibold text-white"
-      >
-        Create enrollment token
-      </button>
-    </div>
-  );
-}
+const STATE_ORDER: Record<string, number> = {
+  OFFLINE: 0,
+  DEGRADED: 1,
+  PAUSED: 2,
+  REVOKED: 3,
+  PENDING_ENROLLMENT: 4,
+  ONLINE: 5,
+};
 
 export function GolemFiltersPanel({
   query,
@@ -86,9 +77,20 @@ export function GolemRegistryPanel({
   selectedGolemId: string | null;
   onSelect: (golemId: string) => void;
 }) {
+  const sorted = useMemo(() => {
+    return [...golems].sort((a, b) => {
+      const orderA = STATE_ORDER[a.state] ?? 5;
+      const orderB = STATE_ORDER[b.state] ?? 5;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' });
+    });
+  }, [golems]);
+
   const parentRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
-    count: golems.length,
+    count: sorted.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => GOLEM_ROW_HEIGHT,
     overscan: 20,
@@ -96,13 +98,13 @@ export function GolemRegistryPanel({
 
   return (
     <div>
-      <p className="mb-1 text-xs text-muted-foreground">{golems.length} golems</p>
-      {golems.length ? (
+      <p className="mb-1 text-xs text-muted-foreground">{sorted.length} golems</p>
+      {sorted.length ? (
         <div className="border border-border/70">
           <div ref={parentRef} className="max-h-[70vh] overflow-auto">
             <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
               {virtualizer.getVirtualItems().map((virtualRow) => {
-                const golem = golems[virtualRow.index];
+                const golem = sorted[virtualRow.index];
                 const selected = golem.id === selectedGolemId;
                 return (
                   <button
@@ -132,50 +134,6 @@ export function GolemRegistryPanel({
         </p>
       )}
     </div>
-  );
-}
-
-export function EnrollmentTokensPanel({
-  tokens,
-  isRevoking,
-  onRevoke,
-}: {
-  tokens: EnrollmentToken[];
-  isRevoking: boolean;
-  onRevoke: (tokenId: string) => void;
-}) {
-  if (!tokens.length) {
-    return null;
-  }
-
-  return (
-    <section className="panel p-4">
-      <h3 className="text-sm font-bold text-foreground">Enrollment tokens</h3>
-      <div className="mt-2 divide-y divide-border/50">
-        {tokens.map((token) => (
-          <div key={token.id} className="flex items-center justify-between gap-3 py-2">
-            <div>
-              <p className="text-sm text-foreground">{token.note || token.preview}</p>
-              <p className="text-xs text-muted-foreground">
-                By {token.createdByUsername || 'operator'} · expires {formatTimestamp(token.expiresAt)}
-                {' · '}{token.registrationCount} registrations
-                {token.revoked ? ' · Revoked' : ''}
-              </p>
-            </div>
-            {!token.revoked ? (
-              <button
-                type="button"
-                disabled={isRevoking}
-                onClick={() => onRevoke(token.id)}
-                className="shrink-0 border border-rose-300 bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-900"
-              >
-                Revoke
-              </button>
-            ) : null}
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 

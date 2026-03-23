@@ -2,63 +2,72 @@ import type { GolemDetails, GolemRole } from '../../lib/api/golemsApi';
 import { GolemStatusBadge } from './GolemStatusBadge';
 import { formatTimestamp } from '../../lib/format';
 
-interface GolemDetailsPanelProps {
+interface GolemDetailsModalProps {
   golem: GolemDetails | null;
   roles: GolemRole[];
   isBusy: boolean;
+  onClose: () => void;
   onToggleRole: (roleSlug: string, nextAssigned: boolean) => Promise<void>;
   onPause: () => void | Promise<void>;
   onResume: () => Promise<void>;
   onRevoke: () => void | Promise<void>;
 }
 
-export function GolemDetailsPanel({
+export function GolemDetailsModal({
   golem,
   roles,
   isBusy,
+  onClose,
   onToggleRole,
   onPause,
   onResume,
   onRevoke,
-}: GolemDetailsPanelProps) {
+}: GolemDetailsModalProps) {
   if (!golem) {
-    return (
-      <div className="panel p-4 text-sm text-muted-foreground">
-        Select a golem.
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="panel p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-bold text-foreground">{golem.displayName}</h2>
-          <p className="text-xs text-muted-foreground">
-            {golem.hostLabel || golem.id} · {golem.runtimeVersion || 'n/a'}
-          </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4 py-6 backdrop-blur-sm">
+      <div className="panel w-full max-w-2xl p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-foreground">{golem.displayName}</h2>
+            <p className="text-xs text-muted-foreground">
+              {golem.hostLabel || golem.id} · {golem.runtimeVersion || 'n/a'}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <GolemStatusBadge state={golem.state} />
+            <button
+              type="button"
+              onClick={onClose}
+              className="border border-border bg-white/70 px-3 py-1.5 text-sm font-semibold text-foreground"
+            >
+              Close
+            </button>
+          </div>
         </div>
-        <GolemStatusBadge state={golem.state} />
+
+        <GolemStatsGrid golem={golem} />
+
+        <GolemRolesSection
+          roleSlugs={golem.roleSlugs}
+          roles={roles}
+          isBusy={isBusy}
+          onToggleRole={onToggleRole}
+        />
+
+        <GolemLifecycleActions
+          state={golem.state}
+          pauseReason={golem.pauseReason}
+          revokeReason={golem.revokeReason}
+          isBusy={isBusy}
+          onPause={onPause}
+          onResume={onResume}
+          onRevoke={onRevoke}
+        />
       </div>
-
-      <GolemStatsGrid golem={golem} />
-
-      <GolemRolesSection
-        roleSlugs={golem.roleSlugs}
-        roles={roles}
-        isBusy={isBusy}
-        onToggleRole={onToggleRole}
-      />
-
-      <GolemLifecycleActions
-        state={golem.state}
-        pauseReason={golem.pauseReason}
-        revokeReason={golem.revokeReason}
-        isBusy={isBusy}
-        onPause={onPause}
-        onResume={onResume}
-        onRevoke={onRevoke}
-      />
     </div>
   );
 }

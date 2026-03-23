@@ -51,7 +51,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           type="button"
           onClick={() => setActiveTab('team')}
           className={[
-            'rounded-full px-3 py-1.5 text-sm font-semibold transition',
+            ' px-3 py-1.5 text-sm font-semibold transition',
             activeTab === 'team' ? 'bg-foreground text-white' : 'border border-border bg-white text-foreground',
           ].join(' ')}
         >
@@ -61,7 +61,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           type="button"
           onClick={() => setActiveTab('all')}
           className={[
-            'rounded-full px-3 py-1.5 text-sm font-semibold transition',
+            ' px-3 py-1.5 text-sm font-semibold transition',
             activeTab === 'all' ? 'bg-foreground text-white' : 'border border-border bg-white text-foreground',
           ].join(' ')}
         >
@@ -71,7 +71,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Filter golems"
-          className="ml-auto min-w-[180px] rounded-full border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-primary"
+          className="ml-auto min-w-[180px] border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-primary"
         />
       </div>
 
@@ -81,7 +81,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           disabled={isPending}
           onClick={() => void onAssign(null)}
           className={[
-            'rounded-lg border p-3 text-left transition',
+            ' border p-3 text-left transition',
             currentAssigneeId === null ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-white/70',
           ].join(' ')}
         >
@@ -96,7 +96,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
               disabled={isPending}
               onClick={() => void onAssign(candidate.golemId)}
               className={[
-                'rounded-lg border p-3 text-left transition',
+                ' border p-3 text-left transition',
                 currentAssigneeId === candidate.golemId ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-white/70',
               ].join(' ')}
             >

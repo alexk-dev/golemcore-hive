@@ -10,7 +10,7 @@ export function TransitionSuggestionBanner({ signal }: TransitionSuggestionBanne
   }
 
   return (
-    <section className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+    <section className="border border-amber-300 bg-amber-50 px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <span className="text-sm font-semibold text-amber-950">{signal.signalType}</span>

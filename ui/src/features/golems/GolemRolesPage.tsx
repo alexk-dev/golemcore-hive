@@ -52,14 +52,14 @@ export function GolemRolesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <NavLink
           to="/fleet"
-          className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+          className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
         >
           Back to fleet
         </NavLink>
         <button
           type="button"
           onClick={openCreateDialog}
-          className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white"
+          className="bg-foreground px-4 py-2 text-sm font-semibold text-white"
         >
           Create role
         </button>
@@ -77,7 +77,7 @@ export function GolemRolesPage() {
                 <button
                   type="button"
                   onClick={() => openEditDialog(role)}
-                  className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
+                  className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
                 >
                   Edit
                 </button>
@@ -86,7 +86,7 @@ export function GolemRolesPage() {
               {role.capabilityTags.length ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {role.capabilityTags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                    <span key={tag} className="bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                       {tag}
                     </span>
                   ))}

@@ -38,23 +38,23 @@ function SortableCard({ card, onOpenCard }: SortableCardProps) {
         transition,
       }}
       className={[
-        'relative rounded-xl border border-border/70 bg-white/95 px-3 py-2.5 text-left shadow-sm transition hover:bg-white',
+        'relative border border-border/70 bg-white/95 px-2 py-1.5 text-left transition hover:bg-white',
         isDragging ? 'opacity-50' : 'opacity-100',
         isOver ? 'ring-1 ring-primary/30' : '',
       ].join(' ')}
     >
-      {isOver ? <span aria-hidden className="absolute inset-x-3 -top-1 h-0.5 rounded-full bg-primary" /> : null}
-      <div className="flex items-start justify-between gap-2">
-        <p className="line-clamp-2 text-sm font-semibold text-foreground">{card.title}</p>
+      {isOver ? <span aria-hidden className="absolute inset-x-2 -top-px h-px bg-primary" /> : null}
+      <div className="flex items-center justify-between gap-1.5">
+        <p className="min-w-0 truncate text-sm font-semibold text-foreground">{card.title}</p>
         {card.controlState ? (
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${controlTone}`}>
+          <span className={`shrink-0 px-1.5 py-0.5 text-[10px] font-semibold ${controlTone}`}>
             {formatControlLabel(card.controlState)}
           </span>
         ) : null}
       </div>
-      <p className="mt-1 truncate text-xs text-muted-foreground">{card.assigneeGolemId || 'Unassigned'}</p>
+      <p className="truncate text-xs text-muted-foreground">{card.assigneeGolemId || 'Unassigned'}</p>
       {card.controlState?.cancelRequestedPending && card.controlState.cancelRequestedByActorName ? (
-        <p className="mt-1 text-xs text-rose-900">stop by {card.controlState.cancelRequestedByActorName}</p>
+        <p className="text-xs text-rose-900">stop by {card.controlState.cancelRequestedByActorName}</p>
       ) : null}
     </button>
   );
@@ -74,26 +74,25 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
   return (
     <section
       className={[
-        'flex min-h-[250px] flex-col rounded-xl border p-3 transition',
-        hasCards ? 'min-w-[280px]' : 'min-w-[220px]',
-        isPrimaryLane ? 'border-border bg-white/88 shadow-sm' : 'border-border/70 bg-white/55',
+        'flex min-h-[200px] flex-col border p-2 transition',
+        hasCards ? 'min-w-[240px]' : 'min-w-[200px]',
+        isPrimaryLane ? 'border-border bg-white/88' : 'border-border/70 bg-white/55',
         isLaneActive ? 'border-primary/40 bg-primary/5' : '',
       ].join(' ')}
     >
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-foreground">{column.name}</h3>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 px-1">
+        <h3 className="text-xs font-semibold text-foreground">{column.name}</h3>
+        <div className="flex items-center gap-1.5">
           <span className="text-xs text-muted-foreground">{cards.length}</span>
           {column.wipLimit ? (
-            <span className="text-xs text-muted-foreground">WIP {column.wipLimit}</span>
+            <span className="text-xs text-muted-foreground">/ {column.wipLimit}</span>
           ) : null}
         </div>
       </div>
-      {column.description ? <p className="mt-1 text-xs text-muted-foreground">{column.description}</p> : null}
       <div
         ref={laneDrop.setNodeRef}
         className={[
-          'mt-2 flex flex-1 flex-col gap-2 rounded-lg border border-dashed p-1 transition',
+          'mt-1 flex flex-1 flex-col gap-1 border border-dashed p-0.5 transition',
           isLaneActive ? 'border-primary/35 bg-primary/5' : 'border-transparent',
         ].join(' ')}
       >
@@ -106,14 +105,14 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
           <div
             ref={endDrop.setNodeRef}
             className={[
-              'flex min-h-7 items-center justify-center rounded-lg border border-dashed px-3 py-1.5 text-xs transition',
+              'flex min-h-6 items-center justify-center border border-dashed px-2 py-1 text-xs transition',
               endDrop.isOver ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-white/60 text-muted-foreground',
             ].join(' ')}
           >
             Drop to end
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border/70 bg-white/45 px-4 py-6 text-xs text-muted-foreground">
+          <div className="flex flex-1 items-center justify-center border border-dashed border-border/70 bg-white/45 px-3 py-4 text-xs text-muted-foreground">
             Drop here
           </div>
         )}

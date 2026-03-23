@@ -1,9 +1,12 @@
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { EnrollmentToken, GolemRole, GolemSummary } from '../../lib/api/golemsApi';
 import { GolemStatusBadge } from './GolemStatusBadge';
 import { formatTimestamp } from '../../lib/format';
 
 const fleetStates = ['', 'ONLINE', 'DEGRADED', 'OFFLINE', 'PAUSED', 'REVOKED', 'PENDING_ENROLLMENT'];
+const GOLEM_ROW_HEIGHT = 32;
 
 export function GolemsHero({
   onCreateEnrollmentToken,
@@ -15,14 +18,14 @@ export function GolemsHero({
       <div className="flex flex-wrap gap-2">
         <Link
           to="/fleet/roles"
-          className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+          className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
         >
           Manage roles
         </Link>
         <button
           type="button"
           onClick={onCreateEnrollmentToken}
-          className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white"
+          className="bg-foreground px-3 py-1.5 text-sm font-semibold text-white"
         >
           Create enrollment token
         </button>
@@ -49,17 +52,17 @@ export function GolemFiltersPanel({
   onRoleFilterChange: (value: string) => void;
 }) {
   return (
-    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
+    <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_180px_180px]">
       <input
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
         placeholder="Search by name, host, or id"
-        className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+        className="border border-border bg-white/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary"
       />
       <select
         value={stateFilter}
         onChange={(event) => onStateFilterChange(event.target.value)}
-        className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+        className="border border-border bg-white/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary"
       >
         {fleetStates.map((state) => (
           <option key={state || 'all'} value={state}>
@@ -70,7 +73,7 @@ export function GolemFiltersPanel({
       <select
         value={roleFilter}
         onChange={(event) => onRoleFilterChange(event.target.value)}
-        className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+        className="border border-border bg-white/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary"
       >
         <option value="">All roles</option>
         {roles.map((role) => (
@@ -92,41 +95,49 @@ export function GolemRegistryPanel({
   selectedGolemId: string | null;
   onSelect: (golemId: string) => void;
 }) {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: golems.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => GOLEM_ROW_HEIGHT,
+    overscan: 20,
+  });
+
   return (
-    <div className="grid gap-3">
-      <p className="text-sm font-semibold text-foreground">{golems.length} golems</p>
+    <div>
+      <p className="mb-1 text-xs text-muted-foreground">{golems.length} golems</p>
       {golems.length ? (
-        golems.map((golem) => {
-          const selected = golem.id === selectedGolemId;
-          return (
-            <button
-              key={golem.id}
-              type="button"
-              onClick={() => onSelect(golem.id)}
-              className={[
-                'rounded-xl border p-4 text-left transition',
-                selected
-                  ? 'border-primary/40 bg-primary/5 shadow-[0_8px_20px_rgba(238,109,52,0.1)]'
-                  : 'border-border/70 bg-white/70 hover:bg-white',
-              ].join(' ')}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-foreground">{golem.displayName}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{golem.hostLabel || golem.id}</p>
-                </div>
-                <GolemStatusBadge state={golem.state} />
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                Last seen: {formatTimestamp(golem.lastSeenAt)}
-                {golem.roleSlugs.length ? ` · ${golem.roleSlugs.join(', ')}` : ''}
-              </div>
-            </button>
-          );
-        })
+        <div className="border border-border/70">
+          <div ref={parentRef} className="max-h-[70vh] overflow-auto">
+            <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const golem = golems[virtualRow.index];
+                const selected = golem.id === selectedGolemId;
+                return (
+                  <button
+                    key={golem.id}
+                    type="button"
+                    onClick={() => onSelect(golem.id)}
+                    className={[
+                      'absolute left-0 flex w-full items-center gap-3 px-3 text-left text-sm transition',
+                      selected ? 'bg-primary/5' : 'bg-white/70 hover:bg-white',
+                    ].join(' ')}
+                    style={{ height: GOLEM_ROW_HEIGHT, top: virtualRow.start }}
+                  >
+                    <GolemStatusBadge state={golem.state} />
+                    <span className="min-w-0 flex-1 truncate font-semibold text-foreground">{golem.displayName}</span>
+                    <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{golem.hostLabel || golem.id}</span>
+                    <span className="hidden shrink-0 text-xs text-muted-foreground md:inline">{golem.roleSlugs.join(', ') || '—'}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{formatTimestamp(golem.lastSeenAt)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          No golems enrolled yet. Create an enrollment token to get started.
+        <p className="py-4 text-sm text-muted-foreground">
+          No golems enrolled. Create an enrollment token to get started.
         </p>
       )}
     </div>
@@ -147,31 +158,29 @@ export function EnrollmentTokensPanel({
   }
 
   return (
-    <section className="panel p-5">
-      <h3 className="text-base font-bold tracking-tight text-foreground">Enrollment tokens</h3>
-      <div className="mt-4 grid gap-3">
+    <section className="panel p-4">
+      <h3 className="text-sm font-bold text-foreground">Enrollment tokens</h3>
+      <div className="mt-2 divide-y divide-border/50">
         {tokens.map((token) => (
-          <div key={token.id} className="rounded-xl border border-border/70 bg-white/70 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">{token.note || token.preview}</p>
-                <p className="text-xs text-muted-foreground">
-                  By {token.createdByUsername || 'operator'} · expires {formatTimestamp(token.expiresAt)}
-                  {' · '}{token.registrationCount} registrations
-                  {token.revoked ? ' · Revoked' : ''}
-                </p>
-              </div>
-              {!token.revoked ? (
-                <button
-                  type="button"
-                  disabled={isRevoking}
-                  onClick={() => onRevoke(token.id)}
-                  className="rounded-full border border-rose-300 bg-rose-100 px-3 py-1.5 text-sm font-semibold text-rose-900"
-                >
-                  Revoke
-                </button>
-              ) : null}
+          <div key={token.id} className="flex items-center justify-between gap-3 py-2">
+            <div>
+              <p className="text-sm text-foreground">{token.note || token.preview}</p>
+              <p className="text-xs text-muted-foreground">
+                By {token.createdByUsername || 'operator'} · expires {formatTimestamp(token.expiresAt)}
+                {' · '}{token.registrationCount} registrations
+                {token.revoked ? ' · Revoked' : ''}
+              </p>
             </div>
+            {!token.revoked ? (
+              <button
+                type="button"
+                disabled={isRevoking}
+                onClick={() => onRevoke(token.id)}
+                className="shrink-0 border border-rose-300 bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-900"
+              >
+                Revoke
+              </button>
+            ) : null}
           </div>
         ))}
       </div>
@@ -205,45 +214,45 @@ export function GolemActionDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4 py-6 backdrop-blur-sm">
       <div className="panel w-full max-w-md p-5">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-bold tracking-tight text-foreground">{title}</h3>
+          <h3 className="text-sm font-bold text-foreground">{title}</h3>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-full border border-border bg-white/70 px-3 py-1.5 text-sm font-semibold text-foreground"
+            className="border border-border bg-white/70 px-2 py-1 text-xs font-semibold text-foreground"
           >
             Close
           </button>
         </div>
 
         <form
-          className="mt-4 grid gap-4"
+          className="mt-3 grid gap-3"
           onSubmit={(event) => {
             event.preventDefault();
             void onSubmit();
           }}
         >
-          <label className="grid gap-1.5">
+          <label className="grid gap-1">
             <span className="text-sm font-semibold text-foreground">Reason</span>
             <textarea
               value={reason}
               onChange={(event) => onReasonChange(event.target.value)}
-              rows={3}
-              className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              rows={2}
+              className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
               placeholder="Optional reason"
             />
           </label>
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+              className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="bg-foreground px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               {submitLabel}
             </button>

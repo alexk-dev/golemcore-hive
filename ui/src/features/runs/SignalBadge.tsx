@@ -17,7 +17,7 @@ export function SignalBadge({ signalType }: SignalBadgeProps) {
           : 'bg-muted text-muted-foreground';
 
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${tone}`}>
+    <span className={` px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${tone}`}>
       {signalType}
     </span>
   );

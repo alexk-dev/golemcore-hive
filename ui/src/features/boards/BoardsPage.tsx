@@ -62,13 +62,13 @@ export function BoardsPage() {
                   <div className="flex flex-wrap gap-2">
                     <Link
                       to={`/boards/${board.id}`}
-                      className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white"
+                      className="bg-foreground px-4 py-2 text-sm font-semibold text-white"
                     >
                       Open board
                     </Link>
                     <Link
                       to={`/boards/${board.id}/settings`}
-                      className="rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+                      className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
                     >
                       Settings
                     </Link>
@@ -99,7 +99,7 @@ export function BoardsPage() {
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
               placeholder="Engineering backlog"
             />
           </label>
@@ -109,7 +109,7 @@ export function BoardsPage() {
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}
-              className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
             />
           </label>
           <div className="grid gap-4 md:grid-cols-2">
@@ -118,7 +118,7 @@ export function BoardsPage() {
               <select
                 value={templateKey}
                 onChange={(event) => setTemplateKey(event.target.value)}
-                className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
               >
                 {templateOptions.map((option) => (
                   <option key={option.key} value={option.key}>
@@ -132,7 +132,7 @@ export function BoardsPage() {
               <select
                 value={defaultAssignmentPolicy}
                 onChange={(event) => setDefaultAssignmentPolicy(event.target.value)}
-                className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
               >
                 <option value="MANUAL">MANUAL</option>
                 <option value="SUGGESTED">SUGGESTED</option>
@@ -143,7 +143,7 @@ export function BoardsPage() {
           <button
             type="submit"
             disabled={createBoardMutation.isPending || !name.trim()}
-            className="rounded-xl bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
           >
               {createBoardMutation.isPending ? 'Creating...' : 'Create board'}
             </button>

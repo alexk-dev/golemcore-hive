@@ -1,7 +1,10 @@
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useRef, useState } from 'react';
 import { ApprovalDecisionDialog } from './ApprovalDecisionDialog';
 import { approveApproval, listApprovals, rejectApproval, type ApprovalRequest } from '../../lib/api/approvalsApi';
+
+const ROW_HEIGHT = 32;
 
 export function ApprovalsPage() {
   const queryClient = useQueryClient();
@@ -9,6 +12,7 @@ export function ApprovalsPage() {
   const [selectedApproval, setSelectedApproval] = useState<ApprovalRequest | null>(null);
   const [dialogMode, setDialogMode] = useState<'approve' | 'reject' | null>(null);
   const deferredStatus = useDeferredValue(status);
+  const parentRef = useRef<HTMLDivElement>(null);
 
   const approvalsQuery = useQuery({
     queryKey: ['approvals', deferredStatus],
@@ -25,16 +29,25 @@ export function ApprovalsPage() {
     },
   });
 
+  const approvals = approvalsQuery.data ?? [];
+
+  const virtualizer = useVirtualizer({
+    count: approvals.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 20,
+  });
+
   return (
-    <div className="grid gap-5">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-center gap-1">
         {['PENDING', 'APPROVED', 'REJECTED'].map((option) => (
           <button
             key={option}
             type="button"
             onClick={() => setStatus(option)}
             className={[
-              'rounded-full px-4 py-2 text-sm font-semibold transition',
+              'px-3 py-1 text-xs font-semibold transition',
               status === option ? 'bg-foreground text-white' : 'border border-border bg-white/80 text-foreground',
             ].join(' ')}
           >
@@ -43,55 +56,68 @@ export function ApprovalsPage() {
         ))}
       </div>
 
-      <div className="grid gap-4">
-        {(approvalsQuery.data ?? []).length ? (
-          approvalsQuery.data?.map((approval) => (
-            <article key={approval.id} className="panel p-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="pill">{approval.riskLevel}</span>
-                    <span className="pill">{approval.status}</span>
-                  </div>
-                  <p className="text-sm font-medium text-foreground">{approval.commandBody}</p>
-                  {approval.reason ? <p className="text-sm text-muted-foreground">{approval.reason}</p> : null}
-                  <p className="text-xs text-muted-foreground">
-                    Card {approval.cardId} · Golem {approval.golemId} · Cost {approval.estimatedCostMicros}
-                  </p>
-                </div>
-                {approval.status === 'PENDING' ? (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedApproval(approval);
-                        setDialogMode('approve');
-                      }}
-                      className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedApproval(approval);
-                        setDialogMode('reject');
-                      }}
-                      className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            </article>
-          ))
-        ) : (
-          <div className="panel p-6 text-sm text-muted-foreground">
-            No approval requests match this filter.
+      {approvals.length ? (
+        <div className="border border-border/70">
+          <div className="flex items-center gap-3 border-b border-border/50 bg-white/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+            <span className="w-20 shrink-0">Risk</span>
+            <span className="w-20 shrink-0">Status</span>
+            <span className="min-w-0 flex-1">Command</span>
+            <span className="w-24 shrink-0">Card</span>
+            <span className="w-24 shrink-0">Golem</span>
+            <span className="w-20 shrink-0 text-right">Cost</span>
+            <span className="w-24 shrink-0 text-right">Actions</span>
           </div>
-        )}
-      </div>
+          <div ref={parentRef} className="max-h-[70vh] overflow-auto">
+            <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const approval = approvals[virtualRow.index];
+                return (
+                  <div
+                    key={approval.id}
+                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-white/80"
+                    style={{ height: ROW_HEIGHT, top: virtualRow.start }}
+                  >
+                    <span className="w-20 shrink-0 text-xs font-medium text-foreground">{approval.riskLevel}</span>
+                    <span className="w-20 shrink-0 text-xs text-muted-foreground">{approval.status}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">{approval.commandBody}</span>
+                    <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">{approval.cardId}</span>
+                    <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">{approval.golemId}</span>
+                    <span className="w-20 shrink-0 text-right tabular-nums text-xs text-muted-foreground">{approval.estimatedCostMicros}</span>
+                    <span className="flex w-24 shrink-0 justify-end gap-1">
+                      {approval.status === 'PENDING' ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedApproval(approval);
+                              setDialogMode('approve');
+                            }}
+                            className="bg-accent px-2 py-0.5 text-xs font-semibold text-white"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedApproval(approval);
+                              setDialogMode('reject');
+                            }}
+                            className="bg-primary px-2 py-0.5 text-xs font-semibold text-white"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : null}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">No approval requests match this filter.</p>
+      )}
 
       <ApprovalDecisionDialog
         approval={selectedApproval}

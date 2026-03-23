@@ -12,7 +12,7 @@ export function AssignmentPolicyBadge({ policy }: AssignmentPolicyBadgeProps) {
   return (
     <span
       className={[
-        'inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]',
+        'inline-flex items-center border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]',
         toneMap[policy] ?? 'bg-muted text-foreground border-border',
       ].join(' ')}
     >

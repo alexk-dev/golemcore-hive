@@ -43,7 +43,7 @@ export function CommandForm({ disabled, isPending, placeholder, onSubmit }: Comm
         rows={4}
         disabled={isDisabled}
         placeholder={placeholder ?? 'Enter command...'}
-        className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary disabled:opacity-60"
+        className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary disabled:opacity-60"
       />
       <div className="flex flex-wrap items-center gap-2">
         {[
@@ -57,7 +57,7 @@ export function CommandForm({ disabled, isPending, placeholder, onSubmit }: Comm
             disabled={isDisabled}
             onClick={() => setApprovalRiskLevel(option.value as ApprovalRiskLevel)}
             className={[
-              'rounded-full px-3 py-1 text-xs font-semibold transition',
+              ' px-3 py-1 text-xs font-semibold transition',
               approvalRiskLevel === option.value
                 ? 'bg-foreground text-white'
                 : 'border border-border bg-white/90 text-foreground',
@@ -76,7 +76,7 @@ export function CommandForm({ disabled, isPending, placeholder, onSubmit }: Comm
             onChange={(event) => setEstimatedCostMicros(event.target.value)}
             disabled={isDisabled}
             placeholder="Estimated cost micros"
-            className="rounded-lg border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary disabled:opacity-60"
+            className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary disabled:opacity-60"
           />
           <input
             type="text"
@@ -84,7 +84,7 @@ export function CommandForm({ disabled, isPending, placeholder, onSubmit }: Comm
             onChange={(event) => setApprovalReason(event.target.value)}
             disabled={isDisabled}
             placeholder="Approval note"
-            className="rounded-lg border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary disabled:opacity-60"
+            className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary disabled:opacity-60"
           />
         </div>
       ) : null}
@@ -92,7 +92,7 @@ export function CommandForm({ disabled, isPending, placeholder, onSubmit }: Comm
         <button
           type="submit"
           disabled={isDisabled || !body.trim()}
-          className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+          className="bg-foreground px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
         >
           {isPending ? 'Dispatching…' : 'Dispatch'}
         </button>

@@ -15,52 +15,52 @@ export function AppShell() {
   const { logout, user } = useAuth();
 
   return (
-    <div className="min-h-screen px-3 py-3 md:px-4 md:py-4">
-      <div className="mx-auto flex min-h-screen max-w-[1800px] flex-col gap-4">
-        <header className="panel sticky top-3 z-40 border-white/70 bg-[rgba(255,251,245,0.92)]">
-          <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="pill px-2.5 py-1 text-[10px] tracking-[0.16em]">Hive</span>
-              <nav className="flex flex-wrap gap-2">
-                {navigationItems.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      [
-                        'rounded-full px-3 py-1.5 text-sm font-medium transition',
-                        isActive
-                          ? 'bg-foreground text-white shadow-glow'
-                          : 'bg-white/80 text-foreground hover:bg-white',
-                      ].join(' ')
-                    }
-                  >
-                    {item.label}
-                  </NavLink>
-                ))}
-              </nav>
-            </div>
+    <div className="flex min-h-screen">
+      <aside className="sticky top-0 flex h-screen w-48 shrink-0 flex-col border-r border-border/70 bg-white/60 backdrop-blur">
+        <div className="px-4 py-4">
+          <span className="text-sm font-bold tracking-tight text-foreground">Hive</span>
+        </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-foreground">
-                {user?.displayName}
-                {user?.roles?.length ? <span className="text-muted-foreground"> · {user.roles.join(' / ')}</span> : null}
-              </span>
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className="rounded-full border border-foreground/10 bg-white/85 px-3 py-1.5 text-sm font-semibold text-foreground transition hover:bg-white"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        </header>
+        <nav className="flex flex-1 flex-col gap-0.5 px-2">
+          {navigationItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/'}
+              className={({ isActive }) =>
+                [
+                  'px-3 py-1.5 text-sm transition',
+                  isActive
+                    ? 'bg-foreground text-white font-semibold'
+                    : 'text-foreground hover:bg-white',
+                ].join(' ')
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
 
-        <main className="flex-1">
+        <div className="border-t border-border/60 px-4 py-3">
+          <p className="truncate text-sm text-foreground">{user?.displayName}</p>
+          {user?.roles?.length ? (
+            <p className="truncate text-xs text-muted-foreground">{user.roles.join(' / ')}</p>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="mt-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+          >
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <main className="min-w-0 flex-1 p-4">
+        <div className="mx-auto max-w-[1600px]">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

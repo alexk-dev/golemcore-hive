@@ -203,7 +203,7 @@ function DmMessageList({
   onLoadMore: () => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const prevCountRef = useRef(0);
   const isInitialLoadRef = useRef(true);
 

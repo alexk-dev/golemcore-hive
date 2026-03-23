@@ -1,8 +1,7 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { RequireAuth } from './RequireAuth';
 import { LoginPage } from '../features/auth/LoginPage';
 import { AppShell } from '../features/layout/AppShell';
-import { HomePage } from '../features/dashboard/HomePage';
 import { GolemsPage } from '../features/golems/GolemsPage';
 import { GolemRolesPage } from '../features/golems/GolemRolesPage';
 import { BoardsPage } from '../features/boards/BoardsPage';
@@ -27,7 +26,7 @@ export const routes = createBrowserRouter([
         children: [
           {
             path: '/',
-            element: <HomePage />,
+            element: <Navigate to="/boards" replace />,
           },
           {
             path: '/fleet',

@@ -16,14 +16,19 @@ vi.mock('../../app/providers/useAuth', () => ({
 }));
 
 describe('AppShell', () => {
-  it('renders the navigation and child route on non-board routes', () => {
-    renderShell('/');
+  it('renders grouped navigation sections', () => {
+    renderShell('/boards');
 
     expect(screen.getByText('Hive')).toBeInTheDocument();
-    expect(screen.getByText('Overview page')).toBeInTheDocument();
+    expect(screen.getByText('Operate')).toBeInTheDocument();
+    expect(screen.getByText('Fleet')).toBeInTheDocument();
+    expect(screen.getByText('Observe')).toBeInTheDocument();
+    expect(screen.getByText('Boards')).toBeInTheDocument();
+    expect(screen.getByText('Golems')).toBeInTheDocument();
+    expect(screen.getByText('Roles')).toBeInTheDocument();
   });
 
-  it('renders the navigation and child route on board routes', () => {
+  it('renders child route content', () => {
     renderShell('/boards/board_1');
 
     expect(screen.getByText('Board page')).toBeInTheDocument();
@@ -36,7 +41,7 @@ function renderShell(initialEntry: string) {
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route element={<AppShell />}>
-          <Route path="/" element={<div>Overview page</div>} />
+          <Route path="/boards" element={<div>Boards page</div>} />
           <Route path="/boards/:boardId" element={<div>Board page</div>} />
         </Route>
       </Routes>

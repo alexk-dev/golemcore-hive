@@ -1,14 +1,28 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../app/providers/useAuth';
 
-const navigationItems = [
-  { to: '/', label: 'Overview' },
-  { to: '/fleet', label: 'Fleet' },
-  { to: '/boards', label: 'Boards' },
-  { to: '/approvals', label: 'Approvals' },
-  { to: '/audit', label: 'Audit' },
-  { to: '/budgets', label: 'Budgets' },
-  { to: '/settings', label: 'Settings' },
+const navGroups = [
+  {
+    label: 'Operate',
+    items: [
+      { to: '/boards', label: 'Boards' },
+      { to: '/approvals', label: 'Approvals' },
+    ],
+  },
+  {
+    label: 'Fleet',
+    items: [
+      { to: '/fleet', label: 'Golems' },
+      { to: '/fleet/roles', label: 'Roles' },
+    ],
+  },
+  {
+    label: 'Observe',
+    items: [
+      { to: '/audit', label: 'Audit' },
+      { to: '/budgets', label: 'Budgets' },
+    ],
+  },
 ];
 
 export function AppShell() {
@@ -21,25 +35,49 @@ export function AppShell() {
           <span className="text-sm font-bold tracking-tight text-foreground">Hive</span>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 px-2">
-          {navigationItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) =>
-                [
-                  'px-3 py-1.5 text-sm transition',
-                  isActive
-                    ? 'bg-foreground text-white font-semibold'
-                    : 'text-foreground hover:bg-white',
-                ].join(' ')
-              }
-            >
-              {item.label}
-            </NavLink>
+        <nav className="flex flex-1 flex-col gap-3 px-2">
+          {navGroups.map((group) => (
+            <div key={group.label}>
+              <p className="px-3 pb-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                {group.label}
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      [
+                        'px-3 py-1.5 text-sm transition',
+                        isActive
+                          ? 'bg-foreground text-white font-semibold'
+                          : 'text-foreground hover:bg-white',
+                      ].join(' ')
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
+
+        <div className="flex flex-col gap-0.5 border-t border-border/60 px-2 py-2">
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              [
+                'px-3 py-1.5 text-sm transition',
+                isActive
+                  ? 'bg-foreground text-white font-semibold'
+                  : 'text-foreground hover:bg-white',
+              ].join(' ')
+            }
+          >
+            Settings
+          </NavLink>
+        </div>
 
         <div className="border-t border-border/60 px-4 py-3">
           <p className="truncate text-sm text-foreground">{user?.displayName}</p>

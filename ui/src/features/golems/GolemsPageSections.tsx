@@ -1,6 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRef } from 'react';
-import { Link } from 'react-router-dom';
 import type { EnrollmentToken, GolemRole, GolemSummary } from '../../lib/api/golemsApi';
 import { GolemStatusBadge } from './GolemStatusBadge';
 import { formatTimestamp } from '../../lib/format';
@@ -15,21 +14,13 @@ export function GolemsHero({
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex flex-wrap gap-2">
-        <Link
-          to="/fleet/roles"
-          className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
-        >
-          Manage roles
-        </Link>
-        <button
-          type="button"
-          onClick={onCreateEnrollmentToken}
-          className="bg-foreground px-3 py-1.5 text-sm font-semibold text-white"
-        >
-          Create enrollment token
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={onCreateEnrollmentToken}
+        className="bg-foreground px-3 py-1.5 text-sm font-semibold text-white"
+      >
+        Create enrollment token
+      </button>
     </div>
   );
 }

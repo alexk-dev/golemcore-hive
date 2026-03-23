@@ -6,9 +6,18 @@ import { listGolemRoles, listGolems } from '../../lib/api/golemsApi';
 import { BoardTeamEditor } from './BoardTeamEditor';
 import { FlowEditor } from './FlowEditor';
 
+type SettingsTab = 'metadata' | 'team' | 'flow';
+
+const tabs: { key: SettingsTab; label: string }[] = [
+  { key: 'metadata', label: 'Metadata' },
+  { key: 'team', label: 'Team' },
+  { key: 'flow', label: 'Flow' },
+];
+
 export function BoardEditorPage() {
   const { boardId = '' } = useParams();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<SettingsTab>('metadata');
 
   const boardQuery = useQuery({
     queryKey: ['board', boardId],
@@ -89,7 +98,7 @@ export function BoardEditorPage() {
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold tracking-tight text-foreground">{boardQuery.data.name} settings</h2>
         <div className="flex flex-wrap gap-2">
@@ -102,66 +111,89 @@ export function BoardEditorPage() {
         </div>
       </div>
 
-      <form className="panel grid gap-4 p-5" onSubmit={(event) => void handleMetadataSubmit(event)}>
-        <h3 className="text-base font-bold tracking-tight text-foreground">Metadata</h3>
-        <div className="grid gap-4 md:grid-cols-[1fr_220px]">
+      <div className="flex gap-0 border-b border-border/70">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key)}
+            className={[
+              'px-4 py-2 text-sm font-semibold transition',
+              activeTab === tab.key
+                ? 'border-b-2 border-foreground text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            ].join(' ')}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'metadata' ? (
+        <form className="panel grid gap-4 p-5" onSubmit={(event) => void handleMetadataSubmit(event)}>
+          <div className="grid gap-4 md:grid-cols-[1fr_220px]">
+            <label className="grid gap-1.5">
+              <span className="text-sm font-semibold text-foreground">Name</span>
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              />
+            </label>
+            <label className="grid gap-1.5">
+              <span className="text-sm font-semibold text-foreground">Default assignment</span>
+              <select
+                value={defaultAssignmentPolicy}
+                onChange={(event) => setDefaultAssignmentPolicy(event.target.value)}
+                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              >
+                <option value="MANUAL">MANUAL</option>
+                <option value="SUGGESTED">SUGGESTED</option>
+                <option value="AUTOMATIC">AUTOMATIC</option>
+              </select>
+            </label>
+          </div>
           <label className="grid gap-1.5">
-            <span className="text-sm font-semibold text-foreground">Name</span>
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
+            <span className="text-sm font-semibold text-foreground">Description</span>
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              rows={3}
               className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
             />
           </label>
-          <label className="grid gap-1.5">
-            <span className="text-sm font-semibold text-foreground">Default assignment</span>
-            <select
-              value={defaultAssignmentPolicy}
-              onChange={(event) => setDefaultAssignmentPolicy(event.target.value)}
-              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
-            >
-              <option value="MANUAL">MANUAL</option>
-              <option value="SUGGESTED">SUGGESTED</option>
-              <option value="AUTOMATIC">AUTOMATIC</option>
-            </select>
-          </label>
-        </div>
-        <label className="grid gap-1.5">
-          <span className="text-sm font-semibold text-foreground">Description</span>
-          <textarea
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            rows={3}
-            className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={updateBoardMutation.isPending}
-          className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-        >
-          Save metadata
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={updateBoardMutation.isPending}
+            className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+          >
+            Save metadata
+          </button>
+        </form>
+      ) : null}
 
-      <BoardTeamEditor
-        board={boardQuery.data}
-        golems={golemsQuery.data ?? []}
-        roles={rolesQuery.data ?? []}
-        resolvedTeam={teamQuery.data ?? null}
-        isPending={updateTeamMutation.isPending}
-        onSave={async (input) => {
-          await updateTeamMutation.mutateAsync({ boardId, team: input });
-        }}
-      />
+      {activeTab === 'team' ? (
+        <BoardTeamEditor
+          board={boardQuery.data}
+          golems={golemsQuery.data ?? []}
+          roles={rolesQuery.data ?? []}
+          resolvedTeam={teamQuery.data ?? null}
+          isPending={updateTeamMutation.isPending}
+          onSave={async (input) => {
+            await updateTeamMutation.mutateAsync({ boardId, team: input });
+          }}
+        />
+      ) : null}
 
-      <FlowEditor
-        board={boardQuery.data}
-        isPending={updateFlowMutation.isPending}
-        onSave={async (input) => {
-          await updateFlowMutation.mutateAsync({ boardId, input });
-        }}
-      />
+      {activeTab === 'flow' ? (
+        <FlowEditor
+          board={boardQuery.data}
+          isPending={updateFlowMutation.isPending}
+          onSave={async (input) => {
+            await updateFlowMutation.mutateAsync({ boardId, input });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

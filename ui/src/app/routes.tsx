@@ -70,6 +70,10 @@ export const routes = createBrowserRouter([
             element: <CardThreadPage />,
           },
           {
+            path: '/fleet/chat',
+            element: <GolemChatPage />,
+          },
+          {
             path: '/fleet/chat/:golemId',
             element: <GolemChatPage />,
           },

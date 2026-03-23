@@ -14,6 +14,10 @@ export interface DirectThread {
   lastCommandAt: string | null;
 }
 
+export function listDmThreads(limit = 10) {
+  return apiRequest<DirectThread[]>(`/api/v1/dm/threads?limit=${limit}`);
+}
+
 export function getGolemDirectThread(golemId: string) {
   return apiRequest<DirectThread>(`/api/v1/golems/${golemId}/dm`);
 }

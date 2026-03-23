@@ -18,8 +18,21 @@ export function getGolemDirectThread(golemId: string) {
   return apiRequest<DirectThread>(`/api/v1/golems/${golemId}/dm`);
 }
 
-export function listGolemDmMessages(golemId: string) {
-  return apiRequest<ThreadMessage[]>(`/api/v1/golems/${golemId}/dm/messages`);
+export interface PaginatedMessages {
+  messages: ThreadMessage[];
+  hasMore: boolean;
+}
+
+export function listGolemDmMessages(golemId: string, params?: { limit?: number; before?: string }) {
+  const searchParams = new URLSearchParams();
+  if (params?.limit) {
+    searchParams.set('limit', String(params.limit));
+  }
+  if (params?.before) {
+    searchParams.set('before', params.before);
+  }
+  const query = searchParams.toString();
+  return apiRequest<PaginatedMessages>(`/api/v1/golems/${golemId}/dm/messages${query ? `?${query}` : ''}`);
 }
 
 export function postGolemDmMessage(golemId: string, body: string) {

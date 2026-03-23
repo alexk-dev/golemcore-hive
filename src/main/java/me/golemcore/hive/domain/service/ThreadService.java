@@ -129,6 +129,24 @@ public class ThreadService {
         return messages;
     }
 
+    public MessagePage listMessagesPaginated(String threadId, int limit, Instant before) {
+        List<ThreadMessage> all = listMessages(threadId);
+        if (before != null) {
+            all = all.stream()
+                    .filter(message -> message.getCreatedAt().isBefore(before))
+                    .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        }
+        int total = all.size();
+        if (total <= limit) {
+            return new MessagePage(all, false);
+        }
+        List<ThreadMessage> page = all.subList(total - limit, total);
+        return new MessagePage(new ArrayList<>(page), true);
+    }
+
+    public record MessagePage(List<ThreadMessage> messages, boolean hasMore) {
+    }
+
     public ThreadMessage postOperatorMessage(String threadId, String body, String operatorId, String operatorName) {
         ThreadRecord thread = getThread(threadId);
         return appendMessage(thread, null, null, null, ThreadMessageType.NOTE, ThreadParticipantType.OPERATOR,

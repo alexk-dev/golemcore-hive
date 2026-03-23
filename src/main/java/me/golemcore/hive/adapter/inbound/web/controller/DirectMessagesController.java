@@ -20,11 +20,13 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 
 import jakarta.validation.Valid;
 import java.security.Principal;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.threads.CommandRecordResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.threads.CreateThreadCommandRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.threads.DirectThreadResponse;
+import me.golemcore.hive.adapter.inbound.web.dto.threads.PaginatedMessagesResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.threads.PostThreadMessageRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.threads.RunProjectionResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.threads.ThreadMessageResponse;
@@ -43,6 +45,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -69,17 +72,23 @@ public class DirectMessagesController {
     }
 
     @GetMapping("/messages")
-    public Mono<ResponseEntity<List<ThreadMessageResponse>>> listMessages(Principal principal,
-            @PathVariable String golemId) {
+    public Mono<ResponseEntity<PaginatedMessagesResponse>> listMessages(
+            Principal principal,
+            @PathVariable String golemId,
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(required = false) String before) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             Golem golem = golemRegistryService.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
             ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
-            List<ThreadMessageResponse> response = threadService.listMessages(thread.getId()).stream()
+            Instant beforeInstant = before != null ? Instant.parse(before) : null;
+            ThreadService.MessagePage page = threadService.listMessagesPaginated(
+                    thread.getId(), Math.min(limit, 200), beforeInstant);
+            List<ThreadMessageResponse> messages = page.messages().stream()
                     .map(this::toThreadMessageResponse)
                     .toList();
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(new PaginatedMessagesResponse(messages, page.hasMore()));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 

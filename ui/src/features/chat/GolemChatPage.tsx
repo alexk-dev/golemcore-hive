@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   createGolemDmCommand,
@@ -7,11 +7,13 @@ import {
   listGolemDmMessages,
   listGolemDmRuns,
 } from '../../lib/api/directMessagesApi';
+import type { ThreadMessage } from '../../lib/api/threadsApi';
 import { buildOperatorUpdatesUrl, type OperatorUpdateEvent } from '../../lib/api/eventsApi';
 import { useAuth } from '../../app/providers/useAuth';
 import { readErrorMessage } from '../../lib/format';
 import { GolemStatusBadge } from '../golems/GolemStatusBadge';
-import { ThreadMessageList } from './ThreadMessageList';
+
+const PAGE_SIZE = 50;
 
 function useGolemDmRealtime({
   accessToken,
@@ -38,7 +40,7 @@ function useGolemDmRealtime({
         return;
       }
       void Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['golem-dm-messages'] }),
+        queryClient.invalidateQueries({ queryKey: ['golem-dm-messages', threadId] }),
         queryClient.invalidateQueries({ queryKey: ['golem-dm-runs'] }),
         queryClient.invalidateQueries({ queryKey: ['golem-dm-thread'] }),
       ]);
@@ -93,11 +95,26 @@ export function GolemChatPage() {
     queryFn: () => getGolemDirectThread(golemId),
     enabled: Boolean(golemId),
   });
-  const messagesQuery = useQuery({
-    queryKey: ['golem-dm-messages', golemId],
-    queryFn: () => listGolemDmMessages(golemId),
-    enabled: Boolean(golemId),
+
+  const threadId = threadQuery.data?.threadId;
+
+  const messagesQuery = useInfiniteQuery({
+    queryKey: ['golem-dm-messages', threadId],
+    queryFn: ({ pageParam }) =>
+      listGolemDmMessages(golemId, {
+        limit: PAGE_SIZE,
+        before: pageParam ?? undefined,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.hasMore || !lastPage.messages.length) {
+        return undefined;
+      }
+      return lastPage.messages[0].createdAt;
+    },
+    enabled: Boolean(golemId && threadId),
   });
+
   const runsQuery = useQuery({
     queryKey: ['golem-dm-runs', golemId],
     queryFn: () => listGolemDmRuns(golemId),
@@ -106,7 +123,7 @@ export function GolemChatPage() {
 
   const liveState = useGolemDmRealtime({
     accessToken,
-    threadId: threadQuery.data?.threadId,
+    threadId,
   });
 
   const sendCommandMutation = useMutation({
@@ -114,7 +131,7 @@ export function GolemChatPage() {
     onSuccess: async () => {
       setActionError(null);
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['golem-dm-messages', golemId] }),
+        queryClient.invalidateQueries({ queryKey: ['golem-dm-messages', threadId] }),
         queryClient.invalidateQueries({ queryKey: ['golem-dm-runs', golemId] }),
         queryClient.invalidateQueries({ queryKey: ['golem-dm-thread', golemId] }),
       ]);
@@ -129,6 +146,7 @@ export function GolemChatPage() {
   }
 
   const thread = threadQuery.data;
+  const allMessages = (messagesQuery.data?.pages ?? []).flatMap((page) => page.messages);
   const activeRun = (runsQuery.data ?? []).find(
     (run) => run.status === 'QUEUED' || run.status === 'STARTED' || run.status === 'RUNNING',
   );
@@ -152,7 +170,14 @@ export function GolemChatPage() {
         {actionError ? <p className="mt-2 text-sm text-rose-900">{actionError}</p> : null}
       </section>
 
-      <ThreadMessageList messages={messagesQuery.data ?? []} />
+      <DmMessageList
+        messages={allMessages}
+        hasMore={messagesQuery.hasNextPage}
+        isFetchingMore={messagesQuery.isFetchingNextPage}
+        onLoadMore={() => {
+          void messagesQuery.fetchNextPage();
+        }}
+      />
 
       <DmComposer
         isPending={sendCommandMutation.isPending}
@@ -163,6 +188,107 @@ export function GolemChatPage() {
         }}
       />
     </div>
+  );
+}
+
+function DmMessageList({
+  messages,
+  hasMore,
+  isFetchingMore,
+  onLoadMore,
+}: {
+  messages: ThreadMessage[];
+  hasMore: boolean;
+  isFetchingMore: boolean;
+  onLoadMore: () => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(0);
+  const isInitialLoadRef = useRef(true);
+
+  // Auto-scroll to bottom on new messages (not when loading older)
+  useEffect(() => {
+    if (!scrollRef.current) {
+      return;
+    }
+    const isNewMessage = messages.length > prevCountRef.current && !isFetchingMore;
+    if (isInitialLoadRef.current || isNewMessage) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      isInitialLoadRef.current = false;
+    }
+    prevCountRef.current = messages.length;
+  }, [messages.length, isFetchingMore]);
+
+  // IntersectionObserver on the top sentinel to load older messages
+  const loadMoreRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (sentinelRef.current) {
+        sentinelRef.current = null;
+      }
+      if (!node) {
+        return;
+      }
+      sentinelRef.current = node;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isFetchingMore) {
+            onLoadMore();
+          }
+        },
+        { root: scrollRef.current, threshold: 0.1 },
+      );
+      observer.observe(node);
+      return () => observer.disconnect();
+    },
+    [hasMore, isFetchingMore, onLoadMore],
+  );
+
+  return (
+    <section className="panel p-4">
+      <h3 className="text-base font-bold tracking-tight text-foreground">Messages</h3>
+      <div ref={scrollRef} className="mt-3 max-h-[60vh] overflow-y-auto">
+        {hasMore ? (
+          <div ref={loadMoreRef} className="flex justify-center py-2">
+            {isFetchingMore ? (
+              <span className="text-xs text-muted-foreground">Loading older messages…</span>
+            ) : (
+              <button
+                type="button"
+                onClick={onLoadMore}
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                Load older messages
+              </button>
+            )}
+          </div>
+        ) : null}
+        <div className="grid gap-2">
+          {messages.length ? (
+            messages.map((message) => (
+              <article
+                key={message.id}
+                className={[
+                  'border p-3',
+                  message.participantType === 'OPERATOR' ? 'border-primary/30 bg-primary/5' : 'border-border bg-white/70',
+                ].join(' ')}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-foreground">
+                    {message.authorName || message.participantType.toLowerCase()}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{message.type}</span>
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">{message.body}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{new Date(message.createdAt).toLocaleString()}</p>
+              </article>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No messages yet. Send a command to start the conversation.</p>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 

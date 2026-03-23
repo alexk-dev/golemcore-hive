@@ -202,6 +202,72 @@ function useCardThreadData(cardId: string) {
   };
 }
 
+function CardThreadHeader({
+  title,
+  columnId,
+  boardId,
+  liveState,
+  targetGolem,
+  controllableRun,
+  cancelActionLabel,
+  cancelRequestedPending,
+  isCancelPending,
+  actionError,
+  onCancelRun,
+}: {
+  title: string;
+  columnId: string;
+  boardId: string;
+  liveState: string;
+  targetGolem: { displayName: string; state: string } | null;
+  controllableRun: { id: string; cancelRequestedByActorName?: string | null } | null;
+  cancelActionLabel: string;
+  cancelRequestedPending: boolean;
+  isCancelPending: boolean;
+  actionError: string | null;
+  onCancelRun: (runId: string) => void;
+}) {
+  return (
+    <section className="panel px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-bold tracking-tight text-foreground">{title}</h2>
+          <span className="text-xs text-muted-foreground">{columnId} · {liveState}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {targetGolem ? (
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <GolemStatusBadge state={targetGolem.state} />
+              {targetGolem.displayName}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">Unassigned</span>
+          )}
+          {controllableRun ? (
+            <button
+              type="button"
+              disabled={isCancelPending || cancelRequestedPending}
+              onClick={() => onCancelRun(controllableRun.id)}
+              className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
+            >
+              {isCancelPending ? 'Sending stop...' : cancelRequestedPending ? 'Stop requested' : cancelActionLabel}
+            </button>
+          ) : null}
+          <Link to={`/boards/${boardId}`} className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground">
+            Back to board
+          </Link>
+        </div>
+      </div>
+      {cancelRequestedPending && controllableRun ? (
+        <p className="mt-2 text-xs text-rose-900">
+          Stop requested{controllableRun.cancelRequestedByActorName ? ` by ${controllableRun.cancelRequestedByActorName}` : ''}. Waiting for bot confirmation.
+        </p>
+      ) : null}
+      {actionError ? <p className="mt-2 text-sm text-rose-900">{actionError}</p> : null}
+    </section>
+  );
+}
+
 export function CardThreadPage() {
   const { cardId = '' } = useParams();
   const { accessToken } = useAuth();
@@ -227,47 +293,21 @@ export function CardThreadPage() {
 
   return (
     <div className="grid gap-4">
-      <section className="panel px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold tracking-tight text-foreground">{data.cardQuery.data.title}</h2>
-            <span className="text-xs text-muted-foreground">
-              {data.cardQuery.data.columnId} · {liveState}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {targetGolem ? (
-              <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                <GolemStatusBadge state={targetGolem.state} />
-                {targetGolem.displayName}
-              </span>
-            ) : (
-              <span className="text-xs text-muted-foreground">Unassigned</span>
-            )}
-            {threadId && data.latestControllableRun ? (
-              <button
-                type="button"
-                disabled={data.cancelRunMutation.isPending || cancelRequestedPending}
-                onClick={() => void data.cancelRunMutation.mutateAsync({ threadId, runId: data.latestControllableRun!.id })}
-                className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
-              >
-                {data.cancelRunMutation.isPending ? 'Sending stop...' : cancelRequestedPending ? 'Stop requested' : cancelActionLabel}
-              </button>
-            ) : null}
-            <Link to={`/boards/${data.cardQuery.data.boardId}`} className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground">
-              Back to board
-            </Link>
-          </div>
-        </div>
-        {cancelRequestedPending && data.latestControllableRun ? (
-          <p className="mt-2 text-xs text-rose-900">
-            Stop requested{data.latestControllableRun.cancelRequestedByActorName ? ` by ${data.latestControllableRun.cancelRequestedByActorName}` : ''}. Waiting for bot confirmation.
-          </p>
-        ) : null}
-        {data.actionError ? (
-          <p className="mt-2 text-sm text-rose-900">{data.actionError}</p>
-        ) : null}
-      </section>
+      <CardThreadHeader
+        title={data.cardQuery.data.title}
+        columnId={data.cardQuery.data.columnId}
+        boardId={data.cardQuery.data.boardId}
+        liveState={liveState}
+        targetGolem={targetGolem}
+        controllableRun={data.latestControllableRun}
+        cancelActionLabel={cancelActionLabel}
+        cancelRequestedPending={cancelRequestedPending}
+        isCancelPending={data.cancelRunMutation.isPending}
+        actionError={data.actionError}
+        onCancelRun={(runId) => {
+          void data.cancelRunMutation.mutateAsync({ threadId, runId });
+        }}
+      />
 
       <TransitionSuggestionBanner signal={data.latestSuggestion} />
 

@@ -2,7 +2,7 @@ import { useDndContext, useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardColumn } from '../../lib/api/boardsApi';
-import type { CardControlState, CardSummary } from '../../lib/api/cardsApi';
+import type { CardSummary } from '../../lib/api/cardsApi';
 import { formatControlLabel } from '../../lib/format';
 
 interface KanbanColumnProps {

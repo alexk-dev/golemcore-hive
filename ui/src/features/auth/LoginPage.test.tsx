@@ -26,7 +26,7 @@ describe('LoginPage', () => {
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByRole('heading', { name: /bootstrap the control plane/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/username/i)).toHaveValue('admin');
     expect(screen.getByLabelText(/password/i)).toHaveValue('change-me-now');
   });

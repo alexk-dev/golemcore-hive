@@ -132,7 +132,7 @@ export function ExecutionControlPanel({
           <p className="text-sm font-semibold text-foreground">Execution</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {controlState
-              ? `${formatControlLabel(controlState)}`
+              ? formatControlLabel(controlState)
               : 'No active run'}
           </p>
         </div>

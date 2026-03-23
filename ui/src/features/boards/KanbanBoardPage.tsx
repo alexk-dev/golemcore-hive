@@ -6,6 +6,7 @@ import { getBoard, getBoardTeam } from '../../lib/api/boardsApi';
 import { archiveCard, assignCard, createCard, getCard, getCardAssignees, listCards, moveCard, updateCard } from '../../lib/api/cardsApi';
 import { cancelThreadRun, createThreadCommand, type CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import { listGolems } from '../../lib/api/golemsApi';
+import { readErrorMessage } from '../../lib/format';
 import { CardComposerDialog } from '../cards/CardComposerDialog';
 import { CardDetailsDrawer } from '../cards/CardDetailsDrawer';
 import { KanbanBoardHeader } from './KanbanBoardHeader';
@@ -339,9 +340,3 @@ export function KanbanBoardPage() {
   );
 }
 
-function readErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-  return 'The action failed. Check the Hive control channel state and try again.';
-}

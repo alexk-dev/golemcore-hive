@@ -166,7 +166,7 @@ export function GolemsPage() {
   const state = useGolemsPageState();
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <GolemsHero onCreateEnrollmentToken={state.openEnrollmentDialog} />
       <GolemFiltersPanel
         query={state.query}
@@ -178,7 +178,7 @@ export function GolemsPage() {
         onRoleFilterChange={state.setRoleFilter}
       />
 
-      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
         <GolemRegistryPanel
           golems={state.golemsQuery.data ?? []}
           selectedGolemId={state.selectedGolemId}

@@ -45,13 +45,13 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
   const items = activeTab === 'team' ? visibleTeam : visibleAll;
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => setActiveTab('team')}
           className={[
-            'rounded-full px-4 py-2 text-sm font-semibold transition',
+            'rounded-full px-3 py-1.5 text-sm font-semibold transition',
             activeTab === 'team' ? 'bg-foreground text-white' : 'border border-border bg-white text-foreground',
           ].join(' ')}
         >
@@ -61,7 +61,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           type="button"
           onClick={() => setActiveTab('all')}
           className={[
-            'rounded-full px-4 py-2 text-sm font-semibold transition',
+            'rounded-full px-3 py-1.5 text-sm font-semibold transition',
             activeTab === 'all' ? 'bg-foreground text-white' : 'border border-border bg-white text-foreground',
           ].join(' ')}
         >
@@ -71,22 +71,21 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Filter golems"
-          className="ml-auto min-w-[220px] rounded-full border border-border bg-white px-4 py-2 text-sm outline-none focus:border-primary"
+          className="ml-auto min-w-[180px] rounded-full border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-primary"
         />
       </div>
 
-      <div className="grid gap-3">
+      <div className="grid gap-2">
         <button
           type="button"
           disabled={isPending}
           onClick={() => void onAssign(null)}
           className={[
-            'rounded-[18px] border p-3 text-left transition',
+            'rounded-lg border p-3 text-left transition',
             currentAssigneeId === null ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-white/70',
           ].join(' ')}
         >
-          <span className="block text-sm font-semibold text-foreground">Unassigned</span>
-          <span className="mt-1 block text-sm text-muted-foreground">Leave the card without a specific executor.</span>
+          <span className="text-sm font-semibold text-foreground">Unassigned</span>
         </button>
 
         {items.length ? (
@@ -97,27 +96,23 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
               disabled={isPending}
               onClick={() => void onAssign(candidate.golemId)}
               className={[
-                'rounded-[18px] border p-3 text-left transition',
+                'rounded-lg border p-3 text-left transition',
                 currentAssigneeId === candidate.golemId ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-white/70',
               ].join(' ')}
             >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <span className="block text-sm font-semibold text-foreground">{candidate.displayName}</span>
-                  <span className="mt-1 block text-xs uppercase tracking-[0.16em] text-muted-foreground">{candidate.golemId}</span>
-                </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-foreground">{candidate.displayName}</span>
                 <GolemStatusBadge state={candidate.state} />
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {candidate.roleSlugs.length ? candidate.roleSlugs.join(', ') : 'No roles'}
+                {' · '}
+                {candidate.reasons.join(' · ')}
               </p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">{candidate.reasons.join(' • ')}</p>
             </button>
           ))
         ) : (
-          <div className="rounded-[18px] border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
-            No golems match the current filter.
-          </div>
+          <p className="py-4 text-sm text-muted-foreground">No golems match the filter.</p>
         )}
       </div>
     </div>

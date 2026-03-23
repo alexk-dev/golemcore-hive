@@ -1,140 +1,35 @@
 import type { CardAssigneeOptions, CardControlState, CardDetail } from '../../lib/api/cardsApi';
 import type { CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import type { GolemSummary } from '../../lib/api/golemsApi';
+import { formatControlLabel } from '../../lib/format';
 import { AssignmentPolicyBadge } from './AssignmentPolicyBadge';
 import { AssigneePicker } from './AssigneePicker';
-
-type ApprovalRiskLevel = 'NONE' | 'DESTRUCTIVE' | 'HIGH_COST';
+import { CommandForm } from './CommandForm';
 
 export function CardDispatchPanel({
   card,
-  dispatchBody,
-  approvalRiskLevel,
-  estimatedCostMicros,
-  approvalReason,
   isDispatchPending,
-  onDispatchBodyChange,
-  onApprovalRiskLevelChange,
-  onEstimatedCostMicrosChange,
-  onApprovalReasonChange,
   onSubmit,
 }: {
   card: CardDetail;
-  dispatchBody: string;
-  approvalRiskLevel: ApprovalRiskLevel;
-  estimatedCostMicros: string;
-  approvalReason: string;
   isDispatchPending: boolean;
-  onDispatchBodyChange: (value: string) => void;
-  onApprovalRiskLevelChange: (value: ApprovalRiskLevel) => void;
-  onEstimatedCostMicrosChange: (value: string) => void;
-  onApprovalReasonChange: (value: string) => void;
   onSubmit: (input: CreateThreadCommandInput) => Promise<void>;
 }) {
-  const dispatchDisabled = !card.assigneeGolemId || isDispatchPending;
-
   return (
-    <form
-      className="panel grid gap-4 p-5"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!dispatchBody.trim()) {
-          return;
-        }
-        void onSubmit({
-          body: dispatchBody.trim(),
-          approvalRiskLevel: approvalRiskLevel !== 'NONE' ? approvalRiskLevel : null,
-          estimatedCostMicros: estimatedCostMicros ? Number(estimatedCostMicros) : 0,
-          approvalReason: approvalReason.trim() || undefined,
-        });
-      }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-xl font-bold tracking-[-0.03em] text-foreground">Dispatch to assignee</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            The saved card prompt goes out automatically on the first move to In Progress. Use dispatch here for manual
-            follow-up instructions.
-          </p>
-        </div>
-        <span className="rounded-full border border-border bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          {card.assigneeGolemId || 'Unassigned'}
-        </span>
+    <section className="panel p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-base font-bold tracking-tight text-foreground">Dispatch</h3>
+        <span className="text-xs text-muted-foreground">{card.assigneeGolemId || 'Unassigned'}</span>
       </div>
-      <textarea
-        value={dispatchBody}
-        onChange={(event) => onDispatchBodyChange(event.target.value)}
-        rows={6}
-        disabled={dispatchDisabled}
-        placeholder={
-          card.assigneeGolemId
-            ? 'Ask the assigned golem to continue, explain, or execute a next step.'
-            : 'Assign the card before dispatching commands.'
-        }
-        className="rounded-[18px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
-      />
-      <div className="grid gap-3 rounded-[18px] border border-border bg-white/65 p-4 md:grid-cols-2">
-        <label className="grid gap-2 text-sm text-muted-foreground">
-          Estimated cost micros
-          <input
-            type="number"
-            min="0"
-            value={estimatedCostMicros}
-            onChange={(event) => onEstimatedCostMicrosChange(event.target.value)}
-            disabled={dispatchDisabled}
-            placeholder="Optional budget estimate"
-            className="rounded-[14px] border border-border bg-white/90 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
-          />
-        </label>
-        <label className="grid gap-2 text-sm text-muted-foreground">
-          Approval note
-          <input
-            type="text"
-            value={approvalReason}
-            onChange={(event) => onApprovalReasonChange(event.target.value)}
-            disabled={dispatchDisabled}
-            placeholder="Why this needs approval"
-            className="rounded-[14px] border border-border bg-white/90 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
-          />
-        </label>
-        <div className="md:col-span-2 flex flex-wrap gap-2">
-          {[
-            { value: 'NONE', label: 'Normal' },
-            { value: 'DESTRUCTIVE', label: 'Destructive' },
-            { value: 'HIGH_COST', label: 'High-cost' },
-          ].map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              disabled={dispatchDisabled}
-              onClick={() => onApprovalRiskLevelChange(option.value as ApprovalRiskLevel)}
-              className={[
-                'rounded-full px-3 py-1.5 text-sm font-semibold transition',
-                approvalRiskLevel === option.value
-                  ? 'bg-foreground text-white'
-                  : 'border border-border bg-white/90 text-foreground',
-              ].join(' ')}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+      <div className="mt-3">
+        <CommandForm
+          disabled={!card.assigneeGolemId}
+          isPending={isDispatchPending}
+          placeholder={card.assigneeGolemId ? 'Follow-up instruction for the assignee' : 'Assign the card first'}
+          onSubmit={onSubmit}
+        />
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {card.assigneeGolemId
-            ? 'Dispatch uses the card thread and the current assignee golem.'
-            : 'Assign the card first to enable dispatch.'}
-        </p>
-        <button
-          type="submit"
-          disabled={dispatchDisabled || !dispatchBody.trim()}
-          className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-        >
-          {isDispatchPending ? 'Dispatching...' : 'Dispatch command'}
-        </button>
-      </div>
-    </form>
+    </section>
   );
 }
 
@@ -163,67 +58,58 @@ export function CardEditorPanel({
 }) {
   return (
     <form
-      className="panel grid gap-4 p-5"
+      className="panel grid gap-3 p-4"
       onSubmit={(event) => {
         event.preventDefault();
         void onSubmit();
       }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-xl font-bold tracking-[-0.03em] text-foreground">Card details</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Edit the card brief without leaving the board workspace.</p>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-base font-bold tracking-tight text-foreground">Card details</h3>
         <button
           type="submit"
           disabled={isPending || !title.trim() || !prompt.trim()}
           className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
         >
-          Save card
+          Save
         </button>
       </div>
-      <label className="grid gap-2">
+      <label className="grid gap-1.5">
         <span className="text-sm font-semibold text-foreground">Title</span>
         <input
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
-          className="rounded-[18px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+          className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
         />
       </label>
-      <label className="grid gap-2">
+      <label className="grid gap-1.5">
         <span className="text-sm font-semibold text-foreground">Description</span>
         <textarea
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value)}
-          rows={5}
-          className="rounded-[18px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+          rows={3}
+          className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
         />
       </label>
-      <label className="grid gap-2">
+      <label className="grid gap-1.5">
         <span className="text-sm font-semibold text-foreground">Prompt</span>
         <textarea
           value={prompt}
           onChange={(event) => onPromptChange(event.target.value)}
-          rows={6}
-          className="rounded-[18px] border border-border bg-white/90 px-4 py-3 text-sm outline-none transition focus:border-primary"
+          rows={4}
+          className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
         />
       </label>
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-border bg-white/65 p-4">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Assignee routing</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Routing chooses who receives work. Card status still follows lifecycle signals and board flow.
-          </p>
-          <select
-            value={assignmentPolicy}
-            onChange={(event) => onAssignmentPolicyChange(event.target.value)}
-            className="mt-2 rounded-[14px] border border-border bg-white px-4 py-2 text-sm outline-none transition focus:border-primary"
-          >
-            <option value="MANUAL">MANUAL</option>
-            <option value="SUGGESTED">SUGGESTED</option>
-            <option value="AUTOMATIC">AUTOMATIC</option>
-          </select>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <select
+          value={assignmentPolicy}
+          onChange={(event) => onAssignmentPolicyChange(event.target.value)}
+          className="rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+        >
+          <option value="MANUAL">MANUAL</option>
+          <option value="SUGGESTED">SUGGESTED</option>
+          <option value="AUTOMATIC">AUTOMATIC</option>
+        </select>
         <AssignmentPolicyBadge policy={assignmentPolicy} />
       </div>
     </form>
@@ -240,14 +126,14 @@ export function ExecutionControlPanel({
   onCancelRun: (runId: string) => Promise<void>;
 }) {
   return (
-    <section className="panel grid gap-3 p-4">
+    <section className="panel p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-foreground">Execution control</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-sm font-semibold text-foreground">Execution</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             {controlState
-              ? `Run ${controlState.runId} · ${formatControlLabel(controlState)}`
-              : 'No active run is attached to this card right now.'}
+              ? `${formatControlLabel(controlState)}`
+              : 'No active run'}
           </p>
         </div>
         {controlState?.canCancel ? (
@@ -255,22 +141,19 @@ export function ExecutionControlPanel({
             type="button"
             disabled={isCancelPending}
             onClick={() => void onCancelRun(controlState.runId)}
-            className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
+            className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
           >
-            {isCancelPending ? 'Sending stop...' : controlActionLabel(controlState)}
+            {isCancelPending ? 'Stopping...' : controlState.commandStatus === 'QUEUED' && controlState.runStatus === 'QUEUED' ? 'Cancel' : 'Stop'}
           </button>
         ) : null}
       </div>
       {controlState?.summary ? (
-        <p className="text-sm leading-6 text-muted-foreground">{controlState.summary}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{controlState.summary}</p>
       ) : null}
-      {controlState?.queueReason ? <p className="text-sm text-amber-900">{controlState.queueReason}</p> : null}
       {controlState?.cancelRequestedPending ? (
-        <div className="rounded-[16px] border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-900">
-          Stop requested
-          {controlState.cancelRequestedByActorName ? ` by ${controlState.cancelRequestedByActorName}` : ''}
-          {controlState.cancelRequestedAt ? ` at ${new Date(controlState.cancelRequestedAt).toLocaleString()}` : ''}.
-        </div>
+        <p className="mt-2 text-xs text-rose-900">
+          Stop requested{controlState.cancelRequestedByActorName ? ` by ${controlState.cancelRequestedByActorName}` : ''}
+        </p>
       ) : null}
     </section>
   );
@@ -290,18 +173,17 @@ export function AssigneeRoutingPanel({
   onAssign: (assigneeGolemId: string | null) => Promise<void>;
 }) {
   return (
-    <section className="panel grid gap-3 p-4">
-      <div>
-        <p className="text-sm font-semibold text-foreground">Assignee routing</p>
-        <p className="mt-1 text-sm text-muted-foreground">Reassign from the board team or the full fleet.</p>
+    <section className="panel p-4">
+      <p className="text-sm font-semibold text-foreground">Assignee</p>
+      <div className="mt-2">
+        <AssigneePicker
+          options={assigneeOptions}
+          allGolems={allGolems}
+          currentAssigneeId={card.assigneeGolemId}
+          isPending={isPending}
+          onAssign={onAssign}
+        />
       </div>
-      <AssigneePicker
-        options={assigneeOptions}
-        allGolems={allGolems}
-        currentAssigneeId={card.assigneeGolemId}
-        isPending={isPending}
-        onAssign={onAssign}
-      />
     </section>
   );
 }
@@ -316,68 +198,38 @@ export function TransitionHistoryPanel({
   onArchive: () => Promise<void>;
 }) {
   return (
-    <section className="panel grid gap-3 p-4">
+    <section className="panel p-4">
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Transition history</p>
-          <p className="mt-1 text-sm text-muted-foreground">Recent card moves and automation outcomes.</p>
-        </div>
+        <p className="text-sm font-semibold text-foreground">Transitions</p>
         <button
           type="button"
           disabled={isPending || card.archived}
           onClick={() => void onArchive()}
-          className="rounded-full border border-rose-300 bg-rose-100 px-3 py-1.5 text-sm font-semibold text-rose-900 disabled:opacity-60"
+          className="rounded-full border border-rose-300 bg-rose-100 px-3 py-1.5 text-xs font-semibold text-rose-900 disabled:opacity-60"
         >
           Archive
         </button>
       </div>
-      <div className="grid gap-2">
+      <div className="mt-2 grid gap-2">
         {card.transitions.length ? (
           card.transitions.map((transition, index) => (
-            <article key={`${transition.occurredAt}-${index}`} className="rounded-[16px] border border-border bg-white/70 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-foreground">
-                  {transition.fromColumnId || 'none'} → {transition.toColumnId}
+            <div key={`${transition.occurredAt}-${index}`} className="rounded-lg border border-border bg-white/70 p-2.5 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium text-foreground">
+                  {transition.fromColumnId || '—'} → {transition.toColumnId}
                 </span>
-                <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{transition.origin}</span>
+                <span className="text-xs text-muted-foreground">{transition.origin}</span>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">{transition.summary}</p>
-              <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                {new Date(transition.occurredAt).toLocaleString()} · {transition.actorName || 'system'}
+              {transition.summary ? <p className="mt-1 text-xs text-muted-foreground">{transition.summary}</p> : null}
+              <p className="mt-1 text-xs text-muted-foreground">
+                {new Date(transition.occurredAt).toLocaleString()}
               </p>
-            </article>
+            </div>
           ))
         ) : (
-          <div className="rounded-[16px] border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
-            No transitions recorded yet.
-          </div>
+          <p className="text-xs text-muted-foreground">No transitions yet.</p>
         )}
       </div>
     </section>
   );
-}
-
-function controlActionLabel(controlState: CardControlState) {
-  return controlState.commandStatus === 'QUEUED' && controlState.runStatus === 'QUEUED'
-    ? 'Cancel queued command'
-    : 'Stop active run';
-}
-
-function formatControlLabel(controlState: CardControlState) {
-  if (controlState.cancelRequestedPending) {
-    return 'Stop requested';
-  }
-  if (controlState.runStatus === 'PENDING_APPROVAL') {
-    return 'Awaiting approval';
-  }
-  if (controlState.runStatus === 'QUEUED' && controlState.commandStatus === 'QUEUED') {
-    return 'Queued';
-  }
-  if (controlState.runStatus === 'BLOCKED') {
-    return 'Blocked';
-  }
-  if (controlState.runStatus === 'RUNNING') {
-    return 'Running';
-  }
-  return controlState.runStatus.replace(/_/g, ' ');
 }

@@ -12,7 +12,8 @@ const navGroups = [
   {
     label: 'Fleet',
     items: [
-      { to: '/fleet', label: 'Golems' },
+      { to: '/fleet', label: 'Golems', end: true },
+      { to: '/fleet/chat', label: 'Chat' },
       { to: '/fleet/roles', label: 'Roles' },
     ],
   },
@@ -46,6 +47,7 @@ export function AppShell() {
                   <NavLink
                     key={item.to}
                     to={item.to}
+                    end={'end' in item ? item.end : undefined}
                     className={({ isActive }) =>
                       [
                         'px-3 py-1.5 text-sm transition',

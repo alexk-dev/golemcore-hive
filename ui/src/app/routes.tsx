@@ -8,6 +8,7 @@ import { BoardsPage } from '../features/boards/BoardsPage';
 import { KanbanBoardPage } from '../features/boards/KanbanBoardPage';
 import { BoardEditorPage } from '../features/boards/BoardEditorPage';
 import { CardThreadPage } from '../features/chat/CardThreadPage';
+import { GolemChatPage } from '../features/chat/GolemChatPage';
 import { ApprovalsPage } from '../features/approvals/ApprovalsPage';
 import { AuditPage } from '../features/audit/AuditPage';
 import { BudgetsPage } from '../features/budgets/BudgetsPage';
@@ -67,6 +68,14 @@ export const routes = createBrowserRouter([
           {
             path: '/cards/:cardId/thread',
             element: <CardThreadPage />,
+          },
+          {
+            path: '/fleet/chat',
+            element: <GolemChatPage />,
+          },
+          {
+            path: '/fleet/chat/:golemId',
+            element: <GolemChatPage />,
           },
         ],
       },

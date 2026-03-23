@@ -188,6 +188,90 @@ public class CommandDispatchService {
         return new DispatchResult(command, run);
     }
 
+    public DispatchResult createDirectCommand(String threadId,
+            String body,
+            String operatorId,
+            String operatorName) {
+        if (body == null || body.isBlank()) {
+            throw new IllegalArgumentException("Command body is required");
+        }
+
+        ThreadRecord thread = threadService.getThread(threadId);
+        if (thread.getAssignedGolemId() == null || thread.getAssignedGolemId().isBlank()) {
+            throw new IllegalArgumentException("DM thread has no assigned golem");
+        }
+        Golem golem = golemRegistryService.findGolem(thread.getAssignedGolemId())
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Unknown golem: " + thread.getAssignedGolemId()));
+
+        Instant now = Instant.now();
+        String commandId = "cmd_" + UUID.randomUUID().toString().replace("-", "");
+        String runId = "run_" + UUID.randomUUID().toString().replace("-", "");
+
+        RunProjection run = RunProjection.builder()
+                .id(runId)
+                .threadId(thread.getId())
+                .commandId(commandId)
+                .golemId(golem.getId())
+                .status(RunStatus.QUEUED)
+                .summary(body)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+
+        CommandRecord command = CommandRecord.builder()
+                .id(commandId)
+                .threadId(thread.getId())
+                .golemId(golem.getId())
+                .runId(runId)
+                .body(body)
+                .status(CommandStatus.QUEUED)
+                .createdAt(now)
+                .updatedAt(now)
+                .dispatchAttempts(0)
+                .build();
+
+        saveRun(run);
+        saveCommand(command);
+
+        threadService.appendMessage(thread, commandId, runId, null, ThreadMessageType.COMMAND_REQUEST,
+                ThreadParticipantType.OPERATOR, operatorId, operatorName, body, now);
+
+        dispatchToControlChannel(command, run, now, golem);
+        saveCommand(command);
+        saveRun(run);
+
+        auditService.record(AuditEvent.builder()
+                .eventType("command.dispatch")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(operatorId)
+                .actorName(operatorName)
+                .targetType("COMMAND")
+                .targetId(command.getId())
+                .threadId(thread.getId())
+                .golemId(golem.getId())
+                .commandId(command.getId())
+                .runId(run.getId())
+                .summary("Direct command dispatched")
+                .details(body));
+
+        threadService.markCommandCreated(thread, golem.getId(), now);
+
+        operatorUpdatesService.publish(OperatorUpdate.builder()
+                .eventType("thread_updated")
+                .threadId(thread.getId())
+                .commandId(command.getId())
+                .runId(run.getId())
+                .kinds(List.of("command", "run", "thread_message"))
+                .createdAt(now)
+                .build());
+
+        budgetService.refreshSnapshots();
+
+        return new DispatchResult(command, run);
+    }
+
     public List<CommandRecord> listCommands(String threadId) {
         List<CommandRecord> commands = new ArrayList<>();
         for (String path : storagePort.listObjects(COMMANDS_DIR, "")) {
@@ -380,8 +464,27 @@ public class CommandDispatchService {
             if (run != null) {
                 saveRun(run);
             }
-            Card card = cardService.getCard(command.getCardId());
-            recordDispatchAudit(command, run, card, "system", "Hive");
+            if (command.getCardId() != null) {
+                Card card = cardService.getCard(command.getCardId());
+                recordDispatchAudit(command, run, card, "system", "Hive");
+            } else {
+                auditService.record(AuditEvent.builder()
+                        .eventType("command.dispatch")
+                        .severity("INFO")
+                        .actorType("SYSTEM")
+                        .actorId("system")
+                        .actorName("Hive")
+                        .targetType("COMMAND")
+                        .targetId(command.getId())
+                        .threadId(command.getThreadId())
+                        .golemId(golem.getId())
+                        .commandId(command.getId())
+                        .runId(run != null ? run.getId() : null)
+                        .summary(command.getStatus() == CommandStatus.DELIVERED
+                                ? "Direct command dispatched on reconnect"
+                                : "Direct command queued for delivery")
+                        .details(command.getBody()));
+            }
         }
         budgetService.refreshSnapshots();
     }
@@ -402,7 +505,8 @@ public class CommandDispatchService {
         RunProjection run = resolveRunProjection(commandId, runId, threadId, cardId, golemId, eventTime);
         CommandRecord command = resolveCommand(commandId, run);
         ThreadRecord thread = resolveThread(threadId, run);
-        Card card = cardId != null ? cardService.getCard(cardId) : cardService.getCard(run.getCardId());
+        String resolvedCardId = cardId != null ? cardId : run.getCardId();
+        Card card = resolvedCardId != null ? cardService.getCard(resolvedCardId) : null;
 
         if (command != null) {
             command.setUpdatedAt(eventTime);
@@ -492,8 +596,8 @@ public class CommandDispatchService {
                     .severity(NotificationSeverity.CRITICAL)
                     .title("Command failed")
                     .message(firstNonBlank(summary, details, "A command execution failed"))
-                    .cardId(card.getId())
-                    .boardId(card.getBoardId())
+                    .cardId(card != null ? card.getId() : null)
+                    .boardId(card != null ? card.getBoardId() : null)
                     .threadId(thread.getId())
                     .golemId(golemId)
                     .commandId(command != null ? command.getId() : commandId));
@@ -510,8 +614,8 @@ public class CommandDispatchService {
                     .actorName(golemId)
                     .targetType("RUN")
                     .targetId(run.getId())
-                    .boardId(card.getBoardId())
-                    .cardId(card.getId())
+                    .boardId(card != null ? card.getBoardId() : null)
+                    .cardId(card != null ? card.getId() : null)
                     .threadId(thread.getId())
                     .golemId(golemId)
                     .commandId(command != null ? command.getId() : commandId)
@@ -522,7 +626,7 @@ public class CommandDispatchService {
 
         operatorUpdatesService.publish(OperatorUpdate.builder()
                 .eventType("thread_updated")
-                .cardId(card.getId())
+                .cardId(card != null ? card.getId() : null)
                 .threadId(thread.getId())
                 .commandId(command != null ? command.getId() : commandId)
                 .runId(run.getId())
@@ -606,15 +710,15 @@ public class CommandDispatchService {
             saveCommand(command);
         }
 
-        Card card = cardService.getCard(run.getCardId());
+        Card card = run.getCardId() != null ? cardService.getCard(run.getCardId()) : null;
         if (signalType == LifecycleSignalType.BLOCKER_RAISED && notificationService.isBlockerRaisedEnabled()) {
             notificationService.create(NotificationEvent.builder()
                     .type("BLOCKER_RAISED")
                     .severity(NotificationSeverity.WARN)
                     .title("Blocker raised")
                     .message(signal.getSummary())
-                    .boardId(card.getBoardId())
-                    .cardId(card.getId())
+                    .boardId(card != null ? card.getBoardId() : null)
+                    .cardId(card != null ? card.getId() : null)
                     .threadId(signal.getThreadId())
                     .golemId(signal.getGolemId())
                     .commandId(signal.getCommandId()));
@@ -625,8 +729,8 @@ public class CommandDispatchService {
                     .severity(NotificationSeverity.CRITICAL)
                     .title("Work failed")
                     .message(signal.getSummary())
-                    .boardId(card.getBoardId())
-                    .cardId(card.getId())
+                    .boardId(card != null ? card.getBoardId() : null)
+                    .cardId(card != null ? card.getId() : null)
                     .threadId(signal.getThreadId())
                     .golemId(signal.getGolemId())
                     .commandId(signal.getCommandId()));
@@ -643,8 +747,8 @@ public class CommandDispatchService {
                 .actorName(signal.getGolemId())
                 .targetType("RUN")
                 .targetId(run.getId())
-                .boardId(card.getBoardId())
-                .cardId(card.getId())
+                .boardId(card != null ? card.getBoardId() : null)
+                .cardId(card != null ? card.getId() : null)
                 .threadId(signal.getThreadId())
                 .golemId(signal.getGolemId())
                 .commandId(signal.getCommandId())

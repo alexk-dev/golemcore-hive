@@ -67,6 +67,52 @@ public class ThreadService {
         return getOrCreateThreadForCard(card);
     }
 
+    public ThreadRecord getOrCreateDirectThread(String golemId, String golemDisplayName) {
+        String threadId = "dm_" + golemId;
+        Optional<ThreadRecord> existing = findThread(threadId);
+        if (existing.isPresent()) {
+            ThreadRecord thread = existing.get();
+            if (!java.util.Objects.equals(thread.getTitle(), golemDisplayName)) {
+                thread.setTitle(golemDisplayName);
+                thread.setUpdatedAt(Instant.now());
+                saveThread(thread);
+            }
+            return thread;
+        }
+        Instant now = Instant.now();
+        ThreadRecord thread = ThreadRecord.builder()
+                .id(threadId)
+                .title(golemDisplayName)
+                .assignedGolemId(golemId)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        saveThread(thread);
+        return thread;
+    }
+
+    public List<ThreadRecord> listDirectThreads() {
+        List<ThreadRecord> threads = new ArrayList<>();
+        for (String path : storagePort.listObjects(THREADS_DIR, "")) {
+            if (!path.startsWith("dm_")) {
+                continue;
+            }
+            String content = storagePort.getText(THREADS_DIR, path);
+            if (content == null) {
+                continue;
+            }
+            try {
+                threads.add(objectMapper.readValue(content, ThreadRecord.class));
+            } catch (JsonProcessingException exception) {
+                throw new IllegalStateException("Failed to deserialize thread " + path, exception);
+            }
+        }
+        threads.sort(Comparator.comparing(
+                ThreadRecord::getLastMessageAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return threads;
+    }
+
     public List<ThreadMessage> listMessages(String threadId) {
         List<ThreadMessage> messages = new ArrayList<>();
         for (String path : storagePort.listObjects(THREAD_MESSAGES_DIR, "")) {
@@ -81,6 +127,24 @@ public class ThreadService {
         }
         messages.sort(Comparator.comparing(ThreadMessage::getCreatedAt).thenComparing(ThreadMessage::getId));
         return messages;
+    }
+
+    public MessagePage listMessagesPaginated(String threadId, int limit, Instant before) {
+        List<ThreadMessage> all = listMessages(threadId);
+        if (before != null) {
+            all = all.stream()
+                    .filter(message -> message.getCreatedAt().isBefore(before))
+                    .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        }
+        int total = all.size();
+        if (total <= limit) {
+            return new MessagePage(all, false);
+        }
+        List<ThreadMessage> page = all.subList(total - limit, total);
+        return new MessagePage(new ArrayList<>(page), true);
+    }
+
+    public record MessagePage(List<ThreadMessage> messages, boolean hasMore) {
     }
 
     public ThreadMessage postOperatorMessage(String threadId, String body, String operatorId, String operatorName) {

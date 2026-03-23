@@ -52,7 +52,7 @@ export function RoleEditorDialog({ open, role, isPending, onClose, onSubmit }: R
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-border bg-white/70 px-3 py-1.5 text-sm font-semibold text-foreground"
+            className="border border-border bg-white/70 px-3 py-1.5 text-sm font-semibold text-foreground"
           >
             Close
           </button>
@@ -66,7 +66,7 @@ export function RoleEditorDialog({ open, role, isPending, onClose, onSubmit }: R
                 value={slug}
                 onChange={(event) => setSlug(event.target.value)}
                 placeholder="developer, reviewer, ops"
-                className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
               />
             </label>
           ) : null}
@@ -75,7 +75,7 @@ export function RoleEditorDialog({ open, role, isPending, onClose, onSubmit }: R
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
             />
           </label>
           <label className="grid gap-1.5">
@@ -84,7 +84,7 @@ export function RoleEditorDialog({ open, role, isPending, onClose, onSubmit }: R
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}
-              className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
             />
           </label>
           <label className="grid gap-1.5">
@@ -93,13 +93,13 @@ export function RoleEditorDialog({ open, role, isPending, onClose, onSubmit }: R
               value={capabilityTags}
               onChange={(event) => setCapabilityTags(event.target.value)}
               placeholder="java, review, spring"
-              className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
             />
           </label>
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-xl bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
           >
             {isPending ? 'Saving...' : role ? 'Update role' : 'Create role'}
           </button>

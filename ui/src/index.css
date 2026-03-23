@@ -20,10 +20,7 @@
     --ring: 17 83% 46%;
     font-family: 'Space Grotesk', sans-serif;
     color: hsl(var(--foreground));
-    background:
-      radial-gradient(circle at top left, rgba(240, 171, 79, 0.12), transparent 28%),
-      radial-gradient(circle at top right, rgba(56, 189, 149, 0.1), transparent 22%),
-      linear-gradient(180deg, #fff9f0 0%, #f7f0e4 48%, #efe7db 100%);
+    background: hsl(var(--background));
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -47,14 +44,14 @@
 
 @layer components {
   .panel {
-    @apply rounded-xl border border-border/80 bg-white/85 shadow-[0_10px_30px_rgba(34,29,24,0.06)] backdrop-blur;
+    @apply border border-border/80 bg-white/90;
   }
 
   .soft-card {
-    @apply rounded-lg border border-white/60 bg-white/70 shadow-[0_8px_24px_rgba(34,29,24,0.05)];
+    @apply border border-border/50 bg-white/70;
   }
 
   .pill {
-    @apply inline-flex items-center rounded-full border border-border/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground;
+    @apply inline-flex items-center border border-border/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground;
   }
 }

@@ -1,10 +1,10 @@
-const toneMap: Record<string, string> = {
-  ONLINE: 'bg-emerald-100 text-emerald-900 border-emerald-200',
-  DEGRADED: 'bg-amber-100 text-amber-900 border-amber-200',
-  OFFLINE: 'bg-slate-200 text-slate-800 border-slate-300',
-  PAUSED: 'bg-sky-100 text-sky-900 border-sky-200',
-  REVOKED: 'bg-rose-100 text-rose-900 border-rose-200',
-  PENDING_ENROLLMENT: 'bg-orange-100 text-orange-900 border-orange-200',
+const dotColor: Record<string, string> = {
+  ONLINE: 'bg-emerald-500',
+  DEGRADED: 'bg-amber-500',
+  OFFLINE: 'bg-slate-400',
+  PAUSED: 'bg-sky-500',
+  REVOKED: 'bg-rose-500',
+  PENDING_ENROLLMENT: 'bg-orange-400',
 };
 
 interface GolemStatusBadgeProps {
@@ -13,13 +13,9 @@ interface GolemStatusBadgeProps {
 
 export function GolemStatusBadge({ state }: GolemStatusBadgeProps) {
   return (
-    <span
-      className={[
-        'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]',
-        toneMap[state] ?? 'bg-muted text-foreground border-border',
-      ].join(' ')}
-    >
-      {state.replace(/_/g, ' ')}
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span className={`inline-block h-1.5 w-1.5 shrink-0 ${dotColor[state] ?? 'bg-muted-foreground'}`} />
+      {state.replace(/_/g, ' ').toLowerCase()}
     </span>
   );
 }

@@ -14,7 +14,7 @@ export function ThreadMessageList({ messages }: ThreadMessageListProps) {
             <article
               key={message.id}
               className={[
-                'rounded-lg border p-3',
+                ' border p-3',
                 message.participantType === 'OPERATOR' ? 'border-primary/30 bg-primary/5' : 'border-border bg-white/70',
               ].join(' ')}
             >

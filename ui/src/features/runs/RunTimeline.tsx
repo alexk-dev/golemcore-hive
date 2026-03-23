@@ -14,7 +14,7 @@ type TimelineItem =
 
 function CommandTimelineItem({ item }: { item: Extract<TimelineItem, { kind: 'command' }> }) {
   return (
-    <article className="rounded-lg border border-border bg-white/70 p-3">
+    <article className="border border-border bg-white/70 p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-muted-foreground">Command</span>
         <span className="text-xs text-muted-foreground">{item.payload.status}</span>
@@ -37,7 +37,7 @@ function CommandTimelineItem({ item }: { item: Extract<TimelineItem, { kind: 'co
 
 function RunTimelineItemCard({ item }: { item: Extract<TimelineItem, { kind: 'run' }> }) {
   return (
-    <article className="rounded-lg border border-border bg-white/70 p-3">
+    <article className="border border-border bg-white/70 p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-muted-foreground">Run</span>
         <span className="text-xs text-muted-foreground">{item.payload.status}</span>
@@ -60,7 +60,7 @@ function RunTimelineItemCard({ item }: { item: Extract<TimelineItem, { kind: 'ru
 
 function SignalTimelineItemCard({ item }: { item: Extract<TimelineItem, { kind: 'signal' }> }) {
   return (
-    <article className="rounded-lg border border-border bg-white/70 p-3">
+    <article className="border border-border bg-white/70 p-3">
       <div className="flex items-center justify-between gap-2">
         <SignalBadge signalType={item.payload.signalType} />
         <span className="text-xs text-muted-foreground">
@@ -76,7 +76,7 @@ function SignalTimelineItemCard({ item }: { item: Extract<TimelineItem, { kind: 
           {item.payload.evidenceRefs.map((ref) => (
             <span
               key={`${item.payload.id}-${ref.kind}-${ref.ref}`}
-              className="rounded-full border border-border bg-white/90 px-2 py-0.5 text-xs text-muted-foreground"
+              className="border border-border bg-white/90 px-2 py-0.5 text-xs text-muted-foreground"
             >
               {ref.kind}: {ref.ref}
             </span>

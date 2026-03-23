@@ -22,24 +22,24 @@ export function FlowColumnsEditor({
         <button
           type="button"
           onClick={onAddColumn}
-          className="rounded-full border border-border bg-white px-3 py-1.5 text-sm font-semibold text-foreground"
+          className="border border-border bg-white px-3 py-1.5 text-sm font-semibold text-foreground"
         >
           Add column
         </button>
       </div>
       {columns.map((column, index) => (
-        <div key={column.id} className="grid gap-2 rounded-xl border border-border bg-white/70 p-3">
+        <div key={column.id} className="grid gap-2 border border-border bg-white/70 p-3">
           <div className="grid gap-2 md:grid-cols-[1fr_1fr_100px_90px_auto]">
             <input
               value={column.id}
               onChange={(event) => onUpdateColumn(index, { id: event.target.value })}
-              className="rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
               placeholder="column_id"
             />
             <input
               value={column.name}
               onChange={(event) => onUpdateColumn(index, { name: event.target.value })}
-              className="rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
               placeholder="Column name"
             />
             <input
@@ -47,7 +47,7 @@ export function FlowColumnsEditor({
               onChange={(event) =>
                 onUpdateColumn(index, { wipLimit: event.target.value ? Number.parseInt(event.target.value, 10) : null })
               }
-              className="rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
               placeholder="WIP"
             />
             <label className="flex items-center gap-2 text-sm text-foreground">
@@ -61,7 +61,7 @@ export function FlowColumnsEditor({
             <button
               type="button"
               onClick={() => onRemoveColumn(index)}
-              className="rounded-lg border border-rose-300 bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-900"
+              className="border border-rose-300 bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-900"
             >
               Remove
             </button>
@@ -70,7 +70,7 @@ export function FlowColumnsEditor({
             value={column.description ?? ''}
             onChange={(event) => onUpdateColumn(index, { description: event.target.value })}
             rows={2}
-            className="rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
             placeholder="Description"
           />
         </div>
@@ -80,7 +80,7 @@ export function FlowColumnsEditor({
         <select
           value={defaultColumnId}
           onChange={(event) => onDefaultColumnChange(event.target.value)}
-          className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-white px-4 py-2.5 text-sm outline-none transition focus:border-primary"
         >
           {columns.map((column) => (
             <option key={column.id} value={column.id}>
@@ -115,7 +115,7 @@ export function FlowTransitionsEditor({
         <button
           type="button"
           onClick={() => onAddTransition(defaultColumnId)}
-          className="rounded-full border border-border bg-white px-3 py-1.5 text-sm font-semibold text-foreground"
+          className="border border-border bg-white px-3 py-1.5 text-sm font-semibold text-foreground"
         >
           Add
         </button>
@@ -123,12 +123,12 @@ export function FlowTransitionsEditor({
       {transitions.map((transition, index) => (
         <div
           key={`${transition.fromColumnId}-${transition.toColumnId}-${index}`}
-          className="grid gap-2 rounded-xl border border-border bg-white/70 p-3 md:grid-cols-[1fr_1fr_auto]"
+          className="grid gap-2 border border-border bg-white/70 p-3 md:grid-cols-[1fr_1fr_auto]"
         >
           <select
             value={transition.fromColumnId}
             onChange={(event) => onUpdateTransition(index, { fromColumnId: event.target.value })}
-            className="rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
           >
             {columns.map((column) => (
               <option key={column.id} value={column.id}>
@@ -139,7 +139,7 @@ export function FlowTransitionsEditor({
           <select
             value={transition.toColumnId}
             onChange={(event) => onUpdateTransition(index, { toColumnId: event.target.value })}
-            className="rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
           >
             {columns.map((column) => (
               <option key={column.id} value={column.id}>
@@ -150,7 +150,7 @@ export function FlowTransitionsEditor({
           <button
             type="button"
             onClick={() => onRemoveTransition(index)}
-            className="rounded-lg border border-rose-300 bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-900"
+            className="border border-rose-300 bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-900"
           >
             Remove
           </button>
@@ -180,7 +180,7 @@ export function FlowSignalMappingsEditor({
         <button
           type="button"
           onClick={onAddMapping}
-          className="rounded-full border border-border bg-white px-3 py-1.5 text-sm font-semibold text-foreground"
+          className="border border-border bg-white px-3 py-1.5 text-sm font-semibold text-foreground"
         >
           Add
         </button>
@@ -188,17 +188,17 @@ export function FlowSignalMappingsEditor({
       {signalMappings.map((mapping, index) => (
         <div
           key={`${mapping.signalType}-${index}`}
-          className="grid gap-2 rounded-xl border border-border bg-white/70 p-3 md:grid-cols-[1fr_1fr_1fr_auto]"
+          className="grid gap-2 border border-border bg-white/70 p-3 md:grid-cols-[1fr_1fr_1fr_auto]"
         >
           <input
             value={mapping.signalType}
             onChange={(event) => onUpdateMapping(index, { signalType: event.target.value })}
-            className="rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
           />
           <select
             value={mapping.decision}
             onChange={(event) => onUpdateMapping(index, { decision: event.target.value })}
-            className="rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
           >
             <option value="AUTO_APPLY">AUTO_APPLY</option>
             <option value="SUGGEST_ONLY">SUGGEST_ONLY</option>
@@ -207,7 +207,7 @@ export function FlowSignalMappingsEditor({
           <select
             value={mapping.targetColumnId ?? ''}
             onChange={(event) => onUpdateMapping(index, { targetColumnId: event.target.value || null })}
-            className="rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
           >
             <option value="">No target</option>
             {columns.map((column) => (
@@ -219,7 +219,7 @@ export function FlowSignalMappingsEditor({
           <button
             type="button"
             onClick={() => onRemoveMapping(index)}
-            className="rounded-lg border border-rose-300 bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-900"
+            className="border border-rose-300 bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-900"
           >
             Remove
           </button>
@@ -250,13 +250,13 @@ export function FlowPreviewPanel({
   }
   if (!preview.removedColumnIds.length) {
     return (
-      <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
+      <div className="border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
         No remap required.
       </div>
     );
   }
   return (
-    <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+    <div className="border border-amber-300 bg-amber-50 p-4">
       <p className="text-sm font-semibold text-amber-900">Remap required</p>
       <p className="mt-1 text-sm text-amber-900">
         Cards in removed columns need a new target.
@@ -270,7 +270,7 @@ export function FlowPreviewPanel({
             <select
               value={remap[columnId] || ''}
               onChange={(event) => onRemapChange(columnId, event.target.value)}
-              className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-amber-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
             >
               <option value="">Select target</option>
               {columns.map((column) => (

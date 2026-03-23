@@ -78,7 +78,7 @@ export function CardComposerDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-border bg-white/70 px-3 py-1.5 text-sm font-semibold text-foreground"
+            className="border border-border bg-white/70 px-3 py-1.5 text-sm font-semibold text-foreground"
           >
             Close
           </button>
@@ -91,7 +91,7 @@ export function CardComposerDialog({
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className="rounded-xl border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
                 placeholder="Implement board filters"
               />
             </label>
@@ -101,7 +101,7 @@ export function CardComposerDialog({
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
                 rows={5}
-                className="rounded-xl border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
                 placeholder="Starting instruction dispatched when moved to In Progress."
               />
             </label>
@@ -111,7 +111,7 @@ export function CardComposerDialog({
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 rows={6}
-                className="rounded-xl border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
                 placeholder="Context, acceptance criteria, links."
               />
             </label>
@@ -121,7 +121,7 @@ export function CardComposerDialog({
                 <select
                   value={columnId}
                   onChange={(event) => setColumnId(event.target.value)}
-                  className="rounded-xl border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                  className="border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
                 >
                   {board.flow.columns.map((column) => (
                     <option key={column.id} value={column.id}>
@@ -135,7 +135,7 @@ export function CardComposerDialog({
                 <select
                   value={assignmentPolicy}
                   onChange={(event) => setAssignmentPolicy(event.target.value)}
-                  className="rounded-xl border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                  className="border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
                 >
                   <option value="MANUAL">MANUAL</option>
                   <option value="SUGGESTED">SUGGESTED</option>
@@ -143,7 +143,7 @@ export function CardComposerDialog({
                 </select>
               </label>
             </div>
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-white/70 p-3">
+            <div className="flex items-center justify-between gap-3 border border-border/60 bg-white/70 p-3">
               <div className="flex items-center gap-3">
                 <AssignmentPolicyBadge policy={assignmentPolicy} />
                 <label className="flex items-center gap-2 text-sm text-foreground">
@@ -152,7 +152,7 @@ export function CardComposerDialog({
                     checked={autoAssign}
                     disabled={assignmentPolicy !== 'AUTOMATIC'}
                     onChange={(event) => setAutoAssign(event.target.checked)}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                    className="h-4 w-4 border-border text-primary focus:ring-primary"
                   />
                   Auto-assign on create
                 </label>
@@ -161,7 +161,7 @@ export function CardComposerDialog({
             <button
               type="submit"
               disabled={isPending || !title.trim() || !prompt.trim()}
-              className="rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="bg-foreground px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending ? 'Creating...' : 'Create card'}
             </button>

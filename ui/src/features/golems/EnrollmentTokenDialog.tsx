@@ -62,7 +62,7 @@ export function EnrollmentTokenDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-border bg-white/70 px-3 py-1.5 text-sm font-semibold text-foreground"
+            className="border border-border bg-white/70 px-3 py-1.5 text-sm font-semibold text-foreground"
           >
             Close
           </button>
@@ -70,18 +70,18 @@ export function EnrollmentTokenDialog({
 
         {createdToken ? (
           <div className="mt-4 space-y-3">
-            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <div className="border border-primary/20 bg-primary/5 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-foreground">Join code</p>
                 <button
                   type="button"
                   onClick={() => void handleCopyJoinCode()}
-                  className="rounded-full border border-primary/20 bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
+                  className="border border-primary/20 bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
                 >
                   {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy'}
                 </button>
               </div>
-              <pre className="mt-2 overflow-x-auto rounded-lg bg-foreground px-4 py-3 text-sm text-primary-foreground">
+              <pre className="mt-2 overflow-x-auto bg-foreground px-4 py-3 text-sm text-primary-foreground">
                 {createdToken.joinCode}
               </pre>
               <p className="mt-2 text-xs text-muted-foreground">
@@ -90,7 +90,7 @@ export function EnrollmentTokenDialog({
             </div>
             <details className="text-sm">
               <summary className="cursor-pointer text-muted-foreground">Raw token</summary>
-              <pre className="mt-2 overflow-x-auto rounded-lg border border-border/70 bg-white/90 px-4 py-3 text-sm text-foreground">
+              <pre className="mt-2 overflow-x-auto border border-border/70 bg-white/90 px-4 py-3 text-sm text-foreground">
                 {createdToken.token}
               </pre>
             </details>
@@ -103,7 +103,7 @@ export function EnrollmentTokenDialog({
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 placeholder="staging bot, research box"
-                className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
               />
             </label>
             <label className="grid gap-1.5">
@@ -112,13 +112,13 @@ export function EnrollmentTokenDialog({
                 value={expiresInMinutes}
                 onChange={(event) => setExpiresInMinutes(event.target.value)}
                 inputMode="numeric"
-                className="rounded-xl border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
               />
             </label>
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-xl bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+              className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
             >
               {isPending ? 'Creating...' : 'Create token'}
             </button>

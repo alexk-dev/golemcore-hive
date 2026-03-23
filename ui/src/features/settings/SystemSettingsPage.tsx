@@ -50,7 +50,7 @@ export function SystemSettingsPage() {
         <div className="mt-4 grid gap-3">
           {settings.recentNotifications.length ? (
             settings.recentNotifications.map((notification) => (
-              <article key={notification.id} className="rounded-xl border border-border/70 bg-white/70 p-4">
+              <article key={notification.id} className="border border-border/70 bg-white/70 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex flex-wrap gap-2">
@@ -65,7 +65,7 @@ export function SystemSettingsPage() {
                       type="button"
                       onClick={() => acknowledgeMutation.mutate(notification.id)}
                       disabled={acknowledgeMutation.isPending}
-                      className="rounded-full border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground disabled:opacity-60"
+                      className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground disabled:opacity-60"
                     >
                       Acknowledge
                     </button>
@@ -95,7 +95,7 @@ function SettingCard({ label, value }: { label: string; value: string }) {
 
 function ToggleCard({ label, enabled }: { label: string; enabled: boolean }) {
   return (
-    <div className="rounded-xl border border-border bg-white/80 px-4 py-3">
+    <div className="border border-border bg-white/80 px-4 py-3">
       <p className="text-sm font-semibold text-foreground">{label}</p>
       <p className="mt-1 text-sm text-muted-foreground">{enabled ? 'Enabled' : 'Disabled'}</p>
     </div>

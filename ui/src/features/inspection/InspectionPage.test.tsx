@@ -40,7 +40,6 @@ const getInspectionSessionTraceMock = vi.mocked(getInspectionSessionTrace);
 
 describe('InspectionPage', () => {
   beforeEach(() => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     Object.defineProperty(window.URL, 'createObjectURL', {
       configurable: true,
       writable: true,

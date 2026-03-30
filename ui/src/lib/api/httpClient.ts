@@ -68,15 +68,15 @@ function extractDownloadFileName(contentDisposition: string | null): string | nu
   if (contentDisposition == null) {
     return null;
   }
-  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition);
   if (utf8Match?.[1] != null) {
     return decodeURIComponent(utf8Match[1]);
   }
-  const quotedMatch = contentDisposition.match(/filename=\"([^\"]+)\"/i);
+  const quotedMatch = /filename="([^"]+)"/i.exec(contentDisposition);
   if (quotedMatch?.[1] != null) {
     return quotedMatch[1];
   }
-  const bareMatch = contentDisposition.match(/filename=([^;]+)/i);
+  const bareMatch = /filename=([^;]+)/i.exec(contentDisposition);
   if (bareMatch?.[1] != null) {
     return bareMatch[1].trim();
   }
@@ -98,15 +98,15 @@ export async function apiRequestBlob(
   init: RequestInit = {},
   allowRefresh = true,
 ): Promise<BinaryResponse> {
+  const headers = new Headers(init.headers);
+  headers.set('Accept', '*/*');
+
   const response = await ensureSuccessfulResponse(
     await executeRequest(
       input,
       {
         ...init,
-        headers: {
-          Accept: '*/*',
-          ...(init.headers ?? {}),
-        },
+        headers,
       },
       allowRefresh,
     ),

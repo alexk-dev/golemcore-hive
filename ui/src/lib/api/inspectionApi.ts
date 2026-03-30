@@ -201,19 +201,15 @@ export function compactInspectionSession(golemId: string, sessionId: string, kee
 }
 
 export function clearInspectionSession(golemId: string, sessionId: string) {
-  return apiRequest<void>(
+  return apiRequest<null>(
     `/api/v1/golems/${encodeURIComponent(golemId)}/inspection/sessions/${encodeURIComponent(sessionId)}/clear`,
-    {
-      method: 'POST',
-    },
-  );
+    { method: 'POST' },
+  ).then(() => undefined);
 }
 
 export function deleteInspectionSession(golemId: string, sessionId: string) {
-  return apiRequest<void>(
+  return apiRequest<null>(
     `/api/v1/golems/${encodeURIComponent(golemId)}/inspection/sessions/${encodeURIComponent(sessionId)}`,
-    {
-      method: 'DELETE',
-    },
-  );
+    { method: 'DELETE' },
+  ).then(() => undefined);
 }

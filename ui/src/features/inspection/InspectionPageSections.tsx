@@ -270,6 +270,7 @@ export function InspectionSessionHeader({
   keepLast,
   isMutating,
   isExportingTrace,
+  canExportTrace,
   onKeepLastChange,
   onCompact,
   onClear,
@@ -284,6 +285,7 @@ export function InspectionSessionHeader({
   keepLast: number;
   isMutating: boolean;
   isExportingTrace: boolean;
+  canExportTrace: boolean;
   onKeepLastChange: (value: number) => void;
   onCompact: () => void;
   onClear: () => void;
@@ -330,14 +332,16 @@ export function InspectionSessionHeader({
           >
             Clear
           </button>
-          <button
-            type="button"
-            onClick={onExportTrace}
-            disabled={isExportingTrace}
-            className="border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
-          >
-            {isExportingTrace ? 'Exporting...' : 'Export trace'}
-          </button>
+          {canExportTrace ? (
+            <button
+              type="button"
+              onClick={onExportTrace}
+              disabled={isExportingTrace}
+              className="border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+            >
+              {isExportingTrace ? 'Exporting...' : 'Export trace'}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onDelete}

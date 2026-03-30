@@ -1,3 +1,4 @@
+import type { InspectionTraceSummary } from '../../lib/api/inspectionApi';
 import { readErrorMessage } from '../../lib/format';
 
 export interface FeedbackState {
@@ -13,4 +14,11 @@ export function buildTraceErrorMessage(summaryError: unknown, traceError: unknow
     return `Failed to load trace details: ${readErrorMessage(traceError)}`;
   }
   return null;
+}
+
+export function hasTraceSummaryData(summary: InspectionTraceSummary | null): boolean {
+  if (summary == null) {
+    return false;
+  }
+  return summary.traceCount > 0 && summary.traces.length > 0;
 }

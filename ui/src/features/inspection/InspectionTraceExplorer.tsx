@@ -8,6 +8,7 @@ import {
   TraceSummaryCard,
   type TraceViewMode,
 } from './InspectionTraceCommon';
+import { hasTraceSummaryData } from './inspectionPageUtils';
 
 interface InspectionTraceExplorerProps {
   summary: InspectionTraceSummary | null;
@@ -55,6 +56,14 @@ export function InspectionTraceExplorer({
   }
 
   if (summary == null) {
+    return (
+      <section className="panel p-4">
+        <p className="text-sm text-muted-foreground">No traces captured for this session.</p>
+      </section>
+    );
+  }
+
+  if (!hasTraceSummaryData(summary)) {
     return (
       <section className="panel p-4">
         <p className="text-sm text-muted-foreground">No traces captured for this session.</p>

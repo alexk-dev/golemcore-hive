@@ -111,6 +111,43 @@ describe('InspectionPage', () => {
     expect(screen.getByText(/only available while the golem is online/i)).toBeInTheDocument();
     expect(listInspectionSessionsMock).not.toHaveBeenCalled();
   });
+
+  it('shows an empty trace state when the selected session has no traces', async () => {
+    getGolemMock.mockResolvedValue(createGolem('ONLINE'));
+    listInspectionSessionsMock.mockResolvedValue([createSessionSummary('web:conv-1', 'Conv 1')]);
+    getInspectionSessionMock.mockResolvedValue(createSessionDetail('web:conv-1'));
+    getInspectionSessionTraceSummaryMock.mockResolvedValue({
+      sessionId: 'web:conv-1',
+      traceCount: 0,
+      spanCount: 0,
+      snapshotCount: 0,
+      storageStats: {
+        compressedSnapshotBytes: 0,
+        uncompressedSnapshotBytes: 0,
+        evictedSnapshots: 0,
+        evictedTraces: 0,
+        truncatedTraces: 0,
+      },
+      traces: [],
+    });
+    getInspectionSessionTraceMock.mockResolvedValue({
+      sessionId: 'web:conv-1',
+      storageStats: {
+        compressedSnapshotBytes: 0,
+        uncompressedSnapshotBytes: 0,
+        evictedSnapshots: 0,
+        evictedTraces: 0,
+        truncatedTraces: 0,
+      },
+      traces: [],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('No traces captured for this session.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Export trace' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Load details' })).not.toBeInTheDocument();
+  });
 });
 
 function renderPage() {

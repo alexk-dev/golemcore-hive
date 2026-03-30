@@ -8,6 +8,7 @@ import type {
 } from '../../lib/api/inspectionApi';
 import { InspectionMessagesPanel, InspectionSessionHeader, InspectionSessionsSidebar } from './InspectionPageSections';
 import { InspectionTraceExplorer } from './InspectionTraceExplorer';
+import { hasTraceSummaryData } from './inspectionPageUtils';
 
 function NoticePanel({ children }: { children: string }) {
   return (
@@ -126,6 +127,7 @@ export function InspectionOnlineContent({
     selectedSessionSummary,
     selectedSession,
   );
+  const canExportTrace = hasTraceSummaryData(traceSummary);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
@@ -151,6 +153,7 @@ export function InspectionOnlineContent({
               keepLast={keepLast}
               isMutating={isMutating}
               isExportingTrace={isExportingTrace}
+              canExportTrace={canExportTrace}
               onKeepLastChange={onKeepLastChange}
               onCompact={onCompact}
               onClear={onClear}

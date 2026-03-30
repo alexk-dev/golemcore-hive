@@ -18,29 +18,6 @@
 
 package me.golemcore.hive.domain.model;
 
-import java.time.Instant;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ControlCommandEnvelope {
-
-    @Builder.Default
-    private int schemaVersion = 1;
-
-    private String eventType;
-    private String commandId;
-    private String requestId;
-    private String threadId;
-    private String cardId;
-    private String golemId;
-    private String runId;
-    private String body;
-    private InspectionRequestBody inspection;
-    private Instant createdAt;
+public enum InspectionErrorCode {
+    GOLEM_OFFLINE, REQUEST_TIMEOUT, DELIVERY_FAILED, INVALID_REQUEST, NOT_FOUND, REMOTE_ERROR
 }

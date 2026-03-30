@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { GolemDetails, GolemRole } from '../../lib/api/golemsApi';
 import { GolemStatusBadge } from './GolemStatusBadge';
 import { formatTimestamp } from '../../lib/format';
@@ -59,6 +60,7 @@ export function GolemDetailsModal({
         />
 
         <GolemLifecycleActions
+          golemId={golem.id}
           state={golem.state}
           pauseReason={golem.pauseReason}
           revokeReason={golem.revokeReason}
@@ -133,6 +135,7 @@ function GolemRolesSection({
 }
 
 function GolemLifecycleActions({
+  golemId,
   state,
   pauseReason,
   revokeReason,
@@ -141,6 +144,7 @@ function GolemLifecycleActions({
   onResume,
   onRevoke,
 }: {
+  golemId: string;
   state: string;
   pauseReason: string | null;
   revokeReason: string | null;
@@ -151,6 +155,14 @@ function GolemLifecycleActions({
 }) {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
+      {state === 'ONLINE' ? (
+        <Link
+          to={`/fleet/inspection/${golemId}`}
+          className="border border-border bg-white/80 px-3 py-1 text-xs font-semibold text-foreground transition hover:bg-white"
+        >
+          Inspect
+        </Link>
+      ) : null}
       {state === 'PAUSED' ? (
         <button
           type="button"

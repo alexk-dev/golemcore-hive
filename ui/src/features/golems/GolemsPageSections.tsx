@@ -130,6 +130,15 @@ export function GolemRegistryPanel({
                     >
                       Chat
                     </Link>
+                    {golem.state === 'ONLINE' ? (
+                      <Link
+                        to={`/fleet/inspection/${golem.id}`}
+                        onClick={(event) => event.stopPropagation()}
+                        className="shrink-0 text-xs font-semibold text-foreground hover:underline"
+                      >
+                        Inspect
+                      </Link>
+                    ) : null}
                   </button>
                 );
               })}

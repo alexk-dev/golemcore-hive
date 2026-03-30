@@ -18,7 +18,6 @@
 
 package me.golemcore.hive.domain.model;
 
-import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,19 +27,13 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ControlCommandEnvelope {
+public class InspectionRequestBody {
 
-    @Builder.Default
-    private int schemaVersion = 1;
-
-    private String eventType;
-    private String commandId;
-    private String requestId;
-    private String threadId;
-    private String cardId;
-    private String golemId;
-    private String runId;
-    private String body;
-    private InspectionRequestBody inspection;
-    private Instant createdAt;
+    private String operation;
+    private String sessionId;
+    private String snapshotId;
+    private String channel;
+    private Integer limit;
+    private String beforeMessageId;
+    private Integer keepLast;
 }

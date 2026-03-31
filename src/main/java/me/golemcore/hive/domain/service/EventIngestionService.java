@@ -77,6 +77,21 @@ public class EventIngestionService {
             } else if ("selfevolving.lineage.upserted".equals(event.eventType())) {
                 selfEvolvingProjectionService.applyLineageEvent(golemId, event);
                 acceptedEvents++;
+            } else if ("selfevolving.artifact.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyArtifactCatalogEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.artifact.normalized-revision.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyArtifactNormalizedRevisionEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.artifact.lineage.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyArtifactLineageEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.artifact.diff.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyArtifactDiffEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.artifact.evidence.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyArtifactEvidenceEvent(golemId, event);
+                acceptedEvents++;
             } else if ("runtime_event".equals(event.eventType())) {
                 RuntimeEventType runtimeEventType = RuntimeEventType.valueOf(event.runtimeEventType());
                 commandDispatchService.applyRuntimeEvent(golemId, runtimeEventType, event.threadId(), event.cardId(),

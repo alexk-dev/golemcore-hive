@@ -24,10 +24,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventPayload;
 import me.golemcore.hive.domain.model.RunProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingArtifactCatalogProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingArtifactCompareProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingArtifactLineageProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingArtifactNormalizedRevisionProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingCampaignProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingCandidateProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingLineageNode;
@@ -43,6 +48,11 @@ public class SelfEvolvingProjectionService {
     private static final String SELF_EVOLVING_CANDIDATES_DIR = "selfevolving-candidates";
     private static final String SELF_EVOLVING_CAMPAIGNS_DIR = "selfevolving-campaigns";
     private static final String SELF_EVOLVING_LINEAGE_DIR = "selfevolving-lineage";
+    private static final String SELF_EVOLVING_ARTIFACTS_DIR = "selfevolving-artifacts";
+    private static final String SELF_EVOLVING_ARTIFACT_NORMALIZED_REVISIONS_DIR = "selfevolving-artifact-normalized-revisions";
+    private static final String SELF_EVOLVING_ARTIFACT_LINEAGE_DIR = "selfevolving-artifact-lineage";
+    private static final String SELF_EVOLVING_ARTIFACT_DIFFS_DIR = "selfevolving-artifact-diffs";
+    private static final String SELF_EVOLVING_ARTIFACT_EVIDENCE_DIR = "selfevolving-artifact-evidence";
     private static final String RUNS_DIR = "runs";
 
     private final StoragePort storagePort;
@@ -81,6 +91,41 @@ public class SelfEvolvingProjectionService {
         projection.setGolemId(firstNonBlank(projection.getGolemId(), golemId));
         projection.setUpdatedAt(event.createdAt() != null ? event.createdAt() : Instant.now());
         saveLineage(projection);
+    }
+
+    public void applyArtifactCatalogEvent(String golemId, GolemEventPayload event) {
+        SelfEvolvingArtifactCatalogProjection projection = objectMapper.convertValue(
+                event.payload(),
+                SelfEvolvingArtifactCatalogProjection.class);
+        projection.setGolemId(firstNonBlank(projection.getGolemId(), golemId));
+        projection.setUpdatedAt(event.createdAt() != null ? event.createdAt() : Instant.now());
+        saveArtifactCatalog(golemId, projection);
+    }
+
+    public void applyArtifactNormalizedRevisionEvent(String golemId, GolemEventPayload event) {
+        SelfEvolvingArtifactNormalizedRevisionProjection projection = objectMapper.convertValue(
+                event.payload(),
+                SelfEvolvingArtifactNormalizedRevisionProjection.class);
+        projection.setUpdatedAt(event.createdAt() != null ? event.createdAt() : Instant.now());
+        saveArtifactNormalizedRevision(golemId, projection);
+    }
+
+    public void applyArtifactLineageEvent(String golemId, GolemEventPayload event) {
+        SelfEvolvingArtifactLineageProjection projection = objectMapper.convertValue(
+                event.payload(),
+                SelfEvolvingArtifactLineageProjection.class);
+        projection.setUpdatedAt(event.createdAt() != null ? event.createdAt() : Instant.now());
+        saveArtifactLineage(golemId, projection);
+    }
+
+    public void applyArtifactDiffEvent(String golemId, GolemEventPayload event) {
+        Map<String, Object> payload = objectMapper.convertValue(event.payload(), Map.class);
+        saveArtifactPayload(SELF_EVOLVING_ARTIFACT_DIFFS_DIR, golemId, payload, event.createdAt());
+    }
+
+    public void applyArtifactEvidenceEvent(String golemId, GolemEventPayload event) {
+        Map<String, Object> payload = objectMapper.convertValue(event.payload(), Map.class);
+        saveArtifactPayload(SELF_EVOLVING_ARTIFACT_EVIDENCE_DIR, golemId, payload, event.createdAt());
     }
 
     public List<SelfEvolvingRunProjection> listRuns(String golemId) {
@@ -139,6 +184,154 @@ public class SelfEvolvingProjectionService {
         return campaigns;
     }
 
+    public List<SelfEvolvingArtifactCatalogProjection> listArtifacts(String golemId) {
+        List<SelfEvolvingArtifactCatalogProjection> artifacts = new ArrayList<>();
+        for (String path : storagePort.listObjects(SELF_EVOLVING_ARTIFACTS_DIR, golemId + "/")) {
+            Optional<SelfEvolvingArtifactCatalogProjection> projection = load(
+                    path,
+                    SELF_EVOLVING_ARTIFACTS_DIR,
+                    SelfEvolvingArtifactCatalogProjection.class);
+            projection.map(value -> enrichArtifactCatalogProjection(golemId, value)).ifPresent(artifacts::add);
+        }
+        artifacts.sort(Comparator.comparing(
+                SelfEvolvingArtifactCatalogProjection::getUpdatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(SelfEvolvingArtifactCatalogProjection::getGolemId,
+                        Comparator.nullsLast(String::compareTo))
+                .thenComparing(SelfEvolvingArtifactCatalogProjection::getArtifactStreamId,
+                        Comparator.nullsLast(String::compareTo)));
+        return artifacts;
+    }
+
+    public Optional<SelfEvolvingArtifactCatalogProjection> findArtifactSummary(String golemId,
+            String artifactStreamId) {
+        return load(
+                artifactCatalogPath(golemId, artifactStreamId),
+                SELF_EVOLVING_ARTIFACTS_DIR,
+                SelfEvolvingArtifactCatalogProjection.class)
+                .map(value -> enrichArtifactCatalogProjection(golemId, value));
+    }
+
+    public Optional<SelfEvolvingArtifactLineageProjection> findArtifactLineage(String golemId,
+            String artifactStreamId) {
+        return load(
+                artifactLineagePath(golemId, artifactStreamId),
+                SELF_EVOLVING_ARTIFACT_LINEAGE_DIR,
+                SelfEvolvingArtifactLineageProjection.class);
+    }
+
+    public Optional<Map<String, Object>> findArtifactDiff(
+            String golemId,
+            String artifactStreamId,
+            String payloadKind,
+            String leftId,
+            String rightId) {
+        return loadMap(
+                SELF_EVOLVING_ARTIFACT_DIFFS_DIR,
+                artifactPayloadPath(golemId, artifactStreamId, payloadKind, leftId, rightId));
+    }
+
+    public Optional<Map<String, Object>> findArtifactEvidence(
+            String golemId,
+            String artifactStreamId,
+            String payloadKind,
+            String leftId,
+            String rightId) {
+        return loadMap(
+                SELF_EVOLVING_ARTIFACT_EVIDENCE_DIR,
+                artifactPayloadPath(golemId, artifactStreamId, payloadKind, leftId, rightId));
+    }
+
+    public Optional<SelfEvolvingArtifactCompareProjection> compareArtifacts(
+            String artifactStreamId,
+            String leftGolemId,
+            String rightGolemId,
+            String leftRevisionId,
+            String rightRevisionId) {
+        Optional<SelfEvolvingArtifactCatalogProjection> leftCatalog = findArtifactSummary(leftGolemId,
+                artifactStreamId);
+        Optional<SelfEvolvingArtifactCatalogProjection> rightCatalog = findArtifactSummary(rightGolemId,
+                artifactStreamId);
+        Optional<SelfEvolvingArtifactNormalizedRevisionProjection> leftProjection = findArtifactNormalizedRevision(
+                leftGolemId,
+                artifactStreamId,
+                leftRevisionId);
+        Optional<SelfEvolvingArtifactNormalizedRevisionProjection> rightProjection = findArtifactNormalizedRevision(
+                rightGolemId,
+                artifactStreamId,
+                rightRevisionId);
+        if (leftProjection.isEmpty() || rightProjection.isEmpty()) {
+            return Optional.empty();
+        }
+        boolean sameContent = firstNonBlank(leftProjection.get().getNormalizedHash(), "")
+                .equals(firstNonBlank(rightProjection.get().getNormalizedHash(), ""));
+        List<String> warnings = new ArrayList<>();
+        boolean leftStale = leftCatalog.map(SelfEvolvingArtifactCatalogProjection::getStale).orElse(Boolean.FALSE);
+        boolean rightStale = rightCatalog.map(SelfEvolvingArtifactCatalogProjection::getStale).orElse(Boolean.FALSE);
+        if (leftStale) {
+            warnings.add("Left artifact projection is stale"
+                    + formatReason(
+                            leftCatalog.map(SelfEvolvingArtifactCatalogProjection::getStaleReason).orElse(null)));
+        }
+        if (rightStale) {
+            warnings.add("Right artifact projection is stale"
+                    + formatReason(
+                            rightCatalog.map(SelfEvolvingArtifactCatalogProjection::getStaleReason).orElse(null)));
+        }
+        return Optional.of(SelfEvolvingArtifactCompareProjection.builder()
+                .artifactStreamId(artifactStreamId)
+                .leftGolemId(leftGolemId)
+                .rightGolemId(rightGolemId)
+                .leftRevisionId(leftRevisionId)
+                .rightRevisionId(rightRevisionId)
+                .leftNormalizedHash(leftProjection.get().getNormalizedHash())
+                .rightNormalizedHash(rightProjection.get().getNormalizedHash())
+                .sameContent(sameContent)
+                .leftStale(leftStale)
+                .rightStale(rightStale)
+                .summary(sameContent ? "Artifacts are identical across golems" : "Artifacts diverged across golems")
+                .normalizationSchemaVersion(leftProjection.get().getNormalizationSchemaVersion())
+                .projectedAt(Instant.now())
+                .warnings(warnings)
+                .build());
+    }
+
+    public List<SelfEvolvingArtifactCatalogProjection> searchArtifacts(
+            String golemId,
+            String artifactType,
+            String artifactSubtype,
+            Boolean hasRegression,
+            Boolean hasPendingApproval,
+            String rolloutStage,
+            String query) {
+        List<SelfEvolvingArtifactCatalogProjection> matches = new ArrayList<>();
+        for (String path : storagePort.listObjects(SELF_EVOLVING_ARTIFACTS_DIR, "")) {
+            Optional<SelfEvolvingArtifactCatalogProjection> projection = load(
+                    path,
+                    SELF_EVOLVING_ARTIFACTS_DIR,
+                    SelfEvolvingArtifactCatalogProjection.class);
+            if (projection.isEmpty()) {
+                continue;
+            }
+            String projectionGolemId = extractGolemId(path);
+            SelfEvolvingArtifactCatalogProjection enriched = enrichArtifactCatalogProjection(projectionGolemId,
+                    projection.get());
+            if (!matchesArtifactFilters(enriched, golemId, artifactType, artifactSubtype, hasRegression,
+                    hasPendingApproval, rolloutStage, query)) {
+                continue;
+            }
+            matches.add(enriched);
+        }
+        matches.sort(Comparator.comparing(
+                SelfEvolvingArtifactCatalogProjection::getUpdatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(SelfEvolvingArtifactCatalogProjection::getGolemId,
+                        Comparator.nullsLast(String::compareTo))
+                .thenComparing(SelfEvolvingArtifactCatalogProjection::getArtifactStreamId,
+                        Comparator.nullsLast(String::compareTo)));
+        return matches;
+    }
+
     private void updateRunProjection(SelfEvolvingRunProjection projection) {
         if (!storagePort.exists(RUNS_DIR, projection.getId() + ".json")) {
             return;
@@ -170,6 +363,43 @@ public class SelfEvolvingProjectionService {
         save(SELF_EVOLVING_CAMPAIGNS_DIR, campaignPath(projection.getGolemId(), projection.getId()), projection);
     }
 
+    private void saveArtifactCatalog(String golemId, SelfEvolvingArtifactCatalogProjection projection) {
+        storagePort.ensureDirectory(SELF_EVOLVING_ARTIFACTS_DIR);
+        save(SELF_EVOLVING_ARTIFACTS_DIR, artifactCatalogPath(golemId, projection.getArtifactStreamId()), projection);
+    }
+
+    private void saveArtifactNormalizedRevision(
+            String golemId,
+            SelfEvolvingArtifactNormalizedRevisionProjection projection) {
+        storagePort.ensureDirectory(SELF_EVOLVING_ARTIFACT_NORMALIZED_REVISIONS_DIR);
+        save(
+                SELF_EVOLVING_ARTIFACT_NORMALIZED_REVISIONS_DIR,
+                artifactNormalizedRevisionPath(golemId, projection.getArtifactStreamId(),
+                        projection.getContentRevisionId()),
+                projection);
+    }
+
+    private void saveArtifactLineage(String golemId, SelfEvolvingArtifactLineageProjection projection) {
+        storagePort.ensureDirectory(SELF_EVOLVING_ARTIFACT_LINEAGE_DIR);
+        save(SELF_EVOLVING_ARTIFACT_LINEAGE_DIR, artifactLineagePath(golemId, projection.getArtifactStreamId()),
+                projection);
+    }
+
+    private void saveArtifactPayload(
+            String directory,
+            String golemId,
+            Map<String, Object> payload,
+            Instant updatedAt) {
+        storagePort.ensureDirectory(directory);
+        Map<String, Object> enrichedPayload = objectMapper.convertValue(payload, Map.class);
+        enrichedPayload.put("updatedAt", updatedAt != null ? updatedAt : Instant.now());
+        String artifactStreamId = firstNonBlank(stringValue(enrichedPayload.get("artifactStreamId")), "unknown");
+        String payloadKind = firstNonBlank(stringValue(enrichedPayload.get("payloadKind")), "revision");
+        String leftId = resolveArtifactPayloadLeftId(payloadKind, enrichedPayload);
+        String rightId = resolveArtifactPayloadRightId(payloadKind, enrichedPayload);
+        save(directory, artifactPayloadPath(golemId, artifactStreamId, payloadKind, leftId, rightId), enrichedPayload);
+    }
+
     private void saveLineage(SelfEvolvingLineageNode projection) {
         storagePort.ensureDirectory(SELF_EVOLVING_LINEAGE_DIR);
         save(SELF_EVOLVING_LINEAGE_DIR, lineagePath(projection.getGolemId(), projection.getId()), projection);
@@ -182,6 +412,18 @@ public class SelfEvolvingProjectionService {
         }
         try {
             return Optional.of(objectMapper.readValue(content, type));
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Failed to deserialize projection " + path, exception);
+        }
+    }
+
+    private Optional<Map<String, Object>> loadMap(String directory, String path) {
+        String content = storagePort.getText(directory, path);
+        if (content == null) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(objectMapper.readValue(content, Map.class));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to deserialize projection " + path, exception);
         }
@@ -211,10 +453,186 @@ public class SelfEvolvingProjectionService {
         return golemId + "/" + nodeId + ".json";
     }
 
+    private Optional<SelfEvolvingArtifactNormalizedRevisionProjection> findArtifactNormalizedRevision(
+            String golemId,
+            String artifactStreamId,
+            String revisionId) {
+        return load(
+                artifactNormalizedRevisionPath(golemId, artifactStreamId, revisionId),
+                SELF_EVOLVING_ARTIFACT_NORMALIZED_REVISIONS_DIR,
+                SelfEvolvingArtifactNormalizedRevisionProjection.class);
+    }
+
+    private String artifactCatalogPath(String golemId, String artifactStreamId) {
+        return golemId + "/" + encodePathToken(artifactStreamId) + ".json";
+    }
+
+    private String artifactNormalizedRevisionPath(String golemId, String artifactStreamId, String revisionId) {
+        return golemId + "/" + encodePathToken(artifactStreamId) + "/" + encodePathToken(revisionId) + ".json";
+    }
+
+    private String artifactLineagePath(String golemId, String artifactStreamId) {
+        return golemId + "/" + encodePathToken(artifactStreamId) + ".json";
+    }
+
+    private String artifactPayloadPath(
+            String golemId,
+            String artifactStreamId,
+            String payloadKind,
+            String leftId,
+            String rightId) {
+        return golemId + "/"
+                + encodePathToken(artifactStreamId) + "/"
+                + encodePathToken(payloadKind) + "__"
+                + encodePathToken(firstNonBlank(leftId, "left")) + "__"
+                + encodePathToken(firstNonBlank(rightId, "right")) + ".json";
+    }
+
+    private String resolveArtifactPayloadLeftId(String payloadKind, Map<String, Object> payload) {
+        if ("transition".equals(payloadKind)) {
+            return stringValue(payload.get("fromNodeId"));
+        }
+        return firstNonBlank(stringValue(payload.get("fromRevisionId")), stringValue(payload.get("revisionId")));
+    }
+
+    private String resolveArtifactPayloadRightId(String payloadKind, Map<String, Object> payload) {
+        if ("transition".equals(payloadKind)) {
+            return stringValue(payload.get("toNodeId"));
+        }
+        return firstNonBlank(stringValue(payload.get("toRevisionId")), stringValue(payload.get("revisionId")));
+    }
+
+    private String encodePathToken(String value) {
+        return firstNonBlank(value, "unknown").replace("/", "~");
+    }
+
+    private String stringValue(Object value) {
+        return value != null ? String.valueOf(value) : null;
+    }
+
     private String firstNonBlank(String first, String second) {
         if (first != null && !first.isBlank()) {
             return first;
         }
         return second;
+    }
+
+    private SelfEvolvingArtifactCatalogProjection enrichArtifactCatalogProjection(
+            String golemId,
+            SelfEvolvingArtifactCatalogProjection projection) {
+        String resolvedGolemId = firstNonBlank(projection.getGolemId(), golemId);
+        projection.setGolemId(resolvedGolemId);
+        projection.setStale(isArtifactProjectionStale(resolvedGolemId, projection));
+        projection.setStaleReason(resolveArtifactStaleReason(resolvedGolemId, projection));
+        return projection;
+    }
+
+    private boolean matchesArtifactFilters(
+            SelfEvolvingArtifactCatalogProjection projection,
+            String golemId,
+            String artifactType,
+            String artifactSubtype,
+            Boolean hasRegression,
+            Boolean hasPendingApproval,
+            String rolloutStage,
+            String query) {
+        if (!matchesEquals(projection.getGolemId(), golemId)) {
+            return false;
+        }
+        if (!matchesEquals(projection.getArtifactType(), artifactType)) {
+            return false;
+        }
+        if (!matchesEquals(projection.getArtifactSubtype(), artifactSubtype)) {
+            return false;
+        }
+        if (!matchesBoolean(projection.getHasRegression(), hasRegression)) {
+            return false;
+        }
+        if (!matchesBoolean(projection.getHasPendingApproval(), hasPendingApproval)) {
+            return false;
+        }
+        if (!matchesEquals(projection.getCurrentRolloutStage(), rolloutStage)) {
+            return false;
+        }
+        return matchesQuery(projection, query);
+    }
+
+    private boolean matchesEquals(String actual, String expected) {
+        if (expected == null || expected.isBlank()) {
+            return true;
+        }
+        return expected.equalsIgnoreCase(firstNonBlank(actual, ""));
+    }
+
+    private boolean matchesBoolean(Boolean actual, Boolean expected) {
+        if (expected == null) {
+            return true;
+        }
+        return expected.equals(actual);
+    }
+
+    private boolean matchesQuery(SelfEvolvingArtifactCatalogProjection projection, String query) {
+        if (query == null || query.isBlank()) {
+            return true;
+        }
+        String normalizedQuery = query.toLowerCase();
+        if (containsIgnoreCase(projection.getArtifactStreamId(), normalizedQuery)
+                || containsIgnoreCase(projection.getArtifactKey(), normalizedQuery)
+                || containsIgnoreCase(projection.getDisplayName(), normalizedQuery)
+                || containsIgnoreCase(projection.getGolemId(), normalizedQuery)) {
+            return true;
+        }
+        if (projection.getArtifactAliases() == null) {
+            return false;
+        }
+        return projection.getArtifactAliases().stream()
+                .anyMatch(alias -> containsIgnoreCase(alias, normalizedQuery));
+    }
+
+    private boolean containsIgnoreCase(String value, String normalizedQuery) {
+        return value != null && value.toLowerCase().contains(normalizedQuery);
+    }
+
+    private boolean isArtifactProjectionStale(String golemId, SelfEvolvingArtifactCatalogProjection projection) {
+        return resolveArtifactStaleReason(golemId, projection) != null;
+    }
+
+    private String resolveArtifactStaleReason(String golemId, SelfEvolvingArtifactCatalogProjection projection) {
+        if (projection == null) {
+            return "Missing catalog projection";
+        }
+        if (projection.getProjectionSchemaVersion() == null || projection.getProjectionSchemaVersion() < 1) {
+            return "Unsupported projection schema version";
+        }
+        Optional<SelfEvolvingArtifactLineageProjection> lineageProjection = findArtifactLineage(
+                golemId,
+                projection.getArtifactStreamId());
+        if (lineageProjection.isEmpty()) {
+            return "Missing lineage projection";
+        }
+        String selectedRevisionId = firstNonBlank(lineageProjection.get().getDefaultSelectedRevisionId(),
+                firstNonBlank(projection.getLatestCandidateRevisionId(), projection.getActiveRevisionId()));
+        if (selectedRevisionId != null
+                && !selectedRevisionId.isBlank()
+                && findArtifactNormalizedRevision(golemId, projection.getArtifactStreamId(), selectedRevisionId)
+                        .isEmpty()) {
+            return "Missing normalized revision for " + selectedRevisionId;
+        }
+        return null;
+    }
+
+    private String extractGolemId(String path) {
+        int slashIndex = path.indexOf('/');
+        if (slashIndex <= 0) {
+            return null;
+        }
+        return path.substring(0, slashIndex);
+    }
+
+    private String formatReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return "";
+        }
+        return ": " + reason;
     }
 }

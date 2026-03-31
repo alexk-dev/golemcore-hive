@@ -20,11 +20,15 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.selfevolving.SelfEvolvingCampaignResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.selfevolving.SelfEvolvingCandidateResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.selfevolving.SelfEvolvingLineageResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.selfevolving.SelfEvolvingRunResponse;
+import me.golemcore.hive.domain.model.SelfEvolvingArtifactCatalogProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingArtifactCompareProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingArtifactLineageProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingCampaignProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingCandidateProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingRunProjection;
@@ -33,6 +37,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -40,13 +45,13 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 @RestController
-@RequestMapping("/api/v1/self-evolving/golems/{golemId}")
+@RequestMapping("/api/v1/self-evolving")
 @RequiredArgsConstructor
 public class SelfEvolvingController {
 
     private final SelfEvolvingProjectionService selfEvolvingProjectionService;
 
-    @GetMapping("/runs")
+    @GetMapping("/golems/{golemId}/runs")
     public Mono<ResponseEntity<List<SelfEvolvingRunResponse>>> listRuns(
             Principal principal,
             @PathVariable String golemId) {
@@ -58,7 +63,7 @@ public class SelfEvolvingController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    @GetMapping("/runs/{runId}")
+    @GetMapping("/golems/{golemId}/runs/{runId}")
     public Mono<ResponseEntity<SelfEvolvingRunResponse>> getRun(
             Principal principal,
             @PathVariable String golemId,
@@ -71,7 +76,7 @@ public class SelfEvolvingController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    @GetMapping("/candidates")
+    @GetMapping("/golems/{golemId}/candidates")
     public Mono<ResponseEntity<List<SelfEvolvingCandidateResponse>>> listCandidates(
             Principal principal,
             @PathVariable String golemId) {
@@ -83,7 +88,7 @@ public class SelfEvolvingController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    @GetMapping("/benchmarks/campaigns")
+    @GetMapping("/golems/{golemId}/benchmarks/campaigns")
     public Mono<ResponseEntity<List<SelfEvolvingCampaignResponse>>> listCampaigns(
             Principal principal,
             @PathVariable String golemId) {
@@ -95,7 +100,7 @@ public class SelfEvolvingController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    @GetMapping("/lineage")
+    @GetMapping("/golems/{golemId}/lineage")
     public Mono<ResponseEntity<SelfEvolvingLineageResponse>> getLineage(
             Principal principal,
             @PathVariable String golemId) {
@@ -105,6 +110,168 @@ public class SelfEvolvingController {
                     .golemId(golemId)
                     .nodes(selfEvolvingProjectionService.listLineage(golemId))
                     .build());
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/artifacts")
+    public Mono<ResponseEntity<List<SelfEvolvingArtifactCatalogProjection>>> listArtifacts(
+            Principal principal,
+            @PathVariable String golemId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            return ResponseEntity.ok(selfEvolvingProjectionService.listArtifacts(golemId));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/artifacts/{artifactStreamId}")
+    public Mono<ResponseEntity<SelfEvolvingArtifactCatalogProjection>> getArtifactSummary(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String artifactStreamId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            SelfEvolvingArtifactCatalogProjection projection = selfEvolvingProjectionService
+                    .findArtifactSummary(golemId, artifactStreamId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact summary not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/artifacts/{artifactStreamId}/lineage")
+    public Mono<ResponseEntity<SelfEvolvingArtifactLineageProjection>> getArtifactLineage(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String artifactStreamId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            SelfEvolvingArtifactLineageProjection projection = selfEvolvingProjectionService
+                    .findArtifactLineage(golemId, artifactStreamId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact lineage not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/artifacts/{artifactStreamId}/diff")
+    public Mono<ResponseEntity<Map<String, Object>>> getArtifactDiff(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String artifactStreamId,
+            @RequestParam String fromRevisionId,
+            @RequestParam String toRevisionId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Map<String, Object> projection = selfEvolvingProjectionService
+                    .findArtifactDiff(golemId, artifactStreamId, "revision", fromRevisionId, toRevisionId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact diff not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/artifacts/{artifactStreamId}/transition-diff")
+    public Mono<ResponseEntity<Map<String, Object>>> getArtifactTransitionDiff(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String artifactStreamId,
+            @RequestParam String fromNodeId,
+            @RequestParam String toNodeId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Map<String, Object> projection = selfEvolvingProjectionService
+                    .findArtifactDiff(golemId, artifactStreamId, "transition", fromNodeId, toNodeId)
+                    .orElseThrow(
+                            () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                    "Artifact transition diff not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/artifacts/{artifactStreamId}/evidence")
+    public Mono<ResponseEntity<Map<String, Object>>> getArtifactEvidence(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String artifactStreamId,
+            @RequestParam String revisionId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Map<String, Object> projection = selfEvolvingProjectionService
+                    .findArtifactEvidence(golemId, artifactStreamId, "revision", revisionId, revisionId)
+                    .orElseThrow(
+                            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact evidence not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/artifacts/{artifactStreamId}/compare-evidence")
+    public Mono<ResponseEntity<Map<String, Object>>> getArtifactCompareEvidence(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String artifactStreamId,
+            @RequestParam String fromRevisionId,
+            @RequestParam String toRevisionId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Map<String, Object> projection = selfEvolvingProjectionService
+                    .findArtifactEvidence(golemId, artifactStreamId, "compare", fromRevisionId, toRevisionId)
+                    .orElseThrow(
+                            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact evidence not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/artifacts/{artifactStreamId}/transition-evidence")
+    public Mono<ResponseEntity<Map<String, Object>>> getArtifactTransitionEvidence(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String artifactStreamId,
+            @RequestParam String fromNodeId,
+            @RequestParam String toNodeId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Map<String, Object> projection = selfEvolvingProjectionService
+                    .findArtifactEvidence(golemId, artifactStreamId, "transition", fromNodeId, toNodeId)
+                    .orElseThrow(
+                            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact evidence not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/artifacts/compare")
+    public Mono<ResponseEntity<SelfEvolvingArtifactCompareProjection>> compareArtifacts(
+            Principal principal,
+            @RequestParam String artifactStreamId,
+            @RequestParam String leftGolemId,
+            @RequestParam String rightGolemId,
+            @RequestParam String leftRevisionId,
+            @RequestParam String rightRevisionId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            SelfEvolvingArtifactCompareProjection projection = selfEvolvingProjectionService
+                    .compareArtifacts(artifactStreamId, leftGolemId, rightGolemId, leftRevisionId, rightRevisionId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact compare not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/artifacts/search")
+    public Mono<ResponseEntity<List<SelfEvolvingArtifactCatalogProjection>>> searchArtifacts(
+            Principal principal,
+            @RequestParam(required = false) String golemId,
+            @RequestParam(required = false) String artifactType,
+            @RequestParam(required = false) String artifactSubtype,
+            @RequestParam(required = false) Boolean hasRegression,
+            @RequestParam(required = false) Boolean hasPendingApproval,
+            @RequestParam(required = false) String rolloutStage,
+            @RequestParam(required = false, name = "q") String query) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            return ResponseEntity.ok(selfEvolvingProjectionService.searchArtifacts(
+                    golemId,
+                    artifactType,
+                    artifactSubtype,
+                    hasRegression,
+                    hasPendingApproval,
+                    rolloutStage,
+                    query));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 

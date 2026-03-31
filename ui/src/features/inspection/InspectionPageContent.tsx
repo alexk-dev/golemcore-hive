@@ -1,3 +1,4 @@
+import type { ApprovalRequest } from '../../lib/api/approvalsApi';
 import { readErrorMessage } from '../../lib/format';
 import type {
   InspectionMessage,
@@ -6,6 +7,17 @@ import type {
   InspectionTrace,
   InspectionTraceSummary,
 } from '../../lib/api/inspectionApi';
+import type {
+  SelfEvolvingCandidate,
+  SelfEvolvingLineageResponse,
+  SelfEvolvingRun,
+} from '../../lib/api/selfEvolvingApi';
+import { InspectionSelfEvolvingApprovalPanel } from './InspectionSelfEvolvingApprovalPanel';
+import { InspectionSelfEvolvingCandidateQueue } from './InspectionSelfEvolvingCandidateQueue';
+import { InspectionSelfEvolvingLineageGraph } from './InspectionSelfEvolvingLineageGraph';
+import { InspectionSelfEvolvingOverview } from './InspectionSelfEvolvingOverview';
+import { InspectionSelfEvolvingRunTable } from './InspectionSelfEvolvingRunTable';
+import { InspectionSelfEvolvingVerdictPanel } from './InspectionSelfEvolvingVerdictPanel';
 import { InspectionMessagesPanel, InspectionSessionHeader, InspectionSessionsSidebar } from './InspectionPageSections';
 import { InspectionTraceExplorer } from './InspectionTraceExplorer';
 import { hasTraceSummaryData } from './inspectionPageUtils';
@@ -86,7 +98,14 @@ export function InspectionOnlineContent({
   isLoadingTrace,
   traceErrorMessage,
   isExportingSnapshot,
+  selfEvolvingRuns,
+  selectedSelfEvolvingRunId,
+  selectedSelfEvolvingRun,
+  selfEvolvingCandidates,
+  selfEvolvingLineage,
+  promotionApprovals,
   onSelectSession,
+  onSelectSelfEvolvingRun,
   onKeepLastChange,
   onCompact,
   onClear,
@@ -113,7 +132,14 @@ export function InspectionOnlineContent({
   isLoadingTrace: boolean;
   traceErrorMessage: string | null;
   isExportingSnapshot: boolean;
+  selfEvolvingRuns: SelfEvolvingRun[];
+  selectedSelfEvolvingRunId: string | null;
+  selectedSelfEvolvingRun: SelfEvolvingRun | null;
+  selfEvolvingCandidates: SelfEvolvingCandidate[];
+  selfEvolvingLineage: SelfEvolvingLineageResponse;
+  promotionApprovals: ApprovalRequest[];
   onSelectSession: (sessionId: string) => void;
+  onSelectSelfEvolvingRun: (runId: string) => void;
   onKeepLastChange: (value: number) => void;
   onCompact: () => void;
   onClear: () => void;
@@ -184,6 +210,27 @@ export function InspectionOnlineContent({
             </div>
           </>
         )}
+
+        <InspectionSelfEvolvingOverview
+          runs={selfEvolvingRuns}
+          candidates={selfEvolvingCandidates}
+          approvals={promotionApprovals}
+        />
+
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <InspectionSelfEvolvingRunTable
+            runs={selfEvolvingRuns}
+            selectedRunId={selectedSelfEvolvingRunId}
+            onSelectRun={onSelectSelfEvolvingRun}
+          />
+          <InspectionSelfEvolvingVerdictPanel run={selectedSelfEvolvingRun} />
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-3">
+          <InspectionSelfEvolvingCandidateQueue candidates={selfEvolvingCandidates} />
+          <InspectionSelfEvolvingLineageGraph lineage={selfEvolvingLineage} />
+          <InspectionSelfEvolvingApprovalPanel approvals={promotionApprovals} />
+        </div>
       </div>
     </div>
   );

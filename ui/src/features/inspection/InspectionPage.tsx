@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { listApprovals } from '../../lib/api/approvalsApi';
 import { readErrorMessage } from '../../lib/format';
 import { getGolem } from '../../lib/api/golemsApi';
 import {
@@ -14,6 +15,11 @@ import {
   getInspectionSessionTraceSummary,
   listInspectionSessions,
 } from '../../lib/api/inspectionApi';
+import {
+  getSelfEvolvingLineage,
+  listSelfEvolvingCandidates,
+  listSelfEvolvingRuns,
+} from '../../lib/api/selfEvolvingApi';
 import { InspectionActionDialog } from './InspectionActionDialog';
 import {
   InspectionOnlineContent,
@@ -214,6 +220,7 @@ export function InspectionPage() {
   const queryClient = useQueryClient();
   const [channelFilter, setChannelFilter] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedSelfEvolvingRunId, setSelectedSelfEvolvingRunId] = useState<string | null>(null);
   const [keepLast, setKeepLast] = useState(20);
   const [detailsRequested, setDetailsRequested] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -262,6 +269,34 @@ export function InspectionPage() {
     enabled: traceEnabled,
   });
 
+  const selfEvolvingRunsQuery = useQuery({
+    queryKey: ['self-evolving-runs', resolvedGolemId],
+    queryFn: () => listSelfEvolvingRuns(resolvedGolemId),
+    enabled: sessionsEnabled,
+    refetchInterval: 10_000,
+  });
+
+  const selfEvolvingCandidatesQuery = useQuery({
+    queryKey: ['self-evolving-candidates', resolvedGolemId],
+    queryFn: () => listSelfEvolvingCandidates(resolvedGolemId),
+    enabled: sessionsEnabled,
+    refetchInterval: 10_000,
+  });
+
+  const selfEvolvingLineageQuery = useQuery({
+    queryKey: ['self-evolving-lineage', resolvedGolemId],
+    queryFn: () => getSelfEvolvingLineage(resolvedGolemId),
+    enabled: sessionsEnabled,
+    refetchInterval: 10_000,
+  });
+
+  const approvalsQuery = useQuery({
+    queryKey: ['approvals', resolvedGolemId, 'SELF_EVOLVING_PROMOTION'],
+    queryFn: () => listApprovals({ golemId: resolvedGolemId }),
+    enabled: sessionsEnabled,
+    refetchInterval: 10_000,
+  });
+
   const {
     clearMutation,
     compactMutation,
@@ -282,12 +317,31 @@ export function InspectionPage() {
     () => (sessionsQuery.data ?? []).find((session) => session.id === selectedSessionId) ?? null,
     [selectedSessionId, sessionsQuery.data],
   );
+  const promotionApprovals = useMemo(
+    () => (approvalsQuery.data ?? []).filter((approval) => approval.subjectType === 'SELF_EVOLVING_PROMOTION'),
+    [approvalsQuery.data],
+  );
+  const selfEvolvingRuns = selfEvolvingRunsQuery.data ?? [];
+  const selectedSelfEvolvingRun = useMemo(
+    () => selfEvolvingRuns.find((run) => run.id === selectedSelfEvolvingRunId) ?? selfEvolvingRuns[0] ?? null,
+    [selectedSelfEvolvingRunId, selfEvolvingRuns],
+  );
 
   const channelOptions = useMemo(() => {
     const values = new Set(['']);
     (sessionsQuery.data ?? []).forEach((session) => values.add(session.channelType));
     return Array.from(values);
   }, [sessionsQuery.data]);
+
+  useEffect(() => {
+    if (selfEvolvingRuns.length === 0) {
+      setSelectedSelfEvolvingRunId(null);
+      return;
+    }
+    if (selectedSelfEvolvingRunId == null || !selfEvolvingRuns.some((run) => run.id === selectedSelfEvolvingRunId)) {
+      setSelectedSelfEvolvingRunId(selfEvolvingRuns[0].id);
+    }
+  }, [selectedSelfEvolvingRunId, selfEvolvingRuns]);
 
   const actionDialogConfig = buildActionDialogConfig(
     actionDialog,
@@ -348,10 +402,17 @@ export function InspectionPage() {
           isLoadingTrace={traceQuery.isLoading}
           traceErrorMessage={buildTraceErrorMessage(traceSummaryQuery.error, traceQuery.error)}
           isExportingSnapshot={snapshotExportMutation.isPending}
+          selfEvolvingRuns={selfEvolvingRuns}
+          selectedSelfEvolvingRunId={selectedSelfEvolvingRunId}
+          selectedSelfEvolvingRun={selectedSelfEvolvingRun}
+          selfEvolvingCandidates={selfEvolvingCandidatesQuery.data ?? []}
+          selfEvolvingLineage={selfEvolvingLineageQuery.data ?? { golemId: resolvedGolemId, nodes: [] }}
+          promotionApprovals={promotionApprovals}
           onSelectSession={(sessionId) => {
             setSelectedSessionId(sessionId);
             setFeedback(null);
           }}
+          onSelectSelfEvolvingRun={setSelectedSelfEvolvingRunId}
           onKeepLastChange={setKeepLast}
           onCompact={() => {
             void compactMutation.mutateAsync();

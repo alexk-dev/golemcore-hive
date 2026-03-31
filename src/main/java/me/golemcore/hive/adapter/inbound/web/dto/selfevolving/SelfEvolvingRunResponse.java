@@ -16,9 +16,11 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.domain.model;
+package me.golemcore.hive.adapter.inbound.web.dto.selfevolving;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,33 +30,26 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RunProjection {
-
-    @Builder.Default
-    private int schemaVersion = 1;
+public class SelfEvolvingRunResponse {
 
     private String id;
-    private String threadId;
-    private String cardId;
-    private String commandId;
     private String golemId;
-    private String approvalRequestId;
-    private RunStatus status;
-    private String summary;
-    private String lastRuntimeEventType;
-    private String lastSignalType;
-    private int eventCount;
-    private long inputTokens;
-    private long outputTokens;
-    private long accumulatedCostMicros;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private String sessionId;
+    private String traceId;
+    private String artifactBundleId;
+    private String artifactBundleStatus;
+    private String status;
+    private String outcomeStatus;
+    private String processStatus;
+    private String promotionRecommendation;
+    private String outcomeSummary;
+    private String processSummary;
+    private Double confidence;
+
+    @Builder.Default
+    private List<String> processFindings = new ArrayList<>();
+
     private Instant startedAt;
     private Instant completedAt;
-    private Instant cancelRequestedAt;
-    private String cancelRequestedByActorId;
-    private String cancelRequestedByActorName;
-    private String selfEvolvingRunId;
-    private String selfEvolvingOutcomeStatus;
-    private String selfEvolvingPromotionRecommendation;
+    private Instant updatedAt;
 }

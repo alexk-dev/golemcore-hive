@@ -49,6 +49,7 @@ public class EventIngestionService {
     private final CommandDispatchService commandDispatchService;
     private final SignalResolutionService signalResolutionService;
     private final GolemInspectionRpcService golemInspectionRpcService;
+    private final SelfEvolvingProjectionService selfEvolvingProjectionService;
 
     public BatchResult ingestBatch(String golemId, GolemEventBatchRequest request) {
         int acceptedEvents = 0;
@@ -63,6 +64,15 @@ public class EventIngestionService {
             }
             if ("inspection_response".equals(event.eventType())) {
                 golemInspectionRpcService.handleInspectionResponse(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.run.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyRunEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.candidate.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyCandidateEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.lineage.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyLineageEvent(golemId, event);
                 acceptedEvents++;
             } else if ("runtime_event".equals(event.eventType())) {
                 RuntimeEventType runtimeEventType = RuntimeEventType.valueOf(event.runtimeEventType());

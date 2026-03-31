@@ -19,9 +19,10 @@
 package me.golemcore.hive.domain.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
@@ -32,10 +33,10 @@ import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventPayload;
 import me.golemcore.hive.port.outbound.StoragePort;
 import org.junit.jupiter.api.Test;
 
-class EventIngestionServiceTest {
+class EventIngestionServiceSelfEvolvingTest {
 
     @Test
-    void shouldRouteInspectionResponsesToRpcServiceWithoutPersistingRuntimeArtifacts() {
+    void shouldIngestSelfEvolvingCandidateEventWithoutTouchingSessionInspection() {
         StoragePort storagePort = mock(StoragePort.class);
         CommandDispatchService commandDispatchService = mock(CommandDispatchService.class);
         SignalResolutionService signalResolutionService = mock(SignalResolutionService.class);
@@ -54,15 +55,12 @@ class EventIngestionServiceTest {
                 "golem-1",
                 List.of(new GolemEventPayload(
                         1,
-                        "inspection_response",
+                        "selfevolving.candidate.upserted",
                         "golem-1",
                         null,
                         null,
                         null,
                         null,
-                        "req-1",
-                        null,
-                        "inspection:golem-1",
                         null,
                         null,
                         null,
@@ -71,42 +69,17 @@ class EventIngestionServiceTest {
                         null,
                         null,
                         null,
-                        "sessions.list",
-                        true,
                         null,
                         null,
-                        new ObjectMapper().valueToTree(List.of(Map.of("id", "web:conv-1"))),
-                        Instant.parse("2026-03-30T21:00:00Z")))));
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        Map.of("id", "candidate-1"),
+                        Instant.parse("2026-03-31T16:00:00Z")))));
 
         assertEquals(1, result.getAcceptedEvents());
-        assertEquals(0, result.getRuntimeEvents());
-        assertEquals(0, result.getLifecycleSignals());
-        verify(golemInspectionRpcService).handleInspectionResponse("golem-1", new GolemEventPayload(
-                1,
-                "inspection_response",
-                "golem-1",
-                null,
-                null,
-                null,
-                null,
-                "req-1",
-                null,
-                "inspection:golem-1",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                "sessions.list",
-                true,
-                null,
-                null,
-                new ObjectMapper().valueToTree(List.of(Map.of("id", "web:conv-1"))),
-                Instant.parse("2026-03-30T21:00:00Z")));
-        verifyNoInteractions(commandDispatchService);
-        verifyNoInteractions(signalResolutionService);
+        verify(selfEvolvingProjectionService).applyCandidateEvent(eq("golem-1"), any());
     }
 }

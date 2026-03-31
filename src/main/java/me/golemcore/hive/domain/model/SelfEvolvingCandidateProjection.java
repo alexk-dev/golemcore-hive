@@ -19,6 +19,8 @@
 package me.golemcore.hive.domain.model;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,33 +30,21 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RunProjection {
+public class SelfEvolvingCandidateProjection {
 
     @Builder.Default
     private int schemaVersion = 1;
 
     private String id;
-    private String threadId;
-    private String cardId;
-    private String commandId;
     private String golemId;
-    private String approvalRequestId;
-    private RunStatus status;
-    private String summary;
-    private String lastRuntimeEventType;
-    private String lastSignalType;
-    private int eventCount;
-    private long inputTokens;
-    private long outputTokens;
-    private long accumulatedCostMicros;
-    private Instant createdAt;
+    private String goal;
+    private String artifactType;
+    private String status;
+    private String riskLevel;
+    private String expectedImpact;
+
+    @Builder.Default
+    private List<String> sourceRunIds = new ArrayList<>();
+
     private Instant updatedAt;
-    private Instant startedAt;
-    private Instant completedAt;
-    private Instant cancelRequestedAt;
-    private String cancelRequestedByActorId;
-    private String cancelRequestedByActorName;
-    private String selfEvolvingRunId;
-    private String selfEvolvingOutcomeStatus;
-    private String selfEvolvingPromotionRecommendation;
 }

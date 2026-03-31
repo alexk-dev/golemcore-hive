@@ -18,7 +18,30 @@ Self-hosted orchestration and control plane for `golemcore-bot` runtimes.
 - board flows, board teams, cards, card-bound threads, and command dispatch
 - lifecycle signal ingestion from golems
 - approval gates for destructive or high-cost commands
+- approval gates for `SelfEvolving` promotion decisions
 - audit history, budget snapshots, notification events, and production guardrails
+- readonly per-golem `SelfEvolving` inspection fed by connected bot projections
+
+## SelfEvolving inspection
+
+When a connected `golemcore-bot` has `SelfEvolving` enabled, Hive exposes readonly per-golem inspection for:
+
+- projected runs and judge verdict summaries
+- candidate queue and promotion states
+- lineage nodes
+- promotion approvals
+
+Hive keeps these views inside the existing inspection surface instead of creating a second golem dashboard.
+
+Relevant APIs:
+
+- `GET /api/v1/self-evolving/golems/{golemId}/runs`
+- `GET /api/v1/self-evolving/golems/{golemId}/runs/{runId}`
+- `GET /api/v1/self-evolving/golems/{golemId}/candidates`
+- `GET /api/v1/self-evolving/golems/{golemId}/lineage`
+- `GET /api/v1/approvals?golemId={golemId}`
+
+Promotion approvals are generalized through the normal approvals system with `subjectType=SELF_EVOLVING_PROMOTION`.
 
 ## Local development
 

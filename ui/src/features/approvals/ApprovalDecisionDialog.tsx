@@ -36,7 +36,9 @@ export function ApprovalDecisionDialog({
       <div className="panel w-full max-w-lg p-5">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-lg font-bold tracking-tight text-foreground">
-            {mode === 'approve' ? 'Approve' : 'Reject'} — {approval.riskLevel}
+            {mode === 'approve' ? 'Approve' : 'Reject'} — {approval.subjectType === 'SELF_EVOLVING_PROMOTION'
+              ? approval.subjectType
+              : approval.riskLevel}
           </h3>
           <button
             type="button"
@@ -46,7 +48,17 @@ export function ApprovalDecisionDialog({
             Close
           </button>
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">{approval.commandBody}</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {approval.subjectType === 'SELF_EVOLVING_PROMOTION'
+            ? approval.promotionContext?.expectedImpact ?? 'Promotion approval'
+            : approval.commandBody}
+        </p>
+        {approval.subjectType === 'SELF_EVOLVING_PROMOTION' && approval.promotionContext ? (
+          <div className="mt-4 grid gap-1 text-sm text-muted-foreground">
+            <p>Candidate: {approval.promotionContext.candidateId}</p>
+            <p>Source runs: {approval.promotionContext.sourceRunIds.join(', ')}</p>
+          </div>
+        ) : null}
         <form className="mt-4 grid gap-4" onSubmit={(event) => void handleSubmit(event)}>
           <label className="grid gap-1.5 text-sm text-muted-foreground">
             Note

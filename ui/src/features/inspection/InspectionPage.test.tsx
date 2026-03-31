@@ -16,7 +16,14 @@ import {
   listInspectionSessions,
 } from '../../lib/api/inspectionApi';
 import {
+  getSelfEvolvingArtifactCompareEvidence,
+  getSelfEvolvingArtifactLineage,
+  getSelfEvolvingArtifactRevisionDiff,
+  getSelfEvolvingArtifactRevisionEvidence,
+  getSelfEvolvingArtifactTransitionDiff,
+  getSelfEvolvingArtifactTransitionEvidence,
   getSelfEvolvingLineage,
+  listSelfEvolvingArtifacts,
   listSelfEvolvingCampaigns,
   listSelfEvolvingCandidates,
   listSelfEvolvingRuns,
@@ -44,6 +51,13 @@ vi.mock('../../lib/api/selfEvolvingApi', () => ({
   listSelfEvolvingCandidates: vi.fn(),
   getSelfEvolvingLineage: vi.fn(),
   listSelfEvolvingCampaigns: vi.fn(),
+  listSelfEvolvingArtifacts: vi.fn(),
+  getSelfEvolvingArtifactLineage: vi.fn(),
+  getSelfEvolvingArtifactRevisionDiff: vi.fn(),
+  getSelfEvolvingArtifactTransitionDiff: vi.fn(),
+  getSelfEvolvingArtifactRevisionEvidence: vi.fn(),
+  getSelfEvolvingArtifactCompareEvidence: vi.fn(),
+  getSelfEvolvingArtifactTransitionEvidence: vi.fn(),
 }));
 
 vi.mock('../../lib/api/approvalsApi', () => ({
@@ -59,6 +73,13 @@ const listSelfEvolvingRunsMock = vi.mocked(listSelfEvolvingRuns);
 const listSelfEvolvingCandidatesMock = vi.mocked(listSelfEvolvingCandidates);
 const getSelfEvolvingLineageMock = vi.mocked(getSelfEvolvingLineage);
 const listSelfEvolvingCampaignsMock = vi.mocked(listSelfEvolvingCampaigns);
+const listSelfEvolvingArtifactsMock = vi.mocked(listSelfEvolvingArtifacts);
+const getSelfEvolvingArtifactLineageMock = vi.mocked(getSelfEvolvingArtifactLineage);
+const getSelfEvolvingArtifactRevisionDiffMock = vi.mocked(getSelfEvolvingArtifactRevisionDiff);
+const getSelfEvolvingArtifactTransitionDiffMock = vi.mocked(getSelfEvolvingArtifactTransitionDiff);
+const getSelfEvolvingArtifactRevisionEvidenceMock = vi.mocked(getSelfEvolvingArtifactRevisionEvidence);
+const getSelfEvolvingArtifactCompareEvidenceMock = vi.mocked(getSelfEvolvingArtifactCompareEvidence);
+const getSelfEvolvingArtifactTransitionEvidenceMock = vi.mocked(getSelfEvolvingArtifactTransitionEvidence);
 const listApprovalsMock = vi.mocked(listApprovals);
 
 describe('InspectionPage', () => {
@@ -90,6 +111,106 @@ describe('InspectionPage', () => {
     listSelfEvolvingCandidatesMock.mockResolvedValue([]);
     getSelfEvolvingLineageMock.mockResolvedValue({ golemId: 'golem_1', nodes: [] });
     listSelfEvolvingCampaignsMock.mockResolvedValue([]);
+    listSelfEvolvingArtifactsMock.mockResolvedValue([]);
+    getSelfEvolvingArtifactLineageMock.mockResolvedValue({
+      artifactStreamId: 'stream-1',
+      originArtifactStreamId: 'stream-1',
+      artifactKey: 'skill:planner',
+      nodes: [],
+      edges: [],
+      railOrder: [],
+      branches: [],
+      defaultSelectedNodeId: null,
+      defaultSelectedRevisionId: null,
+      projectionSchemaVersion: 1,
+      projectedAt: '2026-03-30T20:00:00Z',
+    });
+    getSelfEvolvingArtifactRevisionDiffMock.mockResolvedValue({
+      artifactStreamId: 'stream-1',
+      artifactKey: 'skill:planner',
+      fromRevisionId: 'rev-1',
+      toRevisionId: 'rev-2',
+      summary: 'planner diff',
+      semanticSections: ['routing'],
+      rawPatch: '@@ -1 +1 @@',
+      changedFields: ['body'],
+      riskSignals: [],
+      impactSummary: null,
+      projectionSchemaVersion: 1,
+      projectedAt: '2026-03-30T20:00:00Z',
+    });
+    getSelfEvolvingArtifactTransitionDiffMock.mockResolvedValue({
+      artifactStreamId: 'stream-1',
+      artifactKey: 'skill:planner',
+      fromNodeId: 'candidate-1:approved',
+      toNodeId: 'candidate-1:active',
+      fromRevisionId: 'rev-2',
+      toRevisionId: 'rev-2',
+      fromRolloutStage: 'approved',
+      toRolloutStage: 'active',
+      contentChanged: false,
+      summary: 'approved to active',
+      impactSummary: null,
+      projectionSchemaVersion: 1,
+      projectedAt: '2026-03-30T20:00:00Z',
+    });
+    getSelfEvolvingArtifactRevisionEvidenceMock.mockResolvedValue({
+      artifactStreamId: 'stream-1',
+      artifactKey: 'skill:planner',
+      payloadKind: 'revision',
+      revisionId: 'rev-2',
+      fromRevisionId: null,
+      toRevisionId: null,
+      fromNodeId: null,
+      toNodeId: null,
+      runIds: ['run-1'],
+      traceIds: ['trace-1'],
+      spanIds: [],
+      campaignIds: ['campaign-1'],
+      promotionDecisionIds: ['promo-1'],
+      approvalRequestIds: ['apr-1'],
+      findings: ['Anchored evidence'],
+      projectionSchemaVersion: 1,
+      projectedAt: '2026-03-30T20:00:00Z',
+    });
+    getSelfEvolvingArtifactCompareEvidenceMock.mockResolvedValue({
+      artifactStreamId: 'stream-1',
+      artifactKey: 'skill:planner',
+      payloadKind: 'compare',
+      revisionId: null,
+      fromRevisionId: 'rev-1',
+      toRevisionId: 'rev-2',
+      fromNodeId: null,
+      toNodeId: null,
+      runIds: ['run-1'],
+      traceIds: ['trace-1'],
+      spanIds: [],
+      campaignIds: ['campaign-1'],
+      promotionDecisionIds: ['promo-1'],
+      approvalRequestIds: ['apr-1'],
+      findings: ['Compare evidence'],
+      projectionSchemaVersion: 1,
+      projectedAt: '2026-03-30T20:00:00Z',
+    });
+    getSelfEvolvingArtifactTransitionEvidenceMock.mockResolvedValue({
+      artifactStreamId: 'stream-1',
+      artifactKey: 'skill:planner',
+      payloadKind: 'transition',
+      revisionId: null,
+      fromRevisionId: 'rev-2',
+      toRevisionId: 'rev-2',
+      fromNodeId: 'candidate-1:approved',
+      toNodeId: 'candidate-1:active',
+      runIds: ['run-1'],
+      traceIds: ['trace-1'],
+      spanIds: [],
+      campaignIds: ['campaign-1'],
+      promotionDecisionIds: ['promo-1'],
+      approvalRequestIds: ['apr-1'],
+      findings: ['Transition evidence'],
+      projectionSchemaVersion: 1,
+      projectedAt: '2026-03-30T20:00:00Z',
+    });
     listApprovalsMock.mockResolvedValue([]);
   });
 
@@ -201,6 +322,78 @@ describe('InspectionPage', () => {
         },
       },
     ]);
+    listSelfEvolvingArtifactsMock.mockResolvedValue([
+      {
+        golemId: 'golem_1',
+        artifactStreamId: 'stream-1',
+        originArtifactStreamId: 'stream-1',
+        artifactKey: 'skill:planner',
+        artifactAliases: ['skill:planner', 'planner'],
+        artifactType: 'skill',
+        artifactSubtype: 'skill',
+        displayName: 'Planner skill',
+        latestRevisionId: 'rev-2',
+        activeRevisionId: 'rev-2',
+        latestCandidateRevisionId: 'rev-2',
+        currentLifecycleState: 'active',
+        currentRolloutStage: 'active',
+        hasRegression: false,
+        hasPendingApproval: false,
+        campaignCount: 1,
+        projectionSchemaVersion: 1,
+        sourceBotVersion: 'bot-1',
+        projectedAt: '2026-03-30T20:00:00Z',
+        updatedAt: '2026-03-30T20:00:00Z',
+        stale: false,
+        staleReason: null,
+      },
+    ]);
+    getSelfEvolvingArtifactLineageMock.mockResolvedValue({
+      artifactStreamId: 'stream-1',
+      originArtifactStreamId: 'stream-1',
+      artifactKey: 'skill:planner',
+      nodes: [
+        {
+          nodeId: 'candidate-1:approved',
+          contentRevisionId: 'rev-2',
+          lifecycleState: 'approved',
+          rolloutStage: 'approved',
+          promotionDecisionId: 'promo-1',
+          originBundleId: 'bundle-1',
+          sourceRunIds: ['run-1'],
+          campaignIds: ['campaign-1'],
+          attributionMode: 'judge',
+          createdAt: '2026-03-30T20:01:00Z',
+        },
+        {
+          nodeId: 'candidate-1:active',
+          contentRevisionId: 'rev-2',
+          lifecycleState: 'active',
+          rolloutStage: 'active',
+          promotionDecisionId: 'promo-2',
+          originBundleId: 'bundle-1',
+          sourceRunIds: ['run-1'],
+          campaignIds: ['campaign-1'],
+          attributionMode: 'judge',
+          createdAt: '2026-03-30T20:02:00Z',
+        },
+      ],
+      edges: [
+        {
+          edgeId: 'edge-1',
+          fromNodeId: 'candidate-1:approved',
+          toNodeId: 'candidate-1:active',
+          edgeType: 'rollout',
+          createdAt: '2026-03-30T20:02:00Z',
+        },
+      ],
+      railOrder: ['candidate-1:approved', 'candidate-1:active'],
+      branches: [],
+      defaultSelectedNodeId: 'candidate-1:active',
+      defaultSelectedRevisionId: 'rev-2',
+      projectionSchemaVersion: 1,
+      projectedAt: '2026-03-30T20:02:00Z',
+    });
 
     renderPage();
 
@@ -216,9 +409,12 @@ describe('InspectionPage', () => {
     expect(screen.getByText('Trace summary')).toBeInTheDocument();
     expect(await screen.findByText('Judging')).toBeInTheDocument();
     expect(screen.getByText('Lineage')).toBeInTheDocument();
+    expect(await screen.findByText('Artifacts')).toBeInTheDocument();
+    expect(screen.getByText('Planner skill')).toBeInTheDocument();
+    expect(screen.getByText('Semantic diff')).toBeInTheDocument();
     expect(screen.getByText('Candidate queue')).toBeInTheDocument();
     expect(screen.getByText('Benchmark lab')).toBeInTheDocument();
-    expect(screen.getByText('campaign-1')).toBeInTheDocument();
+    expect(screen.getAllByText('campaign-1').length).toBeGreaterThan(0);
     expect(screen.getByText('Promotion approvals')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Load details' }));

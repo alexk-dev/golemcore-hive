@@ -16,7 +16,15 @@ import {
   listInspectionSessions,
 } from '../../lib/api/inspectionApi';
 import {
+  getSelfEvolvingArtifactCompareEvidence,
+  getSelfEvolvingArtifactLineage,
+  getSelfEvolvingArtifactRevisionDiff,
+  getSelfEvolvingArtifactRevisionEvidence,
+  getSelfEvolvingArtifactTransitionDiff,
+  getSelfEvolvingArtifactTransitionEvidence,
   getSelfEvolvingLineage,
+  type SelfEvolvingArtifactLineage,
+  listSelfEvolvingArtifacts,
   listSelfEvolvingCampaigns,
   listSelfEvolvingCandidates,
   listSelfEvolvingRuns,
@@ -222,6 +230,10 @@ export function InspectionPage() {
   const [channelFilter, setChannelFilter] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedSelfEvolvingRunId, setSelectedSelfEvolvingRunId] = useState<string | null>(null);
+  const [selectedArtifactStreamId, setSelectedArtifactStreamId] = useState<string | null>(null);
+  const [artifactCompareMode, setArtifactCompareMode] = useState<'revision' | 'transition'>('transition');
+  const [selectedArtifactRevisionPair, setSelectedArtifactRevisionPair] = useState<{ fromRevisionId: string; toRevisionId: string } | null>(null);
+  const [selectedArtifactTransitionPair, setSelectedArtifactTransitionPair] = useState<{ fromNodeId: string; toNodeId: string } | null>(null);
   const [keepLast, setKeepLast] = useState(20);
   const [detailsRequested, setDetailsRequested] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -297,6 +309,18 @@ export function InspectionPage() {
     enabled: sessionsEnabled,
     refetchInterval: 10_000,
   });
+  const selfEvolvingArtifactsQuery = useQuery({
+    queryKey: ['self-evolving-artifacts', resolvedGolemId],
+    queryFn: () => listSelfEvolvingArtifacts(resolvedGolemId),
+    enabled: sessionsEnabled,
+    refetchInterval: 10_000,
+  });
+  const artifactLineageQuery = useQuery({
+    queryKey: ['self-evolving-artifact-lineage', resolvedGolemId, selectedArtifactStreamId],
+    queryFn: () => getSelfEvolvingArtifactLineage(resolvedGolemId, selectedArtifactStreamId ?? ''),
+    enabled: sessionsEnabled && selectedArtifactStreamId != null,
+    refetchInterval: 10_000,
+  });
 
   const approvalsQuery = useQuery({
     queryKey: ['approvals', resolvedGolemId, 'SELF_EVOLVING_PROMOTION'],
@@ -330,6 +354,7 @@ export function InspectionPage() {
     [approvalsQuery.data],
   );
   const selfEvolvingRuns = selfEvolvingRunsQuery.data ?? [];
+  const selfEvolvingArtifacts = selfEvolvingArtifactsQuery.data ?? [];
   const selectedSelfEvolvingRun = useMemo(
     () => selfEvolvingRuns.find((run) => run.id === selectedSelfEvolvingRunId) ?? selfEvolvingRuns[0] ?? null,
     [selectedSelfEvolvingRunId, selfEvolvingRuns],
@@ -350,6 +375,128 @@ export function InspectionPage() {
       setSelectedSelfEvolvingRunId(selfEvolvingRuns[0].id);
     }
   }, [selectedSelfEvolvingRunId, selfEvolvingRuns]);
+
+  useEffect(() => {
+    if (selfEvolvingArtifacts.length === 0) {
+      setSelectedArtifactStreamId(null);
+      return;
+    }
+    if (selectedArtifactStreamId == null
+      || !selfEvolvingArtifacts.some((artifact) => artifact.artifactStreamId === selectedArtifactStreamId)) {
+      setSelectedArtifactStreamId(selfEvolvingArtifacts[0].artifactStreamId);
+    }
+  }, [selectedArtifactStreamId, selfEvolvingArtifacts]);
+
+  useEffect(() => {
+    const lineage = artifactLineageQuery.data;
+    if (!lineage) {
+      setSelectedArtifactRevisionPair(null);
+      setSelectedArtifactTransitionPair(null);
+      return;
+    }
+    const transitionPairs = buildArtifactTransitionPairs(lineage);
+    if (transitionPairs.length > 0) {
+      setSelectedArtifactTransitionPair((current) => current && transitionPairs.some(
+        (pair) => pair.fromNodeId === current.fromNodeId && pair.toNodeId === current.toNodeId,
+      ) ? current : transitionPairs[0]);
+    } else {
+      setSelectedArtifactTransitionPair(null);
+    }
+
+    const revisionPairs = buildArtifactRevisionPairs(lineage);
+    if (revisionPairs.length > 0) {
+      setSelectedArtifactRevisionPair((current) => current && revisionPairs.some(
+        (pair) => pair.fromRevisionId === current.fromRevisionId && pair.toRevisionId === current.toRevisionId,
+      ) ? current : revisionPairs[0]);
+    } else {
+      setSelectedArtifactRevisionPair(null);
+    }
+  }, [artifactLineageQuery.data]);
+
+  useEffect(() => {
+    if (artifactCompareMode === 'transition' && selectedArtifactTransitionPair == null && selectedArtifactRevisionPair != null) {
+      setArtifactCompareMode('revision');
+    }
+  }, [artifactCompareMode, selectedArtifactRevisionPair, selectedArtifactTransitionPair]);
+
+  const artifactRevisionDiffQuery = useQuery({
+    queryKey: [
+      'self-evolving-artifact-revision-diff',
+      resolvedGolemId,
+      selectedArtifactStreamId,
+      selectedArtifactRevisionPair?.fromRevisionId,
+      selectedArtifactRevisionPair?.toRevisionId,
+    ],
+    queryFn: () => getSelfEvolvingArtifactRevisionDiff(
+      resolvedGolemId,
+      selectedArtifactStreamId ?? '',
+      selectedArtifactRevisionPair?.fromRevisionId ?? '',
+      selectedArtifactRevisionPair?.toRevisionId ?? '',
+    ),
+    enabled: sessionsEnabled
+      && selectedArtifactStreamId != null
+      && selectedArtifactRevisionPair != null,
+  });
+  const artifactTransitionDiffQuery = useQuery({
+    queryKey: [
+      'self-evolving-artifact-transition-diff',
+      resolvedGolemId,
+      selectedArtifactStreamId,
+      selectedArtifactTransitionPair?.fromNodeId,
+      selectedArtifactTransitionPair?.toNodeId,
+    ],
+    queryFn: () => getSelfEvolvingArtifactTransitionDiff(
+      resolvedGolemId,
+      selectedArtifactStreamId ?? '',
+      selectedArtifactTransitionPair?.fromNodeId ?? '',
+      selectedArtifactTransitionPair?.toNodeId ?? '',
+    ),
+    enabled: sessionsEnabled
+      && selectedArtifactStreamId != null
+      && selectedArtifactTransitionPair != null,
+  });
+  const artifactEvidenceQuery = useQuery({
+    queryKey: [
+      'self-evolving-artifact-evidence',
+      resolvedGolemId,
+      selectedArtifactStreamId,
+      artifactCompareMode,
+      selectedArtifactRevisionPair?.fromRevisionId,
+      selectedArtifactRevisionPair?.toRevisionId,
+      selectedArtifactTransitionPair?.fromNodeId,
+      selectedArtifactTransitionPair?.toNodeId,
+    ],
+    queryFn: () => {
+      if (artifactCompareMode === 'transition' && selectedArtifactTransitionPair != null) {
+        return getSelfEvolvingArtifactTransitionEvidence(
+          resolvedGolemId,
+          selectedArtifactStreamId ?? '',
+          selectedArtifactTransitionPair.fromNodeId,
+          selectedArtifactTransitionPair.toNodeId,
+        );
+      }
+      if (selectedArtifactRevisionPair != null) {
+        return getSelfEvolvingArtifactCompareEvidence(
+          resolvedGolemId,
+          selectedArtifactStreamId ?? '',
+          selectedArtifactRevisionPair.fromRevisionId,
+          selectedArtifactRevisionPair.toRevisionId,
+        );
+      }
+      return getSelfEvolvingArtifactRevisionEvidence(
+        resolvedGolemId,
+        selectedArtifactStreamId ?? '',
+        artifactLineageQuery.data?.defaultSelectedRevisionId ?? '',
+      );
+    },
+    enabled: sessionsEnabled
+      && selectedArtifactStreamId != null
+      && (
+        selectedArtifactTransitionPair != null
+        || selectedArtifactRevisionPair != null
+        || artifactLineageQuery.data?.defaultSelectedRevisionId != null
+      ),
+  });
 
   const actionDialogConfig = buildActionDialogConfig(
     actionDialog,
@@ -416,12 +563,36 @@ export function InspectionPage() {
           selfEvolvingCandidates={selfEvolvingCandidatesQuery.data ?? []}
           selfEvolvingCampaigns={selfEvolvingCampaignsQuery.data ?? []}
           selfEvolvingLineage={selfEvolvingLineageQuery.data ?? { golemId: resolvedGolemId, nodes: [] }}
+          selfEvolvingArtifacts={selfEvolvingArtifacts}
+          selectedArtifactStreamId={selectedArtifactStreamId}
+          artifactLineage={artifactLineageQuery.data ?? null}
+          artifactCompareMode={artifactCompareMode}
+          artifactRevisionDiff={artifactRevisionDiffQuery.data ?? null}
+          artifactTransitionDiff={artifactTransitionDiffQuery.data ?? null}
+          artifactEvidence={artifactEvidenceQuery.data ?? null}
+          isArtifactsLoading={selfEvolvingArtifactsQuery.isLoading}
+          isArtifactLineageLoading={artifactLineageQuery.isLoading}
+          isArtifactDiffLoading={artifactCompareMode === 'transition'
+            ? artifactTransitionDiffQuery.isLoading
+            : artifactRevisionDiffQuery.isLoading}
+          isArtifactEvidenceLoading={artifactEvidenceQuery.isLoading}
           promotionApprovals={promotionApprovals}
           onSelectSession={(sessionId) => {
             setSelectedSessionId(sessionId);
             setFeedback(null);
           }}
           onSelectSelfEvolvingRun={setSelectedSelfEvolvingRunId}
+          onSelectArtifactStream={(artifactStreamId) => {
+            setSelectedArtifactStreamId(artifactStreamId);
+            setFeedback(null);
+          }}
+          onSelectArtifactCompareMode={setArtifactCompareMode}
+          onSelectArtifactRevisionPair={(fromRevisionId, toRevisionId) => {
+            setSelectedArtifactRevisionPair({ fromRevisionId, toRevisionId });
+          }}
+          onSelectArtifactTransitionPair={(fromNodeId, toNodeId) => {
+            setSelectedArtifactTransitionPair({ fromNodeId, toNodeId });
+          }}
           onKeepLastChange={setKeepLast}
           onCompact={() => {
             void compactMutation.mutateAsync();
@@ -452,4 +623,36 @@ export function InspectionPage() {
       ) : null}
     </div>
   );
+}
+
+function buildArtifactTransitionPairs(lineage: SelfEvolvingArtifactLineage) {
+  const pairs: Array<{ fromNodeId: string; toNodeId: string }> = [];
+  for (let index = 1; index < lineage.railOrder.length; index += 1) {
+    pairs.push({
+      fromNodeId: lineage.railOrder[index - 1],
+      toNodeId: lineage.railOrder[index],
+    });
+  }
+  return pairs;
+}
+
+function buildArtifactRevisionPairs(lineage: SelfEvolvingArtifactLineage) {
+  const orderedRevisions = lineage.railOrder
+    .map((nodeId) => lineage.nodes.find((node) => node.nodeId === nodeId)?.contentRevisionId || null)
+    .filter((value): value is string => value != null && value.length > 0);
+  const uniqueRevisions = Array.from(new Set(orderedRevisions));
+  const pairs: Array<{ fromRevisionId: string; toRevisionId: string }> = [];
+  for (let index = 1; index < uniqueRevisions.length; index += 1) {
+    pairs.push({
+      fromRevisionId: uniqueRevisions[index - 1],
+      toRevisionId: uniqueRevisions[index],
+    });
+  }
+  if (pairs.length === 0 && uniqueRevisions.length === 1) {
+    pairs.push({
+      fromRevisionId: uniqueRevisions[0],
+      toRevisionId: uniqueRevisions[0],
+    });
+  }
+  return pairs;
 }

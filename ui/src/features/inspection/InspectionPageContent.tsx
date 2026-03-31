@@ -10,10 +10,16 @@ import type {
 import type {
   SelfEvolvingCampaign,
   SelfEvolvingCandidate,
+  SelfEvolvingArtifactCatalogEntry,
+  SelfEvolvingArtifactEvidence,
+  SelfEvolvingArtifactLineage,
+  SelfEvolvingArtifactRevisionDiff,
+  SelfEvolvingArtifactTransitionDiff,
   SelfEvolvingLineageResponse,
   SelfEvolvingRun,
 } from '../../lib/api/selfEvolvingApi';
 import { InspectionSelfEvolvingApprovalPanel } from './InspectionSelfEvolvingApprovalPanel';
+import { InspectionSelfEvolvingArtifactWorkspace } from './InspectionSelfEvolvingArtifactWorkspace';
 import { InspectionSelfEvolvingBenchmarkLab } from './InspectionSelfEvolvingBenchmarkLab';
 import { InspectionSelfEvolvingCandidateQueue } from './InspectionSelfEvolvingCandidateQueue';
 import { InspectionSelfEvolvingLineageGraph } from './InspectionSelfEvolvingLineageGraph';
@@ -106,9 +112,24 @@ export function InspectionOnlineContent({
   selfEvolvingCandidates,
   selfEvolvingCampaigns,
   selfEvolvingLineage,
+  selfEvolvingArtifacts,
+  selectedArtifactStreamId,
+  artifactLineage,
+  artifactCompareMode,
+  artifactRevisionDiff,
+  artifactTransitionDiff,
+  artifactEvidence,
+  isArtifactsLoading,
+  isArtifactLineageLoading,
+  isArtifactDiffLoading,
+  isArtifactEvidenceLoading,
   promotionApprovals,
   onSelectSession,
   onSelectSelfEvolvingRun,
+  onSelectArtifactStream,
+  onSelectArtifactCompareMode,
+  onSelectArtifactRevisionPair,
+  onSelectArtifactTransitionPair,
   onKeepLastChange,
   onCompact,
   onClear,
@@ -141,9 +162,24 @@ export function InspectionOnlineContent({
   selfEvolvingCandidates: SelfEvolvingCandidate[];
   selfEvolvingCampaigns: SelfEvolvingCampaign[];
   selfEvolvingLineage: SelfEvolvingLineageResponse;
+  selfEvolvingArtifacts: SelfEvolvingArtifactCatalogEntry[];
+  selectedArtifactStreamId: string | null;
+  artifactLineage: SelfEvolvingArtifactLineage | null;
+  artifactCompareMode: 'revision' | 'transition';
+  artifactRevisionDiff: SelfEvolvingArtifactRevisionDiff | null;
+  artifactTransitionDiff: SelfEvolvingArtifactTransitionDiff | null;
+  artifactEvidence: SelfEvolvingArtifactEvidence | null;
+  isArtifactsLoading: boolean;
+  isArtifactLineageLoading: boolean;
+  isArtifactDiffLoading: boolean;
+  isArtifactEvidenceLoading: boolean;
   promotionApprovals: ApprovalRequest[];
   onSelectSession: (sessionId: string) => void;
   onSelectSelfEvolvingRun: (runId: string) => void;
+  onSelectArtifactStream: (artifactStreamId: string) => void;
+  onSelectArtifactCompareMode: (compareMode: 'revision' | 'transition') => void;
+  onSelectArtifactRevisionPair: (fromRevisionId: string, toRevisionId: string) => void;
+  onSelectArtifactTransitionPair: (fromNodeId: string, toNodeId: string) => void;
   onKeepLastChange: (value: number) => void;
   onCompact: () => void;
   onClear: () => void;
@@ -237,7 +273,28 @@ export function InspectionOnlineContent({
           <InspectionSelfEvolvingApprovalPanel approvals={promotionApprovals} />
         </div>
 
-        <InspectionSelfEvolvingBenchmarkLab campaigns={selfEvolvingCampaigns} />
+        <InspectionSelfEvolvingArtifactWorkspace
+          artifacts={selfEvolvingArtifacts}
+          selectedArtifactStreamId={selectedArtifactStreamId}
+          lineage={artifactLineage}
+          compareMode={artifactCompareMode}
+          revisionDiff={artifactRevisionDiff}
+          transitionDiff={artifactTransitionDiff}
+          evidence={artifactEvidence}
+          isCatalogLoading={isArtifactsLoading}
+          isLineageLoading={isArtifactLineageLoading}
+          isDiffLoading={isArtifactDiffLoading}
+          isEvidenceLoading={isArtifactEvidenceLoading}
+          onSelectArtifactStream={onSelectArtifactStream}
+          onSelectCompareMode={onSelectArtifactCompareMode}
+          onSelectRevisionPair={onSelectArtifactRevisionPair}
+          onSelectTransitionPair={onSelectArtifactTransitionPair}
+        />
+
+        <InspectionSelfEvolvingBenchmarkLab
+          campaigns={selfEvolvingCampaigns}
+          selectedArtifactStreamId={selectedArtifactStreamId}
+        />
       </div>
     </div>
   );

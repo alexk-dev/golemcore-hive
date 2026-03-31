@@ -4,14 +4,19 @@ import { InspectionReadonlySection } from './InspectionPageSections';
 
 export function InspectionSelfEvolvingBenchmarkLab({
   campaigns,
+  selectedArtifactStreamId,
 }: {
   campaigns: SelfEvolvingCampaign[];
+  selectedArtifactStreamId?: string | null;
 }) {
   return (
     <InspectionReadonlySection
       title="Benchmark lab"
       description="Readonly benchmark campaigns harvested from this golem for offline regression inspection."
     >
+      {selectedArtifactStreamId ? (
+        <p className="mb-3 text-xs text-muted-foreground">Focused artifact stream: {selectedArtifactStreamId}</p>
+      ) : null}
       {campaigns.length === 0 ? (
         <p className="text-sm text-muted-foreground">No benchmark campaigns have been projected into Hive yet.</p>
       ) : (

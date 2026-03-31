@@ -29,9 +29,21 @@ When a connected `golemcore-bot` has `SelfEvolving` enabled, Hive exposes readon
 - projected runs and judge verdict summaries
 - candidate queue and promotion states
 - lineage nodes
+- artifact workspace catalog, lineage rail, diff, evidence, and impact tabs mirrored from the bot
+- benchmark campaigns tied to the selected artifact stream
 - promotion approvals
 
-Hive keeps these views inside the existing inspection surface instead of creating a second golem dashboard.
+`golemcore-bot` stays the primary working screen. Hive keeps these views inside the existing inspection surface instead of creating a second golem dashboard and mirrors the bot workspace as readonly state.
+
+Artifact identity and compare rules:
+
+- `artifactStreamId` is the canonical identity across bot and Hive
+- `artifactKey` and aliases are display metadata only
+- per-golem workspace projections are mirrored verbatim from the bot
+- Hive derives only the fleet-level same-stream compare read model
+- bounded rollout diffs are mirrored when available, while arbitrary revision compare may fall back to on-demand content diff from mirrored normalized revisions
+
+Hive also exposes fleet-level artifact search and same-stream compare across golems, while keeping approval actions inside the existing governance flow.
 
 Relevant APIs:
 
@@ -39,6 +51,16 @@ Relevant APIs:
 - `GET /api/v1/self-evolving/golems/{golemId}/runs/{runId}`
 - `GET /api/v1/self-evolving/golems/{golemId}/candidates`
 - `GET /api/v1/self-evolving/golems/{golemId}/lineage`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/lineage`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/diff`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/transition-diff`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/evidence`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/compare-evidence`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/transition-evidence`
+- `GET /api/v1/self-evolving/artifacts/search`
+- `GET /api/v1/self-evolving/artifacts/compare`
 - `GET /api/v1/approvals?golemId={golemId}`
 
 Promotion approvals are generalized through the normal approvals system with `subjectType=SELF_EVOLVING_PROMOTION`.

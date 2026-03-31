@@ -16,31 +16,6 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.domain.model;
+package me.golemcore.hive.adapter.inbound.web.dto.inspection;
 
-import java.time.Instant;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ControlCommandEnvelope {
-
-    @Builder.Default
-    private int schemaVersion = 1;
-
-    private String eventType;
-    private String commandId;
-    private String requestId;
-    private String threadId;
-    private String cardId;
-    private String golemId;
-    private String runId;
-    private String body;
-    private InspectionRequestBody inspection;
-    private Instant createdAt;
-}
+public record InspectionErrorResponse(String code,String message,String requestId,boolean retryable){}

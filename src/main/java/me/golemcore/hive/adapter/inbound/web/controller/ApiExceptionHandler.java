@@ -18,6 +18,8 @@
 
 package me.golemcore.hive.adapter.inbound.web.controller;
 
+import me.golemcore.hive.adapter.inbound.web.dto.inspection.InspectionErrorResponse;
+import me.golemcore.hive.domain.service.GolemInspectionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,6 +36,16 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(exception.getMessage()));
+    }
+
+    @ExceptionHandler(GolemInspectionService.InspectionException.class)
+    public ResponseEntity<InspectionErrorResponse> handleInspectionException(
+            GolemInspectionService.InspectionException exception) {
+        return ResponseEntity.status(exception.getStatus()).body(new InspectionErrorResponse(
+                exception.getCode().name(),
+                exception.getMessage(),
+                exception.getRequestId(),
+                exception.isRetryable()));
     }
 
     public record ErrorResponse(String error) {

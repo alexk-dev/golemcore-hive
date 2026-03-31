@@ -48,6 +48,7 @@ public class EventIngestionService {
     private final ObjectMapper objectMapper;
     private final CommandDispatchService commandDispatchService;
     private final SignalResolutionService signalResolutionService;
+    private final GolemInspectionRpcService golemInspectionRpcService;
 
     public BatchResult ingestBatch(String golemId, GolemEventBatchRequest request) {
         int acceptedEvents = 0;
@@ -60,7 +61,10 @@ public class EventIngestionService {
             if (event.golemId() != null && !event.golemId().isBlank() && !golemId.equals(event.golemId())) {
                 throw new IllegalArgumentException("Event golemId does not match request path");
             }
-            if ("runtime_event".equals(event.eventType())) {
+            if ("inspection_response".equals(event.eventType())) {
+                golemInspectionRpcService.handleInspectionResponse(golemId, event);
+                acceptedEvents++;
+            } else if ("runtime_event".equals(event.eventType())) {
                 RuntimeEventType runtimeEventType = RuntimeEventType.valueOf(event.runtimeEventType());
                 commandDispatchService.applyRuntimeEvent(golemId, runtimeEventType, event.threadId(), event.cardId(),
                         event.commandId(), event.runId(), event.summary(), event.details(),

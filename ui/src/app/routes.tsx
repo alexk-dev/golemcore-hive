@@ -13,6 +13,7 @@ import { ApprovalsPage } from '../features/approvals/ApprovalsPage';
 import { AuditPage } from '../features/audit/AuditPage';
 import { BudgetsPage } from '../features/budgets/BudgetsPage';
 import { SystemSettingsPage } from '../features/settings/SystemSettingsPage';
+import { InspectionPage } from '../features/inspection/InspectionPage';
 
 export const routes = createBrowserRouter([
   {
@@ -76,6 +77,10 @@ export const routes = createBrowserRouter([
           {
             path: '/fleet/chat/:golemId',
             element: <GolemChatPage />,
+          },
+          {
+            path: '/fleet/inspection/:golemId',
+            element: <InspectionPage />,
           },
         ],
       },

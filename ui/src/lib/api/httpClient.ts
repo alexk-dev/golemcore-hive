@@ -19,9 +19,17 @@ export function configureHttpClient(nextAccessTokenProvider: AccessTokenProvider
   refreshHandler = nextRefreshHandler;
 }
 
-export async function apiRequest<T>(input: string, init: RequestInit = {}, allowRefresh = true): Promise<T> {
+export interface BinaryResponse {
+  blob: Blob;
+  fileName: string | null;
+  contentType: string | null;
+}
+
+async function executeRequest(input: string, init: RequestInit = {}, allowRefresh = true): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set('Accept', 'application/json');
+  if (!headers.has('Accept')) {
+    headers.set('Accept', 'application/json');
+  }
 
   const accessToken = accessTokenProvider();
   if (accessToken) {
@@ -40,18 +48,73 @@ export async function apiRequest<T>(input: string, init: RequestInit = {}, allow
   if (response.status === 401 && allowRefresh) {
     const refreshedToken = await refreshHandler();
     if (refreshedToken) {
-      return apiRequest<T>(input, init, false);
+      return executeRequest(input, init, false);
     }
   }
 
+  return response;
+}
+
+async function ensureSuccessfulResponse(response: Response): Promise<Response> {
   if (!response.ok) {
     const message = await response.text();
     throw new HttpError(message || `Request failed with status ${response.status}`, response.status);
   }
+
+  return response;
+}
+
+function extractDownloadFileName(contentDisposition: string | null): string | null {
+  if (contentDisposition == null) {
+    return null;
+  }
+  const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition);
+  if (utf8Match?.[1] != null) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+  const quotedMatch = /filename="([^"]+)"/i.exec(contentDisposition);
+  if (quotedMatch?.[1] != null) {
+    return quotedMatch[1];
+  }
+  const bareMatch = /filename=([^;]+)/i.exec(contentDisposition);
+  if (bareMatch?.[1] != null) {
+    return bareMatch[1].trim();
+  }
+  return null;
+}
+
+export async function apiRequest<T>(input: string, init: RequestInit = {}, allowRefresh = true): Promise<T> {
+  const response = await ensureSuccessfulResponse(await executeRequest(input, init, allowRefresh));
 
   if (response.status === 204) {
     return undefined as T;
   }
 
   return response.json() as Promise<T>;
+}
+
+export async function apiRequestBlob(
+  input: string,
+  init: RequestInit = {},
+  allowRefresh = true,
+): Promise<BinaryResponse> {
+  const headers = new Headers(init.headers);
+  headers.set('Accept', '*/*');
+
+  const response = await ensureSuccessfulResponse(
+    await executeRequest(
+      input,
+      {
+        ...init,
+        headers,
+      },
+      allowRefresh,
+    ),
+  );
+
+  return {
+    blob: await response.blob(),
+    fileName: extractDownloadFileName(response.headers.get('Content-Disposition')),
+    contentType: response.headers.get('Content-Type'),
+  };
 }

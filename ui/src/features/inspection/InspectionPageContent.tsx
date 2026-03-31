@@ -8,11 +8,13 @@ import type {
   InspectionTraceSummary,
 } from '../../lib/api/inspectionApi';
 import type {
+  SelfEvolvingCampaign,
   SelfEvolvingCandidate,
   SelfEvolvingLineageResponse,
   SelfEvolvingRun,
 } from '../../lib/api/selfEvolvingApi';
 import { InspectionSelfEvolvingApprovalPanel } from './InspectionSelfEvolvingApprovalPanel';
+import { InspectionSelfEvolvingBenchmarkLab } from './InspectionSelfEvolvingBenchmarkLab';
 import { InspectionSelfEvolvingCandidateQueue } from './InspectionSelfEvolvingCandidateQueue';
 import { InspectionSelfEvolvingLineageGraph } from './InspectionSelfEvolvingLineageGraph';
 import { InspectionSelfEvolvingOverview } from './InspectionSelfEvolvingOverview';
@@ -102,6 +104,7 @@ export function InspectionOnlineContent({
   selectedSelfEvolvingRunId,
   selectedSelfEvolvingRun,
   selfEvolvingCandidates,
+  selfEvolvingCampaigns,
   selfEvolvingLineage,
   promotionApprovals,
   onSelectSession,
@@ -136,6 +139,7 @@ export function InspectionOnlineContent({
   selectedSelfEvolvingRunId: string | null;
   selectedSelfEvolvingRun: SelfEvolvingRun | null;
   selfEvolvingCandidates: SelfEvolvingCandidate[];
+  selfEvolvingCampaigns: SelfEvolvingCampaign[];
   selfEvolvingLineage: SelfEvolvingLineageResponse;
   promotionApprovals: ApprovalRequest[];
   onSelectSession: (sessionId: string) => void;
@@ -214,6 +218,7 @@ export function InspectionOnlineContent({
         <InspectionSelfEvolvingOverview
           runs={selfEvolvingRuns}
           candidates={selfEvolvingCandidates}
+          campaigns={selfEvolvingCampaigns}
           approvals={promotionApprovals}
         />
 
@@ -231,6 +236,8 @@ export function InspectionOnlineContent({
           <InspectionSelfEvolvingLineageGraph lineage={selfEvolvingLineage} />
           <InspectionSelfEvolvingApprovalPanel approvals={promotionApprovals} />
         </div>
+
+        <InspectionSelfEvolvingBenchmarkLab campaigns={selfEvolvingCampaigns} />
       </div>
     </div>
   );

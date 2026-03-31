@@ -17,6 +17,7 @@ import {
 } from '../../lib/api/inspectionApi';
 import {
   getSelfEvolvingLineage,
+  listSelfEvolvingCampaigns,
   listSelfEvolvingCandidates,
   listSelfEvolvingRuns,
 } from '../../lib/api/selfEvolvingApi';
@@ -283,6 +284,13 @@ export function InspectionPage() {
     refetchInterval: 10_000,
   });
 
+  const selfEvolvingCampaignsQuery = useQuery({
+    queryKey: ['self-evolving-campaigns', resolvedGolemId],
+    queryFn: () => listSelfEvolvingCampaigns(resolvedGolemId),
+    enabled: sessionsEnabled,
+    refetchInterval: 10_000,
+  });
+
   const selfEvolvingLineageQuery = useQuery({
     queryKey: ['self-evolving-lineage', resolvedGolemId],
     queryFn: () => getSelfEvolvingLineage(resolvedGolemId),
@@ -406,6 +414,7 @@ export function InspectionPage() {
           selectedSelfEvolvingRunId={selectedSelfEvolvingRunId}
           selectedSelfEvolvingRun={selectedSelfEvolvingRun}
           selfEvolvingCandidates={selfEvolvingCandidatesQuery.data ?? []}
+          selfEvolvingCampaigns={selfEvolvingCampaignsQuery.data ?? []}
           selfEvolvingLineage={selfEvolvingLineageQuery.data ?? { golemId: resolvedGolemId, nodes: [] }}
           promotionApprovals={promotionApprovals}
           onSelectSession={(sessionId) => {

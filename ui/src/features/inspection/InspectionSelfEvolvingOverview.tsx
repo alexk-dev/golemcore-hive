@@ -1,14 +1,16 @@
 import type { ApprovalRequest } from '../../lib/api/approvalsApi';
-import type { SelfEvolvingCandidate, SelfEvolvingRun } from '../../lib/api/selfEvolvingApi';
+import type { SelfEvolvingCampaign, SelfEvolvingCandidate, SelfEvolvingRun } from '../../lib/api/selfEvolvingApi';
 import { InspectionReadonlySection } from './InspectionPageSections';
 
 export function InspectionSelfEvolvingOverview({
   runs,
   candidates,
+  campaigns,
   approvals,
 }: {
   runs: SelfEvolvingRun[];
   candidates: SelfEvolvingCandidate[];
+  campaigns: SelfEvolvingCampaign[];
   approvals: ApprovalRequest[];
 }) {
   const completedRuns = runs.filter((run) => run.outcomeStatus === 'COMPLETED').length;
@@ -18,11 +20,12 @@ export function InspectionSelfEvolvingOverview({
   return (
     <InspectionReadonlySection
       title="SelfEvolving"
-      description="Readonly golem-level summary for judging, promotion, and lineage."
+      description="Readonly golem-level summary for judging, promotion, lineage, and benchmark activity."
     >
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-5">
         <OverviewCard label="Runs" value={String(runs.length)} detail={`${completedRuns} completed`} />
         <OverviewCard label="Candidates" value={String(candidates.length)} detail="queued for inspection" />
+        <OverviewCard label="Benchmarks" value={String(campaigns.length)} detail="campaigns projected" />
         <OverviewCard label="Approvals" value={String(pendingApprovals)} detail="pending promotion gates" />
         <OverviewCard
           label="Latest verdict"

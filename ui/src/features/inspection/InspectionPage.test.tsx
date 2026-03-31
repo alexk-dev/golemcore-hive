@@ -17,6 +17,7 @@ import {
 } from '../../lib/api/inspectionApi';
 import {
   getSelfEvolvingLineage,
+  listSelfEvolvingCampaigns,
   listSelfEvolvingCandidates,
   listSelfEvolvingRuns,
 } from '../../lib/api/selfEvolvingApi';
@@ -42,6 +43,7 @@ vi.mock('../../lib/api/selfEvolvingApi', () => ({
   listSelfEvolvingRuns: vi.fn(),
   listSelfEvolvingCandidates: vi.fn(),
   getSelfEvolvingLineage: vi.fn(),
+  listSelfEvolvingCampaigns: vi.fn(),
 }));
 
 vi.mock('../../lib/api/approvalsApi', () => ({
@@ -56,6 +58,7 @@ const getInspectionSessionTraceMock = vi.mocked(getInspectionSessionTrace);
 const listSelfEvolvingRunsMock = vi.mocked(listSelfEvolvingRuns);
 const listSelfEvolvingCandidatesMock = vi.mocked(listSelfEvolvingCandidates);
 const getSelfEvolvingLineageMock = vi.mocked(getSelfEvolvingLineage);
+const listSelfEvolvingCampaignsMock = vi.mocked(listSelfEvolvingCampaigns);
 const listApprovalsMock = vi.mocked(listApprovals);
 
 describe('InspectionPage', () => {
@@ -86,6 +89,7 @@ describe('InspectionPage', () => {
     listSelfEvolvingRunsMock.mockResolvedValue([]);
     listSelfEvolvingCandidatesMock.mockResolvedValue([]);
     getSelfEvolvingLineageMock.mockResolvedValue({ golemId: 'golem_1', nodes: [] });
+    listSelfEvolvingCampaignsMock.mockResolvedValue([]);
     listApprovalsMock.mockResolvedValue([]);
   });
 
@@ -150,6 +154,20 @@ describe('InspectionPage', () => {
         },
       ],
     });
+    listSelfEvolvingCampaignsMock.mockResolvedValue([
+      {
+        id: 'campaign-1',
+        golemId: 'golem_1',
+        suiteId: 'suite-1',
+        baselineBundleId: 'bundle-1',
+        candidateBundleId: 'bundle-1',
+        status: 'created',
+        runIds: ['run-1'],
+        startedAt: '2026-03-30T20:04:00Z',
+        completedAt: null,
+        updatedAt: '2026-03-30T20:04:00Z',
+      },
+    ]);
     listApprovalsMock.mockResolvedValue([
       {
         id: 'apr-1',
@@ -199,6 +217,8 @@ describe('InspectionPage', () => {
     expect(await screen.findByText('Judging')).toBeInTheDocument();
     expect(screen.getByText('Lineage')).toBeInTheDocument();
     expect(screen.getByText('Candidate queue')).toBeInTheDocument();
+    expect(screen.getByText('Benchmark lab')).toBeInTheDocument();
+    expect(screen.getByText('campaign-1')).toBeInTheDocument();
     expect(screen.getByText('Promotion approvals')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Load details' }));

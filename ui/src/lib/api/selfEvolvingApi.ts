@@ -46,6 +46,19 @@ export interface SelfEvolvingLineageResponse {
   nodes: SelfEvolvingLineageNode[];
 }
 
+export interface SelfEvolvingCampaign {
+  id: string;
+  golemId: string;
+  suiteId: string | null;
+  baselineBundleId: string | null;
+  candidateBundleId: string | null;
+  status: string | null;
+  runIds: string[];
+  startedAt: string | null;
+  completedAt: string | null;
+  updatedAt: string | null;
+}
+
 export function listSelfEvolvingRuns(golemId: string) {
   return apiRequest<SelfEvolvingRun[]>(`/api/v1/self-evolving/golems/${encodeURIComponent(golemId)}/runs`);
 }
@@ -59,5 +72,11 @@ export function listSelfEvolvingCandidates(golemId: string) {
 export function getSelfEvolvingLineage(golemId: string) {
   return apiRequest<SelfEvolvingLineageResponse>(
     `/api/v1/self-evolving/golems/${encodeURIComponent(golemId)}/lineage`,
+  );
+}
+
+export function listSelfEvolvingCampaigns(golemId: string) {
+  return apiRequest<SelfEvolvingCampaign[]>(
+    `/api/v1/self-evolving/golems/${encodeURIComponent(golemId)}/benchmarks/campaigns`,
   );
 }

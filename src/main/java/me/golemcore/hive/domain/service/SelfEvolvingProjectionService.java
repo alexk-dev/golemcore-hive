@@ -28,6 +28,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventPayload;
 import me.golemcore.hive.domain.model.RunProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingCampaignProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingCandidateProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingLineageNode;
 import me.golemcore.hive.domain.model.SelfEvolvingRunProjection;
@@ -40,6 +41,7 @@ public class SelfEvolvingProjectionService {
 
     private static final String SELF_EVOLVING_RUNS_DIR = "selfevolving-runs";
     private static final String SELF_EVOLVING_CANDIDATES_DIR = "selfevolving-candidates";
+    private static final String SELF_EVOLVING_CAMPAIGNS_DIR = "selfevolving-campaigns";
     private static final String SELF_EVOLVING_LINEAGE_DIR = "selfevolving-lineage";
     private static final String RUNS_DIR = "runs";
 
@@ -63,6 +65,15 @@ public class SelfEvolvingProjectionService {
         projection.setGolemId(firstNonBlank(projection.getGolemId(), golemId));
         projection.setUpdatedAt(event.createdAt() != null ? event.createdAt() : Instant.now());
         saveCandidate(projection);
+    }
+
+    public void applyCampaignEvent(String golemId, GolemEventPayload event) {
+        SelfEvolvingCampaignProjection projection = objectMapper.convertValue(
+                event.payload(),
+                SelfEvolvingCampaignProjection.class);
+        projection.setGolemId(firstNonBlank(projection.getGolemId(), golemId));
+        projection.setUpdatedAt(event.createdAt() != null ? event.createdAt() : Instant.now());
+        saveCampaign(projection);
     }
 
     public void applyLineageEvent(String golemId, GolemEventPayload event) {
@@ -116,6 +127,18 @@ public class SelfEvolvingProjectionService {
         return nodes;
     }
 
+    public List<SelfEvolvingCampaignProjection> listCampaigns(String golemId) {
+        List<SelfEvolvingCampaignProjection> campaigns = new ArrayList<>();
+        for (String path : storagePort.listObjects(SELF_EVOLVING_CAMPAIGNS_DIR, golemId + "/")) {
+            Optional<SelfEvolvingCampaignProjection> campaign = load(path, SELF_EVOLVING_CAMPAIGNS_DIR,
+                    SelfEvolvingCampaignProjection.class);
+            campaign.ifPresent(campaigns::add);
+        }
+        campaigns.sort(Comparator.comparing(SelfEvolvingCampaignProjection::getUpdatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return campaigns;
+    }
+
     private void updateRunProjection(SelfEvolvingRunProjection projection) {
         if (!storagePort.exists(RUNS_DIR, projection.getId() + ".json")) {
             return;
@@ -140,6 +163,11 @@ public class SelfEvolvingProjectionService {
     private void saveCandidate(SelfEvolvingCandidateProjection projection) {
         storagePort.ensureDirectory(SELF_EVOLVING_CANDIDATES_DIR);
         save(SELF_EVOLVING_CANDIDATES_DIR, candidatePath(projection.getGolemId(), projection.getId()), projection);
+    }
+
+    private void saveCampaign(SelfEvolvingCampaignProjection projection) {
+        storagePort.ensureDirectory(SELF_EVOLVING_CAMPAIGNS_DIR);
+        save(SELF_EVOLVING_CAMPAIGNS_DIR, campaignPath(projection.getGolemId(), projection.getId()), projection);
     }
 
     private void saveLineage(SelfEvolvingLineageNode projection) {
@@ -173,6 +201,10 @@ public class SelfEvolvingProjectionService {
 
     private String candidatePath(String golemId, String candidateId) {
         return golemId + "/" + candidateId + ".json";
+    }
+
+    private String campaignPath(String golemId, String campaignId) {
+        return golemId + "/" + campaignId + ".json";
     }
 
     private String lineagePath(String golemId, String nodeId) {

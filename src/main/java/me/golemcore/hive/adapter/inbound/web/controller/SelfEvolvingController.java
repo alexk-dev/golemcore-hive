@@ -21,9 +21,11 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 import java.security.Principal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import me.golemcore.hive.adapter.inbound.web.dto.selfevolving.SelfEvolvingCampaignResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.selfevolving.SelfEvolvingCandidateResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.selfevolving.SelfEvolvingLineageResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.selfevolving.SelfEvolvingRunResponse;
+import me.golemcore.hive.domain.model.SelfEvolvingCampaignProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingCandidateProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingRunProjection;
 import me.golemcore.hive.domain.service.SelfEvolvingProjectionService;
@@ -81,6 +83,18 @@ public class SelfEvolvingController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    @GetMapping("/benchmarks/campaigns")
+    public Mono<ResponseEntity<List<SelfEvolvingCampaignResponse>>> listCampaigns(
+            Principal principal,
+            @PathVariable String golemId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            return ResponseEntity.ok(selfEvolvingProjectionService.listCampaigns(golemId).stream()
+                    .map(this::toCampaignResponse)
+                    .toList());
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
     @GetMapping("/lineage")
     public Mono<ResponseEntity<SelfEvolvingLineageResponse>> getLineage(
             Principal principal,
@@ -126,6 +140,21 @@ public class SelfEvolvingController {
                 .riskLevel(projection.getRiskLevel())
                 .expectedImpact(projection.getExpectedImpact())
                 .sourceRunIds(projection.getSourceRunIds())
+                .updatedAt(projection.getUpdatedAt())
+                .build();
+    }
+
+    private SelfEvolvingCampaignResponse toCampaignResponse(SelfEvolvingCampaignProjection projection) {
+        return SelfEvolvingCampaignResponse.builder()
+                .id(projection.getId())
+                .golemId(projection.getGolemId())
+                .suiteId(projection.getSuiteId())
+                .baselineBundleId(projection.getBaselineBundleId())
+                .candidateBundleId(projection.getCandidateBundleId())
+                .status(projection.getStatus())
+                .runIds(projection.getRunIds())
+                .startedAt(projection.getStartedAt())
+                .completedAt(projection.getCompletedAt())
                 .updatedAt(projection.getUpdatedAt())
                 .build();
     }

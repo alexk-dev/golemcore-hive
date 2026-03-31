@@ -145,6 +145,46 @@ class SelfEvolvingProjectionServiceTest {
         assertEquals(1, service.listCandidates("golem-1").size());
     }
 
+    @Test
+    void shouldPersistReadonlyBenchmarkCampaignProjections() {
+        service.applyCampaignEvent("golem-1", new GolemEventPayload(
+                1,
+                "selfevolving.campaign.upserted",
+                "golem-1",
+                null,
+                null,
+                null,
+                null,
+                null,
+                "run-1",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Map.ofEntries(
+                        Map.entry("id", "campaign-1"),
+                        Map.entry("golemId", "golem-1"),
+                        Map.entry("suiteId", "suite-1"),
+                        Map.entry("baselineBundleId", "bundle-a"),
+                        Map.entry("candidateBundleId", "bundle-b"),
+                        Map.entry("status", "created"),
+                        Map.entry("runIds", List.of("run-1")),
+                        Map.entry("startedAt", "2026-03-31T16:00:00Z")),
+                Instant.parse("2026-03-31T16:00:01Z")));
+
+        assertEquals(1, service.listCampaigns("golem-1").size());
+        assertEquals("campaign-1", service.listCampaigns("golem-1").getFirst().getId());
+    }
+
     private String storageKey(String directory, String path) {
         return directory + "::" + path;
     }

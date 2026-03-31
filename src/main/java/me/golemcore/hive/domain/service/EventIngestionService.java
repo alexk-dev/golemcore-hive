@@ -71,6 +71,9 @@ public class EventIngestionService {
             } else if ("selfevolving.candidate.upserted".equals(event.eventType())) {
                 selfEvolvingProjectionService.applyCandidateEvent(golemId, event);
                 acceptedEvents++;
+            } else if ("selfevolving.campaign.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyCampaignEvent(golemId, event);
+                acceptedEvents++;
             } else if ("selfevolving.lineage.upserted".equals(event.eventType())) {
                 selfEvolvingProjectionService.applyLineageEvent(golemId, event);
                 acceptedEvents++;

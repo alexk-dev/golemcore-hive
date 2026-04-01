@@ -18,15 +18,8 @@ import type {
   SelfEvolvingLineageResponse,
   SelfEvolvingRun,
 } from '../../lib/api/selfEvolvingApi';
-import { InspectionSelfEvolvingApprovalPanel } from './InspectionSelfEvolvingApprovalPanel';
-import { InspectionSelfEvolvingArtifactWorkspace } from './InspectionSelfEvolvingArtifactWorkspace';
-import { InspectionSelfEvolvingBenchmarkLab } from './InspectionSelfEvolvingBenchmarkLab';
-import { InspectionSelfEvolvingCandidateQueue } from './InspectionSelfEvolvingCandidateQueue';
-import { InspectionSelfEvolvingLineageGraph } from './InspectionSelfEvolvingLineageGraph';
-import { InspectionSelfEvolvingOverview } from './InspectionSelfEvolvingOverview';
-import { InspectionSelfEvolvingRunTable } from './InspectionSelfEvolvingRunTable';
-import { InspectionSelfEvolvingVerdictPanel } from './InspectionSelfEvolvingVerdictPanel';
 import { InspectionMessagesPanel, InspectionSessionHeader, InspectionSessionsSidebar } from './InspectionPageSections';
+import { InspectionSelfEvolvingSection } from './InspectionSelfEvolvingSection';
 import { InspectionTraceExplorer } from './InspectionTraceExplorer';
 import { hasTraceSummaryData } from './inspectionPageUtils';
 
@@ -251,49 +244,30 @@ export function InspectionOnlineContent({
           </>
         )}
 
-        <InspectionSelfEvolvingOverview
+        <InspectionSelfEvolvingSection
           runs={selfEvolvingRuns}
+          selectedRunId={selectedSelfEvolvingRunId}
+          selectedRun={selectedSelfEvolvingRun}
           candidates={selfEvolvingCandidates}
           campaigns={selfEvolvingCampaigns}
-          approvals={promotionApprovals}
-        />
-
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <InspectionSelfEvolvingRunTable
-            runs={selfEvolvingRuns}
-            selectedRunId={selectedSelfEvolvingRunId}
-            onSelectRun={onSelectSelfEvolvingRun}
-          />
-          <InspectionSelfEvolvingVerdictPanel run={selectedSelfEvolvingRun} />
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-3">
-          <InspectionSelfEvolvingCandidateQueue candidates={selfEvolvingCandidates} />
-          <InspectionSelfEvolvingLineageGraph lineage={selfEvolvingLineage} />
-          <InspectionSelfEvolvingApprovalPanel approvals={promotionApprovals} />
-        </div>
-
-        <InspectionSelfEvolvingArtifactWorkspace
+          lineage={selfEvolvingLineage}
           artifacts={selfEvolvingArtifacts}
           selectedArtifactStreamId={selectedArtifactStreamId}
-          lineage={artifactLineage}
-          compareMode={artifactCompareMode}
-          revisionDiff={artifactRevisionDiff}
-          transitionDiff={artifactTransitionDiff}
-          evidence={artifactEvidence}
-          isCatalogLoading={isArtifactsLoading}
-          isLineageLoading={isArtifactLineageLoading}
-          isDiffLoading={isArtifactDiffLoading}
-          isEvidenceLoading={isArtifactEvidenceLoading}
+          artifactLineage={artifactLineage}
+          artifactCompareMode={artifactCompareMode}
+          artifactRevisionDiff={artifactRevisionDiff}
+          artifactTransitionDiff={artifactTransitionDiff}
+          artifactEvidence={artifactEvidence}
+          isArtifactsLoading={isArtifactsLoading}
+          isArtifactLineageLoading={isArtifactLineageLoading}
+          isArtifactDiffLoading={isArtifactDiffLoading}
+          isArtifactEvidenceLoading={isArtifactEvidenceLoading}
+          promotionApprovals={promotionApprovals}
+          onSelectRun={onSelectSelfEvolvingRun}
           onSelectArtifactStream={onSelectArtifactStream}
-          onSelectCompareMode={onSelectArtifactCompareMode}
-          onSelectRevisionPair={onSelectArtifactRevisionPair}
-          onSelectTransitionPair={onSelectArtifactTransitionPair}
-        />
-
-        <InspectionSelfEvolvingBenchmarkLab
-          campaigns={selfEvolvingCampaigns}
-          selectedArtifactStreamId={selectedArtifactStreamId}
+          onSelectArtifactCompareMode={onSelectArtifactCompareMode}
+          onSelectArtifactRevisionPair={onSelectArtifactRevisionPair}
+          onSelectArtifactTransitionPair={onSelectArtifactTransitionPair}
         />
       </div>
     </div>

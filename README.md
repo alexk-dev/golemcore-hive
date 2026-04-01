@@ -30,10 +30,12 @@ When a connected `golemcore-bot` has `SelfEvolving` enabled, Hive exposes readon
 - candidate queue and promotion states
 - lineage nodes
 - artifact workspace catalog, lineage rail, diff, evidence, and impact tabs mirrored from the bot
+- tactic search status, readonly result ranking, selected tactic details, and `Why this tactic` score breakdown
 - benchmark campaigns tied to the selected artifact stream
 - promotion approvals
 
 `golemcore-bot` stays the primary working screen. Hive keeps these views inside the existing inspection surface instead of creating a second golem dashboard and mirrors the bot workspace as readonly state.
+When tactic embeddings are disabled or unavailable, Hive mirrors the degraded `BM25-only` state instead of masking it.
 
 Artifact identity and compare rules:
 
@@ -59,6 +61,13 @@ Relevant APIs:
 - `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/evidence`
 - `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/compare-evidence`
 - `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/transition-evidence`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/search`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/search-status`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/{tacticId}`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/{tacticId}/explanation`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/{tacticId}/lineage`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/{tacticId}/evidence`
 - `GET /api/v1/self-evolving/artifacts/search`
 - `GET /api/v1/self-evolving/artifacts/compare`
 - `GET /api/v1/approvals?golemId={golemId}`

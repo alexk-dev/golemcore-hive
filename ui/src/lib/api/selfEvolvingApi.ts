@@ -210,6 +210,71 @@ export interface SelfEvolvingArtifactFleetCompare {
   warnings: string[];
 }
 
+export interface SelfEvolvingTacticSearchStatus {
+  mode: string | null;
+  reason: string | null;
+  degraded: boolean | null;
+  updatedAt: string | null;
+}
+
+export interface SelfEvolvingTacticSearchExplanation {
+  searchMode: string | null;
+  degradedReason: string | null;
+  bm25Score: number | null;
+  vectorScore: number | null;
+  rrfScore: number | null;
+  qualityPrior: number | null;
+  mmrDiversityAdjustment: number | null;
+  negativeMemoryPenalty: number | null;
+  personalizationBoost: number | null;
+  rerankerVerdict: string | null;
+  matchedQueryViews: string[];
+  matchedTerms: string[];
+  eligible: boolean | null;
+  gatingReason: string | null;
+  finalScore: number | null;
+}
+
+export interface SelfEvolvingTactic {
+  tacticId: string;
+  artifactStreamId: string | null;
+  originArtifactStreamId: string | null;
+  artifactKey: string | null;
+  artifactType: string | null;
+  title: string | null;
+  aliases: string[];
+  contentRevisionId: string | null;
+  intentSummary: string | null;
+  behaviorSummary: string | null;
+  toolSummary: string | null;
+  outcomeSummary: string | null;
+  benchmarkSummary: string | null;
+  approvalNotes: string | null;
+  evidenceSnippets: string[];
+  taskFamilies: string[];
+  tags: string[];
+  promotionState: string | null;
+  rolloutStage: string | null;
+  successRate: number | null;
+  benchmarkWinRate: number | null;
+  regressionFlags: string[];
+  recencyScore: number | null;
+  golemLocalUsageSuccess: number | null;
+  embeddingStatus: string | null;
+  updatedAt: string | null;
+}
+
+export interface SelfEvolvingTacticSearchResult extends SelfEvolvingTactic {
+  score: number | null;
+  explanation: SelfEvolvingTacticSearchExplanation | null;
+}
+
+export interface SelfEvolvingTacticSearchResponse {
+  query: string | null;
+  status: SelfEvolvingTacticSearchStatus | null;
+  results: SelfEvolvingTacticSearchResult[];
+}
+
 export interface SelfEvolvingArtifactSearchFilters {
   golemId?: string;
   artifactType?: string;
@@ -357,4 +422,15 @@ export function compareSelfEvolvingArtifacts(
     rightRevisionId,
   });
   return apiRequest<SelfEvolvingArtifactFleetCompare>(`/api/v1/self-evolving/artifacts/compare?${params.toString()}`);
+}
+
+export function searchSelfEvolvingTactics(golemId: string, query: string) {
+  const params = new URLSearchParams();
+  if (query.length > 0) {
+    params.set('q', query);
+  }
+  const queryString = params.toString();
+  return apiRequest<SelfEvolvingTacticSearchResponse>(
+    `/api/v1/self-evolving/golems/${encodeURIComponent(golemId)}/tactics/search${queryString ? `?${queryString}` : ''}`,
+  );
 }

@@ -27,6 +27,7 @@ import {
   listSelfEvolvingCampaigns,
   listSelfEvolvingCandidates,
   listSelfEvolvingRuns,
+  searchSelfEvolvingTactics,
 } from '../../lib/api/selfEvolvingApi';
 import { InspectionPage } from './InspectionPage';
 
@@ -58,6 +59,7 @@ vi.mock('../../lib/api/selfEvolvingApi', () => ({
   getSelfEvolvingArtifactRevisionEvidence: vi.fn(),
   getSelfEvolvingArtifactCompareEvidence: vi.fn(),
   getSelfEvolvingArtifactTransitionEvidence: vi.fn(),
+  searchSelfEvolvingTactics: vi.fn(),
 }));
 
 vi.mock('../../lib/api/approvalsApi', () => ({
@@ -80,6 +82,7 @@ const getSelfEvolvingArtifactTransitionDiffMock = vi.mocked(getSelfEvolvingArtif
 const getSelfEvolvingArtifactRevisionEvidenceMock = vi.mocked(getSelfEvolvingArtifactRevisionEvidence);
 const getSelfEvolvingArtifactCompareEvidenceMock = vi.mocked(getSelfEvolvingArtifactCompareEvidence);
 const getSelfEvolvingArtifactTransitionEvidenceMock = vi.mocked(getSelfEvolvingArtifactTransitionEvidence);
+const searchSelfEvolvingTacticsMock = vi.mocked(searchSelfEvolvingTactics);
 const listApprovalsMock = vi.mocked(listApprovals);
 
 describe('InspectionPage', () => {
@@ -210,6 +213,16 @@ describe('InspectionPage', () => {
       findings: ['Transition evidence'],
       projectionSchemaVersion: 1,
       projectedAt: '2026-03-30T20:00:00Z',
+    });
+    searchSelfEvolvingTacticsMock.mockResolvedValue({
+      query: '',
+      status: {
+        mode: 'hybrid',
+        reason: null,
+        degraded: false,
+        updatedAt: '2026-03-30T20:00:00Z',
+      },
+      results: [],
     });
     listApprovalsMock.mockResolvedValue([]);
   });

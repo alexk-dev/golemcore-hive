@@ -16,6 +16,7 @@ import type {
   SelfEvolvingArtifactRevisionDiff,
   SelfEvolvingArtifactTransitionDiff,
   SelfEvolvingLineageResponse,
+  SelfEvolvingTacticSearchResponse,
   SelfEvolvingRun,
 } from '../../lib/api/selfEvolvingApi';
 import { InspectionMessagesPanel, InspectionSessionHeader, InspectionSessionsSidebar } from './InspectionPageSections';
@@ -112,6 +113,9 @@ export function InspectionOnlineContent({
   artifactRevisionDiff,
   artifactTransitionDiff,
   artifactEvidence,
+  tacticQuery,
+  tacticSearchResponse,
+  selectedTacticId,
   isArtifactsLoading,
   isArtifactLineageLoading,
   isArtifactDiffLoading,
@@ -123,6 +127,8 @@ export function InspectionOnlineContent({
   onSelectArtifactCompareMode,
   onSelectArtifactRevisionPair,
   onSelectArtifactTransitionPair,
+  onTacticQueryChange,
+  onSelectTacticId,
   onKeepLastChange,
   onCompact,
   onClear,
@@ -162,6 +168,9 @@ export function InspectionOnlineContent({
   artifactRevisionDiff: SelfEvolvingArtifactRevisionDiff | null;
   artifactTransitionDiff: SelfEvolvingArtifactTransitionDiff | null;
   artifactEvidence: SelfEvolvingArtifactEvidence | null;
+  tacticQuery: string;
+  tacticSearchResponse: SelfEvolvingTacticSearchResponse | null;
+  selectedTacticId: string | null;
   isArtifactsLoading: boolean;
   isArtifactLineageLoading: boolean;
   isArtifactDiffLoading: boolean;
@@ -173,6 +182,8 @@ export function InspectionOnlineContent({
   onSelectArtifactCompareMode: (compareMode: 'revision' | 'transition') => void;
   onSelectArtifactRevisionPair: (fromRevisionId: string, toRevisionId: string) => void;
   onSelectArtifactTransitionPair: (fromNodeId: string, toNodeId: string) => void;
+  onTacticQueryChange: (query: string) => void;
+  onSelectTacticId: (tacticId: string) => void;
   onKeepLastChange: (value: number) => void;
   onCompact: () => void;
   onClear: () => void;
@@ -258,6 +269,9 @@ export function InspectionOnlineContent({
           artifactRevisionDiff={artifactRevisionDiff}
           artifactTransitionDiff={artifactTransitionDiff}
           artifactEvidence={artifactEvidence}
+          tacticQuery={tacticQuery}
+          tacticSearchResponse={tacticSearchResponse}
+          selectedTacticId={selectedTacticId}
           isArtifactsLoading={isArtifactsLoading}
           isArtifactLineageLoading={isArtifactLineageLoading}
           isArtifactDiffLoading={isArtifactDiffLoading}
@@ -268,6 +282,8 @@ export function InspectionOnlineContent({
           onSelectArtifactCompareMode={onSelectArtifactCompareMode}
           onSelectArtifactRevisionPair={onSelectArtifactRevisionPair}
           onSelectArtifactTransitionPair={onSelectArtifactTransitionPair}
+          onTacticQueryChange={onTacticQueryChange}
+          onSelectTacticId={onSelectTacticId}
         />
       </div>
     </div>

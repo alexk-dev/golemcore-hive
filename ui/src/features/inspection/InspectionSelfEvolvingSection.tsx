@@ -8,6 +8,7 @@ import type {
   SelfEvolvingArtifactRevisionDiff,
   SelfEvolvingArtifactTransitionDiff,
   SelfEvolvingLineageResponse,
+  SelfEvolvingTacticSearchResponse,
   SelfEvolvingRun,
 } from '../../lib/api/selfEvolvingApi';
 import { InspectionSelfEvolvingApprovalPanel } from './InspectionSelfEvolvingApprovalPanel';
@@ -17,6 +18,7 @@ import { InspectionSelfEvolvingCandidateQueue } from './InspectionSelfEvolvingCa
 import { InspectionSelfEvolvingLineageGraph } from './InspectionSelfEvolvingLineageGraph';
 import { InspectionSelfEvolvingOverview } from './InspectionSelfEvolvingOverview';
 import { InspectionSelfEvolvingRunTable } from './InspectionSelfEvolvingRunTable';
+import { InspectionSelfEvolvingTacticWorkspace } from './InspectionSelfEvolvingTacticWorkspace';
 import { InspectionSelfEvolvingVerdictPanel } from './InspectionSelfEvolvingVerdictPanel';
 
 interface InspectionSelfEvolvingSectionProps {
@@ -33,6 +35,9 @@ interface InspectionSelfEvolvingSectionProps {
   artifactRevisionDiff: SelfEvolvingArtifactRevisionDiff | null;
   artifactTransitionDiff: SelfEvolvingArtifactTransitionDiff | null;
   artifactEvidence: SelfEvolvingArtifactEvidence | null;
+  tacticQuery: string;
+  tacticSearchResponse: SelfEvolvingTacticSearchResponse | null;
+  selectedTacticId: string | null;
   isArtifactsLoading: boolean;
   isArtifactLineageLoading: boolean;
   isArtifactDiffLoading: boolean;
@@ -43,6 +48,8 @@ interface InspectionSelfEvolvingSectionProps {
   onSelectArtifactCompareMode: (compareMode: 'revision' | 'transition') => void;
   onSelectArtifactRevisionPair: (fromRevisionId: string, toRevisionId: string) => void;
   onSelectArtifactTransitionPair: (fromNodeId: string, toNodeId: string) => void;
+  onTacticQueryChange: (query: string) => void;
+  onSelectTacticId: (tacticId: string) => void;
 }
 
 export function InspectionSelfEvolvingSection({
@@ -59,6 +66,9 @@ export function InspectionSelfEvolvingSection({
   artifactRevisionDiff,
   artifactTransitionDiff,
   artifactEvidence,
+  tacticQuery,
+  tacticSearchResponse,
+  selectedTacticId,
   isArtifactsLoading,
   isArtifactLineageLoading,
   isArtifactDiffLoading,
@@ -69,6 +79,8 @@ export function InspectionSelfEvolvingSection({
   onSelectArtifactCompareMode,
   onSelectArtifactRevisionPair,
   onSelectArtifactTransitionPair,
+  onTacticQueryChange,
+  onSelectTacticId,
 }: InspectionSelfEvolvingSectionProps) {
   return (
     <>
@@ -110,6 +122,15 @@ export function InspectionSelfEvolvingSection({
         onSelectCompareMode={onSelectArtifactCompareMode}
         onSelectRevisionPair={onSelectArtifactRevisionPair}
         onSelectTransitionPair={onSelectArtifactTransitionPair}
+      />
+
+      <InspectionSelfEvolvingTacticWorkspace
+        query={tacticQuery}
+        onQueryChange={onTacticQueryChange}
+        response={tacticSearchResponse}
+        selectedTacticId={selectedTacticId}
+        onSelectTacticId={onSelectTacticId}
+        onOpenArtifactStream={onSelectArtifactStream}
       />
 
       <InspectionSelfEvolvingBenchmarkLab

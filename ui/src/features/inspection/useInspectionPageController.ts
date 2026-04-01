@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
   buildActionDialogConfig,
   runConfirmedAction,
@@ -33,6 +33,9 @@ export function useInspectionPageController(golemId: string) {
   const [detailsRequested, setDetailsRequested] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [actionDialog, setActionDialog] = useState<InspectionAction>(null);
+  const [tacticQuery, setTacticQuery] = useState('');
+  const [selectedTacticId, setSelectedTacticId] = useState<string | null>(null);
+  const deferredTacticQuery = useDeferredValue(tacticQuery);
 
   const golemPreviewQuery = useInspectionRuntimeQueries({
     resolvedGolemId,
@@ -67,6 +70,7 @@ export function useInspectionPageController(golemId: string) {
   const selfEvolvingQueries = useInspectionSelfEvolvingQueries({
     resolvedGolemId,
     sessionsEnabled,
+    tacticQuery: deferredTacticQuery,
   });
 
   const effectiveRuns = useMemo(
@@ -77,6 +81,7 @@ export function useInspectionPageController(golemId: string) {
     () => selfEvolvingQueries.selfEvolvingArtifactsQuery.data ?? [],
     [selfEvolvingQueries.selfEvolvingArtifactsQuery.data],
   );
+  const tacticSearchResponse = selfEvolvingQueries.selfEvolvingTacticSearchQuery.data ?? null;
 
   const selections = useSelectionState(effectiveRuns, effectiveArtifacts);
   const artifactLineageQuery = useInspectionArtifactLineageQuery({
@@ -94,6 +99,17 @@ export function useInspectionPageController(golemId: string) {
     setSelectedArtifactRevisionPair: selections.setSelectedArtifactRevisionPair,
     setSelectedArtifactTransitionPair: selections.setSelectedArtifactTransitionPair,
   });
+
+  useEffect(() => {
+    const results = tacticSearchResponse?.results ?? [];
+    if (results.length === 0) {
+      setSelectedTacticId(null);
+      return;
+    }
+    if (selectedTacticId == null || !results.some((result) => result.tacticId === selectedTacticId)) {
+      setSelectedTacticId(results[0].tacticId);
+    }
+  }, [selectedTacticId, tacticSearchResponse]);
 
   const artifactQueries = useArtifactCompareQueries({
     sessionsEnabled,
@@ -180,12 +196,14 @@ export function useInspectionPageController(golemId: string) {
     selectedSession,
     selectedSessionId,
     selectedSessionSummary,
+    selectedTacticId,
     selfEvolvingArtifacts: effectiveArtifacts,
     selfEvolvingArtifactsLoading: selfEvolvingQueries.selfEvolvingArtifactsQuery.isLoading,
     selfEvolvingCampaignsQuery: selfEvolvingQueries.selfEvolvingCampaignsQuery,
     selfEvolvingCandidatesQuery: selfEvolvingQueries.selfEvolvingCandidatesQuery,
     selfEvolvingLineageQuery: selfEvolvingQueries.selfEvolvingLineageQuery,
     selfEvolvingRuns: effectiveRuns,
+    selfEvolvingTacticSearchQuery: selfEvolvingQueries.selfEvolvingTacticSearchQuery,
     sessionQuery: runtimeQueries.sessionQuery,
     sessionsQuery: runtimeQueries.sessionsQuery,
     setActionDialog,
@@ -199,7 +217,10 @@ export function useInspectionPageController(golemId: string) {
     setSelectedArtifactTransitionPair: selections.setSelectedArtifactTransitionPair,
     setSelectedSelfEvolvingRunId: selections.setSelectedRunId,
     setSelectedSessionId,
+    setSelectedTacticId,
+    setTacticQuery,
     snapshotExportMutation,
+    tacticQuery,
     traceExportMutation,
     traceQuery: runtimeQueries.traceQuery,
     traceSummaryQuery: runtimeQueries.traceSummaryQuery,

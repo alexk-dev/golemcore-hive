@@ -86,6 +86,9 @@ function OnlineInspectionSection({
       artifactRevisionDiff={controller.artifactRevisionDiffQuery.data ?? null}
       artifactTransitionDiff={controller.artifactTransitionDiffQuery.data ?? null}
       artifactEvidence={controller.artifactEvidenceQuery.data ?? null}
+      tacticQuery={controller.tacticQuery}
+      tacticSearchResponse={controller.selfEvolvingTacticSearchQuery.data ?? null}
+      selectedTacticId={controller.selectedTacticId}
       isArtifactsLoading={controller.selfEvolvingArtifactsLoading}
       isArtifactLineageLoading={controller.artifactLineageQuery.isLoading}
       isArtifactDiffLoading={controller.artifactCompareMode === 'transition'
@@ -109,6 +112,8 @@ function OnlineInspectionSection({
       onSelectArtifactTransitionPair={(fromNodeId, toNodeId) => {
         controller.setSelectedArtifactTransitionPair({ fromNodeId, toNodeId });
       }}
+      onTacticQueryChange={controller.setTacticQuery}
+      onSelectTacticId={controller.setSelectedTacticId}
       onKeepLastChange={controller.setKeepLast}
       onCompact={() => {
         void controller.compactMutation.mutateAsync();

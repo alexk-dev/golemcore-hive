@@ -14,6 +14,7 @@ import {
   listSelfEvolvingCampaigns,
   listSelfEvolvingCandidates,
   listSelfEvolvingRuns,
+  searchSelfEvolvingTactics,
 } from '../../lib/api/selfEvolvingApi';
 
 export function useInspectionRuntimeQueries({
@@ -79,9 +80,11 @@ export function useInspectionRuntimeQueries({
 export function useInspectionSelfEvolvingQueries({
   resolvedGolemId,
   sessionsEnabled,
+  tacticQuery,
 }: {
   resolvedGolemId: string;
   sessionsEnabled: boolean;
+  tacticQuery: string;
 }) {
   const selfEvolvingRunsQuery = useQuery({
     queryKey: ['self-evolving-runs', resolvedGolemId],
@@ -119,6 +122,12 @@ export function useInspectionSelfEvolvingQueries({
     enabled: sessionsEnabled,
     refetchInterval: 10_000,
   });
+  const selfEvolvingTacticSearchQuery = useQuery({
+    queryKey: ['self-evolving-tactics', resolvedGolemId, tacticQuery],
+    queryFn: () => searchSelfEvolvingTactics(resolvedGolemId, tacticQuery),
+    enabled: sessionsEnabled,
+    refetchInterval: 10_000,
+  });
 
   return {
     approvalsQuery,
@@ -127,6 +136,7 @@ export function useInspectionSelfEvolvingQueries({
     selfEvolvingCandidatesQuery,
     selfEvolvingLineageQuery,
     selfEvolvingRunsQuery,
+    selfEvolvingTacticSearchQuery,
   };
 }
 

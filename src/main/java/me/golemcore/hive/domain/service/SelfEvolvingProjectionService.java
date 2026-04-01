@@ -37,6 +37,8 @@ import me.golemcore.hive.domain.model.SelfEvolvingCampaignProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingCandidateProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingLineageNode;
 import me.golemcore.hive.domain.model.SelfEvolvingRunProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingTacticProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingTacticSearchStatusProjection;
 import me.golemcore.hive.port.outbound.StoragePort;
 import org.springframework.stereotype.Service;
 
@@ -53,6 +55,8 @@ public class SelfEvolvingProjectionService {
     private static final String SELF_EVOLVING_ARTIFACT_LINEAGE_DIR = "selfevolving-artifact-lineage";
     private static final String SELF_EVOLVING_ARTIFACT_DIFFS_DIR = "selfevolving-artifact-diffs";
     private static final String SELF_EVOLVING_ARTIFACT_EVIDENCE_DIR = "selfevolving-artifact-evidence";
+    private static final String SELF_EVOLVING_TACTICS_DIR = "selfevolving-tactics";
+    private static final String SELF_EVOLVING_TACTIC_SEARCH_STATUS_DIR = "selfevolving-tactic-search-status";
     private static final String RUNS_DIR = "runs";
 
     private final StoragePort storagePort;
@@ -128,6 +132,24 @@ public class SelfEvolvingProjectionService {
         saveArtifactPayload(SELF_EVOLVING_ARTIFACT_EVIDENCE_DIR, golemId, payload, event.createdAt());
     }
 
+    public void applyTacticEvent(String golemId, GolemEventPayload event) {
+        SelfEvolvingTacticProjection projection = objectMapper.convertValue(
+                event.payload(),
+                SelfEvolvingTacticProjection.class);
+        projection.setGolemId(firstNonBlank(projection.getGolemId(), golemId));
+        projection.setUpdatedAt(event.createdAt() != null ? event.createdAt() : Instant.now());
+        saveTactic(projection);
+    }
+
+    public void applyTacticSearchStatusEvent(String golemId, GolemEventPayload event) {
+        SelfEvolvingTacticSearchStatusProjection projection = objectMapper.convertValue(
+                event.payload(),
+                SelfEvolvingTacticSearchStatusProjection.class);
+        projection.setGolemId(firstNonBlank(projection.getGolemId(), golemId));
+        projection.setUpdatedAt(event.createdAt() != null ? event.createdAt() : Instant.now());
+        saveTacticSearchStatus(projection);
+    }
+
     public List<SelfEvolvingRunProjection> listRuns(String golemId) {
         List<SelfEvolvingRunProjection> runs = new ArrayList<>();
         for (String path : storagePort.listObjects(SELF_EVOLVING_RUNS_DIR, golemId + "/")) {
@@ -201,6 +223,40 @@ public class SelfEvolvingProjectionService {
                 .thenComparing(SelfEvolvingArtifactCatalogProjection::getArtifactStreamId,
                         Comparator.nullsLast(String::compareTo)));
         return artifacts;
+    }
+
+    public List<SelfEvolvingTacticProjection> listTactics(String golemId) {
+        List<SelfEvolvingTacticProjection> tactics = new ArrayList<>();
+        for (String path : storagePort.listObjects(SELF_EVOLVING_TACTICS_DIR, golemId + "/")) {
+            Optional<SelfEvolvingTacticProjection> projection = load(path, SELF_EVOLVING_TACTICS_DIR,
+                    SelfEvolvingTacticProjection.class);
+            projection.ifPresent(tactics::add);
+        }
+        tactics.sort(Comparator.comparing(
+                SelfEvolvingTacticProjection::getUpdatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(SelfEvolvingTacticProjection::getTacticId, Comparator.nullsLast(String::compareTo)));
+        return tactics;
+    }
+
+    public List<SelfEvolvingTacticProjection> searchTactics(String golemId, String query) {
+        List<SelfEvolvingTacticProjection> tactics = listTactics(golemId);
+        if (query == null || query.isBlank()) {
+            return tactics;
+        }
+        String loweredQuery = query.toLowerCase();
+        return tactics.stream()
+                .filter(tactic -> matchesTacticQuery(tactic, loweredQuery))
+                .toList();
+    }
+
+    public Optional<SelfEvolvingTacticProjection> findTactic(String golemId, String tacticId) {
+        return load(tacticPath(golemId, tacticId), SELF_EVOLVING_TACTICS_DIR, SelfEvolvingTacticProjection.class);
+    }
+
+    public Optional<SelfEvolvingTacticSearchStatusProjection> getTacticSearchStatus(String golemId) {
+        return load(tacticSearchStatusPath(golemId), SELF_EVOLVING_TACTIC_SEARCH_STATUS_DIR,
+                SelfEvolvingTacticSearchStatusProjection.class);
     }
 
     public Optional<SelfEvolvingArtifactCatalogProjection> findArtifactSummary(String golemId,
@@ -400,6 +456,16 @@ public class SelfEvolvingProjectionService {
         save(directory, artifactPayloadPath(golemId, artifactStreamId, payloadKind, leftId, rightId), enrichedPayload);
     }
 
+    private void saveTactic(SelfEvolvingTacticProjection projection) {
+        storagePort.ensureDirectory(SELF_EVOLVING_TACTICS_DIR);
+        save(SELF_EVOLVING_TACTICS_DIR, tacticPath(projection.getGolemId(), projection.getTacticId()), projection);
+    }
+
+    private void saveTacticSearchStatus(SelfEvolvingTacticSearchStatusProjection projection) {
+        storagePort.ensureDirectory(SELF_EVOLVING_TACTIC_SEARCH_STATUS_DIR);
+        save(SELF_EVOLVING_TACTIC_SEARCH_STATUS_DIR, tacticSearchStatusPath(projection.getGolemId()), projection);
+    }
+
     private void saveLineage(SelfEvolvingLineageNode projection) {
         storagePort.ensureDirectory(SELF_EVOLVING_LINEAGE_DIR);
         save(SELF_EVOLVING_LINEAGE_DIR, lineagePath(projection.getGolemId(), projection.getId()), projection);
@@ -467,6 +533,14 @@ public class SelfEvolvingProjectionService {
         return golemId + "/" + encodePathToken(artifactStreamId) + ".json";
     }
 
+    private String tacticPath(String golemId, String tacticId) {
+        return golemId + "/" + encodePathToken(tacticId) + ".json";
+    }
+
+    private String tacticSearchStatusPath(String golemId) {
+        return golemId + "/status.json";
+    }
+
     private String artifactNormalizedRevisionPath(String golemId, String artifactStreamId, String revisionId) {
         return golemId + "/" + encodePathToken(artifactStreamId) + "/" + encodePathToken(revisionId) + ".json";
     }
@@ -508,6 +582,37 @@ public class SelfEvolvingProjectionService {
 
     private String stringValue(Object value) {
         return value != null ? String.valueOf(value) : null;
+    }
+
+    private boolean matchesTacticQuery(SelfEvolvingTacticProjection tactic, String loweredQuery) {
+        return containsIgnoreCase(tactic.getTacticId(), loweredQuery)
+                || containsIgnoreCase(tactic.getSearchQuery(), loweredQuery)
+                || containsIgnoreCase(tactic.getArtifactKey(), loweredQuery)
+                || containsIgnoreCase(tactic.getTitle(), loweredQuery)
+                || containsIgnoreCase(tactic.getIntentSummary(), loweredQuery)
+                || containsIgnoreCase(tactic.getBehaviorSummary(), loweredQuery)
+                || containsIgnoreCase(tactic.getToolSummary(), loweredQuery)
+                || containsIgnoreCase(tactic.getOutcomeSummary(), loweredQuery)
+                || containsIgnoreCase(tactic.getBenchmarkSummary(), loweredQuery)
+                || listContainsIgnoreCase(tactic.getAliases(), loweredQuery)
+                || listContainsIgnoreCase(tactic.getTaskFamilies(), loweredQuery)
+                || listContainsIgnoreCase(tactic.getTags(), loweredQuery)
+                || listContainsIgnoreCase(tactic.getEvidenceSnippets(), loweredQuery)
+                || (tactic.getExplanation() != null
+                        && (listContainsIgnoreCase(tactic.getExplanation().getMatchedQueryViews(), loweredQuery)
+                                || listContainsIgnoreCase(tactic.getExplanation().getMatchedTerms(), loweredQuery)));
+    }
+
+    private boolean listContainsIgnoreCase(List<String> values, String loweredQuery) {
+        if (values == null || values.isEmpty()) {
+            return false;
+        }
+        for (String value : values) {
+            if (containsIgnoreCase(value, loweredQuery)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String firstNonBlank(String first, String second) {

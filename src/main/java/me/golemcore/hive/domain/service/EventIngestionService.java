@@ -92,6 +92,12 @@ public class EventIngestionService {
             } else if ("selfevolving.artifact.evidence.upserted".equals(event.eventType())) {
                 selfEvolvingProjectionService.applyArtifactEvidenceEvent(golemId, event);
                 acceptedEvents++;
+            } else if ("selfevolving.tactic.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyTacticEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.tactic.search-status.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyTacticSearchStatusEvent(golemId, event);
+                acceptedEvents++;
             } else if ("runtime_event".equals(event.eventType())) {
                 RuntimeEventType runtimeEventType = RuntimeEventType.valueOf(event.runtimeEventType());
                 commandDispatchService.applyRuntimeEvent(golemId, runtimeEventType, event.threadId(), event.cardId(),

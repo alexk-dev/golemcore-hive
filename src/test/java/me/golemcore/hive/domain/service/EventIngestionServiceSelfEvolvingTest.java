@@ -82,4 +82,79 @@ class EventIngestionServiceSelfEvolvingTest {
         assertEquals(1, result.getAcceptedEvents());
         verify(selfEvolvingProjectionService).applyCandidateEvent(eq("golem-1"), any());
     }
+
+    @Test
+    void shouldIngestSelfEvolvingTacticEvents() {
+        StoragePort storagePort = mock(StoragePort.class);
+        CommandDispatchService commandDispatchService = mock(CommandDispatchService.class);
+        SignalResolutionService signalResolutionService = mock(SignalResolutionService.class);
+        GolemInspectionRpcService golemInspectionRpcService = mock(GolemInspectionRpcService.class);
+        SelfEvolvingProjectionService selfEvolvingProjectionService = mock(SelfEvolvingProjectionService.class);
+        EventIngestionService service = new EventIngestionService(
+                storagePort,
+                new ObjectMapper(),
+                commandDispatchService,
+                signalResolutionService,
+                golemInspectionRpcService,
+                selfEvolvingProjectionService);
+
+        EventIngestionService.BatchResult result = service.ingestBatch("golem-1", new GolemEventBatchRequest(
+                1,
+                "golem-1",
+                List.of(
+                        new GolemEventPayload(
+                                1,
+                                "selfevolving.tactic.upserted",
+                                "golem-1",
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                Map.of("tacticId", "planner"),
+                                Instant.parse("2026-04-01T20:00:00Z")),
+                        new GolemEventPayload(
+                                1,
+                                "selfevolving.tactic.search-status.upserted",
+                                "golem-1",
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                Map.of("mode", "hybrid"),
+                                Instant.parse("2026-04-01T20:00:01Z")))));
+
+        assertEquals(2, result.getAcceptedEvents());
+        verify(selfEvolvingProjectionService).applyTacticEvent(eq("golem-1"), any());
+        verify(selfEvolvingProjectionService).applyTacticSearchStatusEvent(eq("golem-1"), any());
+    }
 }

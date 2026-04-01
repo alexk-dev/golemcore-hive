@@ -32,6 +32,9 @@ import me.golemcore.hive.domain.model.SelfEvolvingArtifactLineageProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingCampaignProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingCandidateProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingRunProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingTacticProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingTacticSearchExplanationProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingTacticSearchStatusProjection;
 import me.golemcore.hive.domain.service.SelfEvolvingProjectionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -120,6 +123,112 @@ public class SelfEvolvingController {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
             return ResponseEntity.ok(selfEvolvingProjectionService.listArtifacts(golemId));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/tactics")
+    public Mono<ResponseEntity<List<SelfEvolvingTacticProjection>>> listTactics(
+            Principal principal,
+            @PathVariable String golemId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            return ResponseEntity.ok(selfEvolvingProjectionService.listTactics(golemId));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/tactics/search")
+    public Mono<ResponseEntity<Map<String, Object>>> searchTactics(
+            Principal principal,
+            @PathVariable String golemId,
+            @RequestParam(required = false) String q) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Map<String, Object> payload = new java.util.LinkedHashMap<>();
+            payload.put("query", q);
+            payload.put("status", selfEvolvingProjectionService.getTacticSearchStatus(golemId).orElse(null));
+            payload.put("results", selfEvolvingProjectionService.searchTactics(golemId, q));
+            return ResponseEntity.ok(payload);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/tactics/search-status")
+    public Mono<ResponseEntity<SelfEvolvingTacticSearchStatusProjection>> getTacticSearchStatus(
+            Principal principal,
+            @PathVariable String golemId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            SelfEvolvingTacticSearchStatusProjection projection = selfEvolvingProjectionService
+                    .getTacticSearchStatus(golemId)
+                    .orElseThrow(
+                            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic search status not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/tactics/{tacticId}")
+    public Mono<ResponseEntity<SelfEvolvingTacticProjection>> getTactic(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String tacticId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            SelfEvolvingTacticProjection projection = selfEvolvingProjectionService.findTactic(golemId, tacticId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/tactics/{tacticId}/explanation")
+    public Mono<ResponseEntity<SelfEvolvingTacticSearchExplanationProjection>> getTacticExplanation(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String tacticId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            SelfEvolvingTacticProjection projection = selfEvolvingProjectionService.findTactic(golemId, tacticId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic not found"));
+            SelfEvolvingTacticSearchExplanationProjection explanation = projection.getExplanation();
+            if (explanation == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic explanation not found");
+            }
+            return ResponseEntity.ok(explanation);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/tactics/{tacticId}/lineage")
+    public Mono<ResponseEntity<SelfEvolvingArtifactLineageProjection>> getTacticLineage(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String tacticId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            SelfEvolvingTacticProjection tactic = selfEvolvingProjectionService.findTactic(golemId, tacticId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic not found"));
+            SelfEvolvingArtifactLineageProjection projection = selfEvolvingProjectionService
+                    .findArtifactLineage(golemId, tactic.getArtifactStreamId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic lineage not found"));
+            return ResponseEntity.ok(projection);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/golems/{golemId}/tactics/{tacticId}/evidence")
+    public Mono<ResponseEntity<Map<String, Object>>> getTacticEvidence(
+            Principal principal,
+            @PathVariable String golemId,
+            @PathVariable String tacticId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            SelfEvolvingTacticProjection tactic = selfEvolvingProjectionService.findTactic(golemId, tacticId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic not found"));
+            Map<String, Object> projection = selfEvolvingProjectionService
+                    .findArtifactEvidence(
+                            golemId,
+                            tactic.getArtifactStreamId(),
+                            "revision",
+                            tactic.getContentRevisionId(),
+                            tactic.getContentRevisionId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic evidence not found"));
+            return ResponseEntity.ok(projection);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 

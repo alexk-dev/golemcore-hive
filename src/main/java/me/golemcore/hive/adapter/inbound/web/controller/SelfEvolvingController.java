@@ -145,7 +145,7 @@ public class SelfEvolvingController {
             ControllerActorSupport.requirePrivilegedOperator(principal);
             Map<String, Object> payload = new java.util.LinkedHashMap<>();
             payload.put("query", q);
-            payload.put("status", selfEvolvingProjectionService.getTacticSearchStatus(golemId).orElse(null));
+            payload.put("status", selfEvolvingProjectionService.getTacticSearchStatus(golemId, q).orElse(null));
             payload.put("results", selfEvolvingProjectionService.searchTactics(golemId, q));
             return ResponseEntity.ok(payload);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -154,11 +154,12 @@ public class SelfEvolvingController {
     @GetMapping("/golems/{golemId}/tactics/search-status")
     public Mono<ResponseEntity<SelfEvolvingTacticSearchStatusProjection>> getTacticSearchStatus(
             Principal principal,
-            @PathVariable String golemId) {
+            @PathVariable String golemId,
+            @RequestParam(required = false) String q) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
             SelfEvolvingTacticSearchStatusProjection projection = selfEvolvingProjectionService
-                    .getTacticSearchStatus(golemId)
+                    .getTacticSearchStatus(golemId, q)
                     .orElseThrow(
                             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic search status not found"));
             return ResponseEntity.ok(projection);

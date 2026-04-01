@@ -56,6 +56,7 @@ public class SelfEvolvingProjectionService {
     private static final String SELF_EVOLVING_ARTIFACT_DIFFS_DIR = "selfevolving-artifact-diffs";
     private static final String SELF_EVOLVING_ARTIFACT_EVIDENCE_DIR = "selfevolving-artifact-evidence";
     private static final String SELF_EVOLVING_TACTICS_DIR = "selfevolving-tactics";
+    private static final String SELF_EVOLVING_TACTIC_SEARCH_RESULTS_DIR = "selfevolving-tactic-search-results";
     private static final String SELF_EVOLVING_TACTIC_SEARCH_STATUS_DIR = "selfevolving-tactic-search-status";
     private static final String RUNS_DIR = "runs";
 
@@ -147,6 +148,7 @@ public class SelfEvolvingProjectionService {
                 SelfEvolvingTacticSearchStatusProjection.class);
         projection.setGolemId(firstNonBlank(projection.getGolemId(), golemId));
         projection.setUpdatedAt(event.createdAt() != null ? event.createdAt() : Instant.now());
+        clearMirroredTacticSearchResults(projection.getGolemId(), projection.getQuery());
         saveTacticSearchStatus(projection);
     }
 
@@ -240,14 +242,10 @@ public class SelfEvolvingProjectionService {
     }
 
     public List<SelfEvolvingTacticProjection> searchTactics(String golemId, String query) {
-        List<SelfEvolvingTacticProjection> tactics = listTactics(golemId);
         if (query == null || query.isBlank()) {
-            return tactics;
+            return listTactics(golemId);
         }
-        String loweredQuery = query.toLowerCase();
-        return tactics.stream()
-                .filter(tactic -> matchesTacticQuery(tactic, loweredQuery))
-                .toList();
+        return listMirroredTacticSearchResults(golemId, query);
     }
 
     public Optional<SelfEvolvingTacticProjection> findTactic(String golemId, String tacticId) {
@@ -255,6 +253,20 @@ public class SelfEvolvingProjectionService {
     }
 
     public Optional<SelfEvolvingTacticSearchStatusProjection> getTacticSearchStatus(String golemId) {
+        return getTacticSearchStatus(golemId, null);
+    }
+
+    public Optional<SelfEvolvingTacticSearchStatusProjection> getTacticSearchStatus(String golemId, String query) {
+        if (query != null && !query.isBlank()) {
+            Optional<SelfEvolvingTacticSearchStatusProjection> queryScoped = load(
+                    tacticSearchStatusPath(golemId, query),
+                    SELF_EVOLVING_TACTIC_SEARCH_STATUS_DIR,
+                    SelfEvolvingTacticSearchStatusProjection.class);
+            if (queryScoped.isPresent()) {
+                return queryScoped;
+            }
+            return Optional.empty();
+        }
         return load(tacticSearchStatusPath(golemId), SELF_EVOLVING_TACTIC_SEARCH_STATUS_DIR,
                 SelfEvolvingTacticSearchStatusProjection.class);
     }
@@ -458,12 +470,37 @@ public class SelfEvolvingProjectionService {
 
     private void saveTactic(SelfEvolvingTacticProjection projection) {
         storagePort.ensureDirectory(SELF_EVOLVING_TACTICS_DIR);
+        if (projection.getSearchQuery() != null && !projection.getSearchQuery().isBlank()) {
+            storagePort.ensureDirectory(SELF_EVOLVING_TACTIC_SEARCH_RESULTS_DIR);
+            save(
+                    SELF_EVOLVING_TACTIC_SEARCH_RESULTS_DIR,
+                    tacticSearchResultPath(projection.getGolemId(), projection.getSearchQuery(),
+                            projection.getTacticId()),
+                    projection);
+            return;
+        }
         save(SELF_EVOLVING_TACTICS_DIR, tacticPath(projection.getGolemId(), projection.getTacticId()), projection);
     }
 
     private void saveTacticSearchStatus(SelfEvolvingTacticSearchStatusProjection projection) {
         storagePort.ensureDirectory(SELF_EVOLVING_TACTIC_SEARCH_STATUS_DIR);
+        if (projection.getQuery() != null && !projection.getQuery().isBlank()) {
+            save(
+                    SELF_EVOLVING_TACTIC_SEARCH_STATUS_DIR,
+                    tacticSearchStatusPath(projection.getGolemId(), projection.getQuery()),
+                    projection);
+        }
         save(SELF_EVOLVING_TACTIC_SEARCH_STATUS_DIR, tacticSearchStatusPath(projection.getGolemId()), projection);
+    }
+
+    private void clearMirroredTacticSearchResults(String golemId, String query) {
+        if (query == null || query.isBlank()) {
+            return;
+        }
+        String prefix = golemId + "/" + encodePathToken(query) + "/";
+        for (String path : storagePort.listObjects(SELF_EVOLVING_TACTIC_SEARCH_RESULTS_DIR, prefix)) {
+            storagePort.delete(SELF_EVOLVING_TACTIC_SEARCH_RESULTS_DIR, path);
+        }
     }
 
     private void saveLineage(SelfEvolvingLineageNode projection) {
@@ -541,6 +578,14 @@ public class SelfEvolvingProjectionService {
         return golemId + "/status.json";
     }
 
+    private String tacticSearchStatusPath(String golemId, String query) {
+        return golemId + "/queries/" + encodePathToken(query) + ".json";
+    }
+
+    private String tacticSearchResultPath(String golemId, String query, String tacticId) {
+        return golemId + "/" + encodePathToken(query) + "/" + encodePathToken(tacticId) + ".json";
+    }
+
     private String artifactNormalizedRevisionPath(String golemId, String artifactStreamId, String revisionId) {
         return golemId + "/" + encodePathToken(artifactStreamId) + "/" + encodePathToken(revisionId) + ".json";
     }
@@ -601,6 +646,25 @@ public class SelfEvolvingProjectionService {
                 || (tactic.getExplanation() != null
                         && (listContainsIgnoreCase(tactic.getExplanation().getMatchedQueryViews(), loweredQuery)
                                 || listContainsIgnoreCase(tactic.getExplanation().getMatchedTerms(), loweredQuery)));
+    }
+
+    private List<SelfEvolvingTacticProjection> listMirroredTacticSearchResults(String golemId, String query) {
+        List<SelfEvolvingTacticProjection> results = new ArrayList<>();
+        String prefix = golemId + "/" + encodePathToken(query) + "/";
+        for (String path : storagePort.listObjects(SELF_EVOLVING_TACTIC_SEARCH_RESULTS_DIR, prefix)) {
+            Optional<SelfEvolvingTacticProjection> projection = load(
+                    path,
+                    SELF_EVOLVING_TACTIC_SEARCH_RESULTS_DIR,
+                    SelfEvolvingTacticProjection.class);
+            projection.ifPresent(results::add);
+        }
+        results.sort(Comparator.comparing(
+                SelfEvolvingTacticProjection::getScore,
+                Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(SelfEvolvingTacticProjection::getUpdatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(SelfEvolvingTacticProjection::getTacticId, Comparator.nullsLast(String::compareTo)));
+        return results;
     }
 
     private boolean listContainsIgnoreCase(List<String> values, String loweredQuery) {

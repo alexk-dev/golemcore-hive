@@ -69,6 +69,11 @@ class SelfEvolvingProjectionServiceTacticSearchTest {
                     invocation.getArgument(2, String.class));
             return null;
         }).when(storagePort).putTextAtomic(anyString(), anyString(), anyString());
+        doAnswer(invocation -> {
+            storedObjects.remove(
+                    storageKey(invocation.getArgument(0, String.class), invocation.getArgument(1, String.class)));
+            return null;
+        }).when(storagePort).delete(anyString(), anyString());
         service = new SelfEvolvingProjectionService(storagePort,
                 new ObjectMapper().registerModule(new JavaTimeModule()));
     }
@@ -129,7 +134,8 @@ class SelfEvolvingProjectionServiceTacticSearchTest {
                                 Map.entry("finalScore", 1.18d))))));
 
         List<SelfEvolvingTacticProjection> tactics = service.listTactics("golem-1");
-        Optional<SelfEvolvingTacticSearchStatusProjection> searchStatus = service.getTacticSearchStatus("golem-1");
+        Optional<SelfEvolvingTacticSearchStatusProjection> searchStatus = service.getTacticSearchStatus("golem-1",
+                "planner");
 
         assertEquals(1, tactics.size());
         assertEquals("planner", tactics.getFirst().getTacticId());
@@ -137,6 +143,111 @@ class SelfEvolvingProjectionServiceTacticSearchTest {
         assertEquals(0.08d, tactics.getFirst().getExplanation().getPersonalizationBoost());
         assertTrue(searchStatus.isPresent());
         assertEquals("hybrid", searchStatus.get().getMode());
+    }
+
+    @Test
+    void shouldReturnQueryScopedSearchStatusForMirroredSearch() {
+        service.applyTacticSearchStatusEvent("golem-1", event(
+                "selfevolving.tactic.search-status.upserted",
+                Map.of(
+                        "query", "planner",
+                        "mode", "hybrid",
+                        "reason", "Embeddings healthy",
+                        "degraded", false,
+                        "updatedAt", "2026-04-01T20:00:00Z")));
+        service.applyTacticSearchStatusEvent("golem-1", event(
+                "selfevolving.tactic.search-status.upserted",
+                Map.of(
+                        "query", "rollback",
+                        "mode", "bm25",
+                        "reason", "local embedding model unavailable",
+                        "degraded", true,
+                        "updatedAt", "2026-04-01T20:10:00Z")));
+
+        Optional<SelfEvolvingTacticSearchStatusProjection> plannerStatus = service.getTacticSearchStatus(
+                "golem-1",
+                "planner");
+
+        assertTrue(plannerStatus.isPresent());
+        assertEquals("planner", plannerStatus.get().getQuery());
+        assertEquals("hybrid", plannerStatus.get().getMode());
+        assertEquals("Embeddings healthy", plannerStatus.get().getReason());
+    }
+
+    @Test
+    void shouldUseQueryScopedMirroredRankingInsteadOfLocalSubstringSearch() {
+        service.applyTacticEvent("golem-1", event(
+                "selfevolving.tactic.upserted",
+                tacticPayload("planner-primary", "planner", "Planner primary", 1.25d, "2026-04-01T20:00:00Z")));
+        service.applyTacticEvent("golem-1", event(
+                "selfevolving.tactic.upserted",
+                tacticPayload("planner-secondary", "planner", "Planner secondary", 0.75d, "2026-04-01T20:05:00Z")));
+        service.applyTacticEvent("golem-1", event(
+                "selfevolving.tactic.upserted",
+                tacticPayload("rollback-only", "rollback", "Planner rollback fallback", 1.50d,
+                        "2026-04-01T20:10:00Z")));
+
+        List<SelfEvolvingTacticProjection> results = service.searchTactics("golem-1", "planner");
+
+        assertEquals(List.of("planner-primary", "planner-secondary"),
+                results.stream().map(SelfEvolvingTacticProjection::getTacticId).toList());
+        assertEquals(1.25d, results.getFirst().getScore());
+    }
+
+    @Test
+    void shouldReplacePreviousMirroredQueryResultsWhenNewSearchStatusArrives() {
+        service.applyTacticSearchStatusEvent("golem-1", event(
+                "selfevolving.tactic.search-status.upserted",
+                Map.of(
+                        "query", "planner",
+                        "mode", "hybrid",
+                        "reason", "Embeddings healthy",
+                        "degraded", false,
+                        "updatedAt", "2026-04-01T20:00:00Z")));
+        service.applyTacticEvent("golem-1", event(
+                "selfevolving.tactic.upserted",
+                tacticPayload("planner-primary", "planner", "Planner primary", 1.25d, "2026-04-01T20:00:00Z")));
+        service.applyTacticEvent("golem-1", event(
+                "selfevolving.tactic.upserted",
+                tacticPayload("planner-secondary", "planner", "Planner secondary", 0.75d, "2026-04-01T20:05:00Z")));
+
+        service.applyTacticSearchStatusEvent("golem-1", event(
+                "selfevolving.tactic.search-status.upserted",
+                Map.of(
+                        "query", "planner",
+                        "mode", "hybrid",
+                        "reason", "Embeddings healthy",
+                        "degraded", false,
+                        "updatedAt", "2026-04-01T20:10:00Z")));
+        service.applyTacticEvent("golem-1", event(
+                "selfevolving.tactic.upserted",
+                tacticPayload("planner-primary", "planner", "Planner primary", 1.30d, "2026-04-01T20:10:00Z")));
+
+        List<SelfEvolvingTacticProjection> results = service.searchTactics("golem-1", "planner");
+
+        assertEquals(List.of("planner-primary"),
+                results.stream().map(SelfEvolvingTacticProjection::getTacticId).toList());
+        assertEquals(1.30d, results.getFirst().getScore());
+    }
+
+    @Test
+    void shouldNotFallbackToLocalSubstringSearchWithoutMirroredQueryResults() {
+        service.applyTacticEvent("golem-1", event(
+                "selfevolving.tactic.upserted",
+                Map.ofEntries(
+                        Map.entry("tacticId", "planner-catalog"),
+                        Map.entry("artifactStreamId", "stream-planner-catalog"),
+                        Map.entry("originArtifactStreamId", "origin-planner-catalog"),
+                        Map.entry("artifactKey", "skill:planner-catalog"),
+                        Map.entry("artifactType", "skill"),
+                        Map.entry("title", "Planner catalog tactic"),
+                        Map.entry("promotionState", "active"),
+                        Map.entry("rolloutStage", "active"),
+                        Map.entry("updatedAt", "2026-04-01T20:00:00Z"))));
+
+        List<SelfEvolvingTacticProjection> results = service.searchTactics("golem-1", "planner");
+
+        assertTrue(results.isEmpty());
     }
 
     private GolemEventPayload event(String eventType, Map<String, Object> payload) {
@@ -165,6 +276,47 @@ class SelfEvolvingProjectionServiceTacticSearchTest {
                 null,
                 payload,
                 Instant.parse("2026-04-01T20:00:01Z"));
+    }
+
+    private Map<String, Object> tacticPayload(
+            String tacticId,
+            String searchQuery,
+            String title,
+            double score,
+            String updatedAt) {
+        return Map.ofEntries(
+                Map.entry("tacticId", tacticId),
+                Map.entry("searchQuery", searchQuery),
+                Map.entry("artifactStreamId", "stream-" + tacticId),
+                Map.entry("originArtifactStreamId", "origin-" + tacticId),
+                Map.entry("artifactKey", "skill:" + tacticId),
+                Map.entry("artifactType", "skill"),
+                Map.entry("title", title),
+                Map.entry("aliases", List.of(tacticId)),
+                Map.entry("contentRevisionId", "rev-" + tacticId),
+                Map.entry("intentSummary", title),
+                Map.entry("behaviorSummary", title),
+                Map.entry("toolSummary", "shell"),
+                Map.entry("outcomeSummary", "summary"),
+                Map.entry("benchmarkSummary", "bench"),
+                Map.entry("approvalNotes", "approved"),
+                Map.entry("evidenceSnippets", List.of("trace:" + tacticId)),
+                Map.entry("taskFamilies", List.of("planning")),
+                Map.entry("tags", List.of("core")),
+                Map.entry("promotionState", "active"),
+                Map.entry("rolloutStage", "active"),
+                Map.entry("successRate", 0.9d),
+                Map.entry("benchmarkWinRate", 0.8d),
+                Map.entry("regressionFlags", List.of()),
+                Map.entry("recencyScore", 0.8d),
+                Map.entry("golemLocalUsageSuccess", 0.85d),
+                Map.entry("embeddingStatus", "indexed"),
+                Map.entry("updatedAt", updatedAt),
+                Map.entry("score", score),
+                Map.entry("explanation", Map.ofEntries(
+                        Map.entry("searchMode", "hybrid"),
+                        Map.entry("eligible", true),
+                        Map.entry("finalScore", score))));
     }
 
     private String storageKey(String directory, String path) {

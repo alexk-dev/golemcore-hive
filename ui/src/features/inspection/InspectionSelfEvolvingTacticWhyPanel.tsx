@@ -17,33 +17,112 @@ export function InspectionSelfEvolvingTacticWhyPanel({
   recencyScore: number | null;
   golemLocalUsageSuccess: number | null;
 }) {
+  const metricRows = buildMetricRows({
+    explanation,
+    successRate,
+    benchmarkWinRate,
+    regressionFlags,
+    promotionState,
+    recencyScore,
+    golemLocalUsageSuccess,
+  });
+
   return (
     <section className="panel p-4">
       <h2 className="text-sm font-bold text-foreground">Why this tactic</h2>
       <div className="mt-4 grid gap-2 text-sm">
-        <MetricRow label="Success rate" value={formatPercent(successRate)} />
-        <MetricRow label="Benchmark win rate" value={formatPercent(benchmarkWinRate)} />
-        <MetricRow label="Regression flags" value={formatList(regressionFlags)} />
-        <MetricRow label="Promotion state" value={promotionState ?? 'n/a'} />
-        <MetricRow label="Recency" value={formatNumber(recencyScore)} />
-        <MetricRow label="Golem-local usage success" value={formatPercent(golemLocalUsageSuccess)} />
-        <MetricRow label="BM25 score" value={formatNumber(explanation?.bm25Score)} />
-        <MetricRow label="Vector score" value={formatNumber(explanation?.vectorScore)} />
-        <MetricRow label="RRF score" value={formatNumber(explanation?.rrfScore)} />
-        <MetricRow label="Quality prior" value={formatNumber(explanation?.qualityPrior)} />
-        <MetricRow label="MMR diversity adjustment" value={formatNumber(explanation?.mmrDiversityAdjustment)} />
-        <MetricRow label="Negative memory penalty" value={formatNumber(explanation?.negativeMemoryPenalty)} />
-        <MetricRow label="Personalization boost" value={formatNumber(explanation?.personalizationBoost)} />
-        <MetricRow label="Reranker verdict" value={explanation?.rerankerVerdict ?? 'n/a'} />
-        <MetricRow label="Matched query views" value={formatList(explanation?.matchedQueryViews ?? [])} />
-        <MetricRow label="Matched terms" value={formatList(explanation?.matchedTerms ?? [])} />
-        <MetricRow label="Eligible" value={formatBoolean(explanation?.eligible)} />
-        <MetricRow label="Gating reason" value={explanation?.gatingReason ?? 'n/a'} />
-        <MetricRow label="Degradation reason" value={explanation?.degradedReason ?? 'n/a'} />
-        <MetricRow label="Final score" value={formatNumber(explanation?.finalScore)} />
+        {metricRows.map((row) => (
+          <MetricRow key={row.label} label={row.label} value={row.value} />
+        ))}
       </div>
     </section>
   );
+}
+
+function buildMetricRows({
+  explanation,
+  successRate,
+  benchmarkWinRate,
+  regressionFlags,
+  promotionState,
+  recencyScore,
+  golemLocalUsageSuccess,
+}: {
+  explanation: SelfEvolvingTacticSearchExplanation | null;
+  successRate: number | null;
+  benchmarkWinRate: number | null;
+  regressionFlags: string[];
+  promotionState: string | null;
+  recencyScore: number | null;
+  golemLocalUsageSuccess: number | null;
+}) {
+  return [
+    ...buildOutcomeMetricRows({
+      successRate,
+      benchmarkWinRate,
+      regressionFlags,
+      promotionState,
+      recencyScore,
+      golemLocalUsageSuccess,
+    }),
+    ...buildSearchMetricRows(explanation),
+  ];
+}
+
+function buildOutcomeMetricRows({
+  successRate,
+  benchmarkWinRate,
+  regressionFlags,
+  promotionState,
+  recencyScore,
+  golemLocalUsageSuccess,
+}: {
+  successRate: number | null;
+  benchmarkWinRate: number | null;
+  regressionFlags: string[];
+  promotionState: string | null;
+  recencyScore: number | null;
+  golemLocalUsageSuccess: number | null;
+}) {
+  return [
+    { label: 'Success rate', value: formatPercent(successRate) },
+    { label: 'Benchmark win rate', value: formatPercent(benchmarkWinRate) },
+    { label: 'Regression flags', value: formatList(regressionFlags) },
+    { label: 'Promotion state', value: promotionState ?? 'n/a' },
+    { label: 'Recency', value: formatNumber(recencyScore) },
+    { label: 'Golem-local usage success', value: formatPercent(golemLocalUsageSuccess) },
+  ];
+}
+
+function buildSearchMetricRows(explanation: SelfEvolvingTacticSearchExplanation | null) {
+  return [
+    ...buildSearchScoreRows(explanation),
+    ...buildSearchExplainabilityRows(explanation),
+  ];
+}
+
+function buildSearchScoreRows(explanation: SelfEvolvingTacticSearchExplanation | null) {
+  return [
+    { label: 'BM25 score', value: formatNumber(explanation?.bm25Score) },
+    { label: 'Vector score', value: formatNumber(explanation?.vectorScore) },
+    { label: 'RRF score', value: formatNumber(explanation?.rrfScore) },
+    { label: 'Quality prior', value: formatNumber(explanation?.qualityPrior) },
+    { label: 'MMR diversity adjustment', value: formatNumber(explanation?.mmrDiversityAdjustment) },
+    { label: 'Negative memory penalty', value: formatNumber(explanation?.negativeMemoryPenalty) },
+    { label: 'Personalization boost', value: formatNumber(explanation?.personalizationBoost) },
+  ];
+}
+
+function buildSearchExplainabilityRows(explanation: SelfEvolvingTacticSearchExplanation | null) {
+  return [
+    { label: 'Reranker verdict', value: explanation?.rerankerVerdict ?? 'n/a' },
+    { label: 'Matched query views', value: formatList(explanation?.matchedQueryViews ?? []) },
+    { label: 'Matched terms', value: formatList(explanation?.matchedTerms ?? []) },
+    { label: 'Eligible', value: formatBoolean(explanation?.eligible) },
+    { label: 'Gating reason', value: explanation?.gatingReason ?? 'n/a' },
+    { label: 'Degradation reason', value: explanation?.degradedReason ?? 'n/a' },
+    { label: 'Final score', value: formatNumber(explanation?.finalScore) },
+  ];
 }
 
 function MetricRow({ label, value }: { label: string; value: string }) {

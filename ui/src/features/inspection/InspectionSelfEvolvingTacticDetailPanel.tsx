@@ -16,6 +16,8 @@ export function InspectionSelfEvolvingTacticDetailPanel({
     );
   }
 
+  const artifactStreamId = tactic.artifactStreamId;
+
   return (
     <section className="panel p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -25,10 +27,10 @@ export function InspectionSelfEvolvingTacticDetailPanel({
             {tactic.artifactKey ?? tactic.tacticId}
           </p>
         </div>
-        {tactic.artifactStreamId ? (
+        {artifactStreamId ? (
           <button
             type="button"
-            onClick={() => onOpenArtifactStream(tactic.artifactStreamId!)}
+            onClick={() => onOpenArtifactStream(artifactStreamId)}
             className="border border-border bg-white/80 px-3 py-1.5 text-xs font-semibold text-foreground"
           >
             Open artifact workspace

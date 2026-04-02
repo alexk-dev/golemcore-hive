@@ -9,6 +9,8 @@ import { InspectionFeedbackBanner, InspectionPageHeader } from './InspectionPage
 import { buildTraceErrorMessage } from './inspectionPageUtils';
 import { useInspectionPageController } from './useInspectionPageController';
 
+type InspectionPageController = ReturnType<typeof useInspectionPageController>;
+
 export function InspectionPage() {
   const { golemId } = useParams();
   const controller = useInspectionPageController(golemId ?? '');
@@ -44,97 +46,19 @@ export function InspectionPage() {
 function OnlineInspectionSection({
   controller,
 }: {
-  controller: ReturnType<typeof useInspectionPageController>;
+  controller: InspectionPageController;
 }) {
   if (!controller.isOnline) {
     return null;
   }
 
-  return (
-    <InspectionOnlineContent
-      sessions={controller.sessionsQuery.data ?? []}
-      selectedSessionId={controller.selectedSessionId}
-      sessionsLoading={controller.sessionsQuery.isLoading}
-      sessionsError={controller.sessionsQuery.error}
-      selectedSessionSummary={controller.selectedSessionSummary}
-      selectedSession={controller.selectedSession}
-      sessionLoading={controller.sessionQuery.isLoading}
-      sessionError={controller.sessionQuery.error}
-      keepLast={controller.keepLast}
-      isMutating={controller.isMutating}
-      isExportingTrace={controller.traceExportMutation.isPending}
-      traceSummary={controller.traceSummaryQuery.data ?? null}
-      trace={controller.traceQuery.data ?? null}
-      messages={controller.selectedSession?.messages ?? []}
-      isLoadingTraceSummary={controller.traceSummaryQuery.isLoading}
-      isLoadingTrace={controller.traceQuery.isLoading}
-      traceErrorMessage={buildTraceErrorMessage(
-        controller.traceSummaryQuery.error,
-        controller.traceQuery.error,
-      )}
-      isExportingSnapshot={controller.snapshotExportMutation.isPending}
-      selfEvolvingRuns={controller.selfEvolvingRuns}
-      selectedSelfEvolvingRunId={controller.selectedSelfEvolvingRunId}
-      selectedSelfEvolvingRun={controller.selectedSelfEvolvingRun}
-      selfEvolvingCandidates={controller.selfEvolvingCandidatesQuery.data ?? []}
-      selfEvolvingCampaigns={controller.selfEvolvingCampaignsQuery.data ?? []}
-      selfEvolvingLineage={controller.selfEvolvingLineageQuery.data ?? buildEmptyLineage(controller)}
-      selfEvolvingArtifacts={controller.selfEvolvingArtifacts}
-      selectedArtifactStreamId={controller.selectedArtifactStreamId}
-      artifactLineage={controller.artifactLineageQuery.data ?? null}
-      artifactCompareMode={controller.artifactCompareMode}
-      artifactRevisionDiff={controller.artifactRevisionDiffQuery.data ?? null}
-      artifactTransitionDiff={controller.artifactTransitionDiffQuery.data ?? null}
-      artifactEvidence={controller.artifactEvidenceQuery.data ?? null}
-      tacticQuery={controller.tacticQuery}
-      tacticSearchResponse={controller.selfEvolvingTacticSearchQuery.data ?? null}
-      selectedTacticId={controller.selectedTacticId}
-      isArtifactsLoading={controller.selfEvolvingArtifactsLoading}
-      isArtifactLineageLoading={controller.artifactLineageQuery.isLoading}
-      isArtifactDiffLoading={controller.artifactCompareMode === 'transition'
-        ? controller.artifactTransitionDiffQuery.isLoading
-        : controller.artifactRevisionDiffQuery.isLoading}
-      isArtifactEvidenceLoading={controller.artifactEvidenceQuery.isLoading}
-      promotionApprovals={controller.promotionApprovals}
-      onSelectSession={(sessionId) => {
-        controller.setSelectedSessionId(sessionId);
-        controller.setFeedback(null);
-      }}
-      onSelectSelfEvolvingRun={controller.setSelectedSelfEvolvingRunId}
-      onSelectArtifactStream={(artifactStreamId) => {
-        controller.setSelectedArtifactStreamId(artifactStreamId);
-        controller.setFeedback(null);
-      }}
-      onSelectArtifactCompareMode={controller.setArtifactCompareMode}
-      onSelectArtifactRevisionPair={(fromRevisionId, toRevisionId) => {
-        controller.setSelectedArtifactRevisionPair({ fromRevisionId, toRevisionId });
-      }}
-      onSelectArtifactTransitionPair={(fromNodeId, toNodeId) => {
-        controller.setSelectedArtifactTransitionPair({ fromNodeId, toNodeId });
-      }}
-      onTacticQueryChange={controller.setTacticQuery}
-      onSelectTacticId={controller.setSelectedTacticId}
-      onKeepLastChange={controller.setKeepLast}
-      onCompact={() => {
-        void controller.compactMutation.mutateAsync();
-      }}
-      onClear={() => controller.setActionDialog('clear')}
-      onExportTrace={() => {
-        void controller.traceExportMutation.mutateAsync();
-      }}
-      onDelete={() => controller.setActionDialog('delete')}
-      onLoadTrace={() => controller.setDetailsRequested(true)}
-      onExportSnapshotPayload={async (snapshotId, role, spanName) => {
-        await controller.snapshotExportMutation.mutateAsync({ snapshotId, role, spanName });
-      }}
-    />
-  );
+  return <InspectionOnlineContent {...buildOnlineInspectionProps(controller)} />;
 }
 
 function ActionDialogSection({
   controller,
 }: {
-  controller: ReturnType<typeof useInspectionPageController>;
+  controller: InspectionPageController;
 }) {
   if (controller.actionDialogConfig == null) {
     return null;
@@ -154,7 +78,87 @@ function ActionDialogSection({
   );
 }
 
-function buildEmptyLineage(controller: ReturnType<typeof useInspectionPageController>) {
+function buildOnlineInspectionProps(controller: InspectionPageController) {
+  return {
+    sessions: controller.sessionsQuery.data ?? [],
+    selectedSessionId: controller.selectedSessionId,
+    sessionsLoading: controller.sessionsQuery.isLoading,
+    sessionsError: controller.sessionsQuery.error,
+    selectedSessionSummary: controller.selectedSessionSummary,
+    selectedSession: controller.selectedSession,
+    sessionLoading: controller.sessionQuery.isLoading,
+    sessionError: controller.sessionQuery.error,
+    keepLast: controller.keepLast,
+    isMutating: controller.isMutating,
+    isExportingTrace: controller.traceExportMutation.isPending,
+    traceSummary: controller.traceSummaryQuery.data ?? null,
+    trace: controller.traceQuery.data ?? null,
+    messages: controller.selectedSession?.messages ?? [],
+    isLoadingTraceSummary: controller.traceSummaryQuery.isLoading,
+    isLoadingTrace: controller.traceQuery.isLoading,
+    traceErrorMessage: buildTraceErrorMessage(
+      controller.traceSummaryQuery.error,
+      controller.traceQuery.error,
+    ),
+    isExportingSnapshot: controller.snapshotExportMutation.isPending,
+    selfEvolvingRuns: controller.selfEvolvingRuns,
+    selectedSelfEvolvingRunId: controller.selectedSelfEvolvingRunId,
+    selectedSelfEvolvingRun: controller.selectedSelfEvolvingRun,
+    selfEvolvingCandidates: controller.selfEvolvingCandidatesQuery.data ?? [],
+    selfEvolvingCampaigns: controller.selfEvolvingCampaignsQuery.data ?? [],
+    selfEvolvingLineage: controller.selfEvolvingLineageQuery.data ?? buildEmptyLineage(controller),
+    selfEvolvingArtifacts: controller.selfEvolvingArtifacts,
+    selectedArtifactStreamId: controller.selectedArtifactStreamId,
+    artifactLineage: controller.artifactLineageQuery.data ?? null,
+    artifactCompareMode: controller.artifactCompareMode,
+    artifactRevisionDiff: controller.artifactRevisionDiffQuery.data ?? null,
+    artifactTransitionDiff: controller.artifactTransitionDiffQuery.data ?? null,
+    artifactEvidence: controller.artifactEvidenceQuery.data ?? null,
+    tacticQuery: controller.tacticQuery,
+    tacticSearchResponse: controller.selfEvolvingTacticSearchQuery.data ?? null,
+    selectedTacticId: controller.selectedTacticId,
+    isArtifactsLoading: controller.selfEvolvingArtifactsLoading,
+    isArtifactLineageLoading: controller.artifactLineageQuery.isLoading,
+    isArtifactDiffLoading: controller.artifactCompareMode === 'transition'
+      ? controller.artifactTransitionDiffQuery.isLoading
+      : controller.artifactRevisionDiffQuery.isLoading,
+    isArtifactEvidenceLoading: controller.artifactEvidenceQuery.isLoading,
+    promotionApprovals: controller.promotionApprovals,
+    onSelectSession: (sessionId: string) => {
+      controller.setSelectedSessionId(sessionId);
+      controller.setFeedback(null);
+    },
+    onSelectSelfEvolvingRun: controller.setSelectedSelfEvolvingRunId,
+    onSelectArtifactStream: (artifactStreamId: string) => {
+      controller.setSelectedArtifactStreamId(artifactStreamId);
+      controller.setFeedback(null);
+    },
+    onSelectArtifactCompareMode: controller.setArtifactCompareMode,
+    onSelectArtifactRevisionPair: (fromRevisionId: string, toRevisionId: string) => {
+      controller.setSelectedArtifactRevisionPair({ fromRevisionId, toRevisionId });
+    },
+    onSelectArtifactTransitionPair: (fromNodeId: string, toNodeId: string) => {
+      controller.setSelectedArtifactTransitionPair({ fromNodeId, toNodeId });
+    },
+    onTacticQueryChange: controller.setTacticQuery,
+    onSelectTacticId: controller.setSelectedTacticId,
+    onKeepLastChange: controller.setKeepLast,
+    onCompact: () => {
+      void controller.compactMutation.mutateAsync();
+    },
+    onClear: () => controller.setActionDialog('clear'),
+    onExportTrace: () => {
+      void controller.traceExportMutation.mutateAsync();
+    },
+    onDelete: () => controller.setActionDialog('delete'),
+    onLoadTrace: () => controller.setDetailsRequested(true),
+    onExportSnapshotPayload: async (snapshotId: string, role: string | null, spanName: string | null) => {
+      await controller.snapshotExportMutation.mutateAsync({ snapshotId, role, spanName });
+    },
+  };
+}
+
+function buildEmptyLineage(controller: InspectionPageController) {
   return {
     golemId: controller.golemQuery.data?.id ?? '',
     nodes: [],

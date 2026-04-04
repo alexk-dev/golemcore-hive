@@ -1,17 +1,19 @@
 import type { CardAssigneeOptions, CardControlState, CardDetail } from '../../lib/api/cardsApi';
 import type { CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import type { GolemSummary } from '../../lib/api/golemsApi';
-import { formatControlLabel } from '../../lib/format';
+import { formatControlLabel, formatGolemDisplayName } from '../../lib/format';
 import { AssignmentPolicyBadge } from './AssignmentPolicyBadge';
 import { AssigneePicker } from './AssigneePicker';
 import { CommandForm } from './CommandForm';
 
 export function CardDispatchPanel({
   card,
+  allGolems,
   isDispatchPending,
   onSubmit,
 }: {
   card: CardDetail;
+  allGolems: GolemSummary[];
   isDispatchPending: boolean;
   onSubmit: (input: CreateThreadCommandInput) => Promise<void>;
 }) {
@@ -19,7 +21,7 @@ export function CardDispatchPanel({
     <section className="panel p-4">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-base font-bold tracking-tight text-foreground">Dispatch</h3>
-        <span className="text-xs text-muted-foreground">{card.assigneeGolemId || 'Unassigned'}</span>
+        <span className="text-xs text-muted-foreground">{formatGolemDisplayName(card.assigneeGolemId, allGolems)}</span>
       </div>
       <div className="mt-3">
         <CommandForm

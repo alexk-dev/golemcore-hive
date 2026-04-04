@@ -507,6 +507,7 @@ public class CommandDispatchService {
         ThreadRecord thread = resolveThread(threadId, run);
         String resolvedCardId = cardId != null ? cardId : run.getCardId();
         Card card = resolvedCardId != null ? cardService.getCard(resolvedCardId) : null;
+        String golemDisplayName = resolveGolemDisplayName(golemId);
 
         if (command != null) {
             command.setUpdatedAt(eventTime);
@@ -536,8 +537,8 @@ public class CommandDispatchService {
         }
         case THREAD_MESSAGE ->
             threadService.appendMessage(thread, command != null ? command.getId() : commandId, run.getId(),
-                    null, ThreadMessageType.GOLEM_RESPONSE, ThreadParticipantType.GOLEM, golemId, golemId,
-                    firstNonBlank(details, summary, "Golem response"), eventTime);
+                    null, ThreadMessageType.GOLEM_RESPONSE, ThreadParticipantType.GOLEM, golemId,
+                    golemDisplayName, firstNonBlank(details, summary, "Golem response"), eventTime);
         case RUN_STARTED, RUN_PROGRESS -> {
             run.setStatus(RunStatus.RUNNING);
             if (run.getStartedAt() == null) {
@@ -581,8 +582,8 @@ public class CommandDispatchService {
 
         if (summary != null && !summary.isBlank() && runtimeEventType != RuntimeEventType.THREAD_MESSAGE) {
             threadService.appendMessage(thread, command != null ? command.getId() : commandId, run.getId(), null,
-                    ThreadMessageType.RUNTIME_EVENT, ThreadParticipantType.SYSTEM, golemId, golemId,
-                    runtimeEventType.name() + ": " + summary, eventTime);
+                    ThreadMessageType.RUNTIME_EVENT, ThreadParticipantType.SYSTEM, golemId,
+                    golemDisplayName, runtimeEventType.name() + ": " + summary, eventTime);
         }
 
         saveRun(run);
@@ -611,7 +612,7 @@ public class CommandDispatchService {
                     .severity(runtimeEventType == RuntimeEventType.RUN_FAILED ? "WARN" : "INFO")
                     .actorType("GOLEM")
                     .actorId(golemId)
-                    .actorName(golemId)
+                    .actorName(golemDisplayName)
                     .targetType("RUN")
                     .targetId(run.getId())
                     .boardId(card != null ? card.getBoardId() : null)
@@ -641,6 +642,7 @@ public class CommandDispatchService {
                 signal.getCardId(), signal.getGolemId(), signal.getCreatedAt());
         CommandRecord command = resolveCommand(signal.getCommandId(), run);
         Instant eventTime = signal.getCreatedAt() != null ? signal.getCreatedAt() : Instant.now();
+        String golemDisplayName = resolveGolemDisplayName(signal.getGolemId());
 
         run.setUpdatedAt(eventTime);
         run.setEventCount(run.getEventCount() + 1);
@@ -744,7 +746,7 @@ public class CommandDispatchService {
                                 : "INFO")
                 .actorType("GOLEM")
                 .actorId(signal.getGolemId())
-                .actorName(signal.getGolemId())
+                .actorName(golemDisplayName)
                 .targetType("RUN")
                 .targetId(run.getId())
                 .boardId(card != null ? card.getBoardId() : null)
@@ -1083,6 +1085,16 @@ public class CommandDispatchService {
             }
         }
         return "";
+    }
+
+    private String resolveGolemDisplayName(String golemId) {
+        if (golemId == null || golemId.isBlank()) {
+            return "";
+        }
+        return golemRegistryService.findGolem(golemId)
+                .map(Golem::getDisplayName)
+                .filter(displayName -> displayName != null && !displayName.isBlank())
+                .orElse(golemId);
     }
 
     @Getter

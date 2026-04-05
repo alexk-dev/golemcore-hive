@@ -34,6 +34,8 @@ public class ApprovalRequest {
     private int schemaVersion = 1;
 
     private String id;
+    @Builder.Default
+    private ApprovalSubjectType subjectType = ApprovalSubjectType.COMMAND;
     private String commandId;
     private String runId;
     private String threadId;
@@ -55,4 +57,5 @@ public class ApprovalRequest {
     private String decidedByActorId;
     private String decidedByActorName;
     private String decisionComment;
+    private SelfEvolvingPromotionApprovalContext promotionContext;
 }

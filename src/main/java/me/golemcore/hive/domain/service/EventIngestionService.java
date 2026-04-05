@@ -49,6 +49,7 @@ public class EventIngestionService {
     private final CommandDispatchService commandDispatchService;
     private final SignalResolutionService signalResolutionService;
     private final GolemInspectionRpcService golemInspectionRpcService;
+    private final SelfEvolvingProjectionService selfEvolvingProjectionService;
 
     public BatchResult ingestBatch(String golemId, GolemEventBatchRequest request) {
         int acceptedEvents = 0;
@@ -63,6 +64,39 @@ public class EventIngestionService {
             }
             if ("inspection_response".equals(event.eventType())) {
                 golemInspectionRpcService.handleInspectionResponse(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.run.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyRunEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.candidate.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyCandidateEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.campaign.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyCampaignEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.lineage.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyLineageEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.artifact.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyArtifactCatalogEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.artifact.normalized-revision.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyArtifactNormalizedRevisionEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.artifact.lineage.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyArtifactLineageEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.artifact.diff.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyArtifactDiffEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.artifact.evidence.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyArtifactEvidenceEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.tactic.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyTacticEvent(golemId, event);
+                acceptedEvents++;
+            } else if ("selfevolving.tactic.search-status.upserted".equals(event.eventType())) {
+                selfEvolvingProjectionService.applyTacticSearchStatusEvent(golemId, event);
                 acceptedEvents++;
             } else if ("runtime_event".equals(event.eventType())) {
                 RuntimeEventType runtimeEventType = RuntimeEventType.valueOf(event.runtimeEventType());

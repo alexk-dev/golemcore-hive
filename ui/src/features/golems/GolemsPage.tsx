@@ -16,6 +16,7 @@ import {
   GolemFiltersPanel,
   GolemRegistryPanel,
 } from './GolemsPageSections';
+import { GolemsSelfEvolvingArtifactsPanel } from './GolemsSelfEvolvingArtifactsPanel';
 
 type GolemActionDialogMode = 'pause' | 'revoke';
 
@@ -142,6 +143,8 @@ export function GolemsPage() {
         selectedGolemId={state.selectedGolemId}
         onSelect={state.openDetailsModal}
       />
+
+      <GolemsSelfEvolvingArtifactsPanel golems={state.golemsQuery.data ?? []} />
 
       <GolemDetailsModal
         golem={state.golemDetailsQuery.data ?? null}

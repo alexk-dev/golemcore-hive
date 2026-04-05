@@ -105,6 +105,7 @@ public class ApprovalsController {
     private ApprovalRequestResponse toResponse(ApprovalRequest approval) {
         return new ApprovalRequestResponse(
                 approval.getId(),
+                approval.getSubjectType() != null ? approval.getSubjectType().name() : null,
                 approval.getCommandId(),
                 approval.getRunId(),
                 approval.getThreadId(),
@@ -123,6 +124,7 @@ public class ApprovalsController {
                 approval.getDecidedAt(),
                 approval.getDecidedByActorId(),
                 approval.getDecidedByActorName(),
-                approval.getDecisionComment());
+                approval.getDecisionComment(),
+                approval.getPromotionContext());
     }
 }

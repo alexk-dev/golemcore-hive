@@ -6,7 +6,7 @@ import { approveApproval, listApprovals, rejectApproval, type ApprovalRequest } 
 import { listGolems } from '../../lib/api/golemsApi';
 import { formatGolemDisplayName } from '../../lib/format';
 
-const ROW_HEIGHT = 32;
+const ROW_HEIGHT = 56;
 
 export function ApprovalsPage() {
   const queryClient = useQueryClient();
@@ -65,10 +65,10 @@ export function ApprovalsPage() {
       {approvals.length ? (
         <div className="border border-border/70">
           <div className="flex items-center gap-3 border-b border-border/50 bg-white/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-            <span className="w-20 shrink-0">Risk</span>
+            <span className="w-36 shrink-0">Type</span>
             <span className="w-20 shrink-0">Status</span>
-            <span className="min-w-0 flex-1">Command</span>
-            <span className="w-24 shrink-0">Card</span>
+            <span className="min-w-0 flex-1">Subject</span>
+            <span className="w-28 shrink-0">Scope</span>
             <span className="w-24 shrink-0">Golem</span>
             <span className="w-20 shrink-0 text-right">Cost</span>
             <span className="w-24 shrink-0 text-right">Actions</span>
@@ -77,17 +77,28 @@ export function ApprovalsPage() {
             <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
               {virtualizer.getVirtualItems().map((virtualRow) => {
                 const approval = approvals[virtualRow.index];
+                const summary = buildApprovalSummary(approval);
+                const detail = buildApprovalDetail(approval);
+                const scope = approval.subjectType === 'SELF_EVOLVING_PROMOTION'
+                  ? approval.promotionContext?.candidateId ?? 'Promotion'
+                  : approval.cardId ?? 'Command';
                 return (
                   <div
                     key={approval.id}
                     className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-white/80"
                     style={{ height: ROW_HEIGHT, top: virtualRow.start }}
                   >
-                    <span className="w-20 shrink-0 text-xs font-medium text-foreground">{approval.riskLevel}</span>
+                    <span className="w-36 shrink-0 text-xs font-medium text-foreground">{approval.subjectType}</span>
                     <span className="w-20 shrink-0 text-xs text-muted-foreground">{approval.status}</span>
-                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">{approval.commandBody}</span>
-                    <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">{approval.cardId}</span>
-                    <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-foreground">{summary}</span>
+                      {detail ? <span className="block truncate text-xs text-muted-foreground">{detail}</span> : null}
+                    </span>
+                    <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">{scope}</span>
+                    <span
+                      className="w-24 shrink-0 truncate text-xs text-muted-foreground"
+                      title={approval.golemId}
+                    >
                       {formatGolemDisplayName(approval.golemId, golemsQuery.data ?? [])}
                     </span>
                     <span className="w-20 shrink-0 text-right tabular-nums text-xs text-muted-foreground">{approval.estimatedCostMicros}</span>
@@ -144,4 +155,18 @@ export function ApprovalsPage() {
       />
     </div>
   );
+}
+
+function buildApprovalSummary(approval: ApprovalRequest) {
+  if (approval.subjectType === 'SELF_EVOLVING_PROMOTION' && approval.promotionContext) {
+    return `${approval.promotionContext.artifactType ?? 'artifact'} • ${approval.promotionContext.goal ?? 'promotion'}`;
+  }
+  return approval.commandBody || 'Command approval';
+}
+
+function buildApprovalDetail(approval: ApprovalRequest) {
+  if (approval.subjectType === 'SELF_EVOLVING_PROMOTION' && approval.promotionContext) {
+    return approval.promotionContext.expectedImpact;
+  }
+  return approval.reason;
 }

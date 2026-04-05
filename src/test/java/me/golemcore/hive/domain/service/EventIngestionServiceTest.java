@@ -40,12 +40,14 @@ class EventIngestionServiceTest {
         CommandDispatchService commandDispatchService = mock(CommandDispatchService.class);
         SignalResolutionService signalResolutionService = mock(SignalResolutionService.class);
         GolemInspectionRpcService golemInspectionRpcService = mock(GolemInspectionRpcService.class);
+        SelfEvolvingProjectionService selfEvolvingProjectionService = mock(SelfEvolvingProjectionService.class);
         EventIngestionService service = new EventIngestionService(
                 storagePort,
                 new ObjectMapper(),
                 commandDispatchService,
                 signalResolutionService,
-                golemInspectionRpcService);
+                golemInspectionRpcService,
+                selfEvolvingProjectionService);
 
         EventIngestionService.BatchResult result = service.ingestBatch("golem-1", new GolemEventBatchRequest(
                 1,

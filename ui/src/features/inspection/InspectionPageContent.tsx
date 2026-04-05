@@ -1,3 +1,5 @@
+import type { ApprovalRequest } from '../../lib/api/approvalsApi';
+import type { ComponentProps } from 'react';
 import { readErrorMessage } from '../../lib/format';
 import type {
   InspectionMessage,
@@ -6,8 +8,23 @@ import type {
   InspectionTrace,
   InspectionTraceSummary,
 } from '../../lib/api/inspectionApi';
-import { InspectionMessagesPanel, InspectionSessionHeader, InspectionSessionsSidebar } from './InspectionPageSections';
-import { InspectionTraceExplorer } from './InspectionTraceExplorer';
+import type {
+  SelfEvolvingCampaign,
+  SelfEvolvingCandidate,
+  SelfEvolvingArtifactCatalogEntry,
+  SelfEvolvingArtifactEvidence,
+  SelfEvolvingArtifactLineage,
+  SelfEvolvingArtifactRevisionDiff,
+  SelfEvolvingArtifactTransitionDiff,
+  SelfEvolvingLineageResponse,
+  SelfEvolvingTacticSearchResponse,
+  SelfEvolvingRun,
+} from '../../lib/api/selfEvolvingApi';
+import { InspectionSessionsSidebar } from './InspectionPageSections';
+import { InspectionSelfEvolvingSection } from './InspectionSelfEvolvingSection';
+import {
+  InspectionSelectedSessionContent,
+} from './InspectionSelectedSessionContent';
 import { hasTraceSummaryData } from './inspectionPageUtils';
 
 function NoticePanel({ children }: { children: string }) {
@@ -37,14 +54,6 @@ function OfflineInspectionPanel() {
   );
 }
 
-function EmptySelectionPanel() {
-  return (
-    <section className="panel p-6">
-      <p className="text-sm text-muted-foreground">Select a session to read messages and inspect traces.</p>
-    </section>
-  );
-}
-
 export function MissingGolemIdPanel() {
   return <NoticePanel>Missing golem id.</NoticePanel>;
 }
@@ -67,6 +76,63 @@ export function InspectionStatusPanels({
   );
 }
 
+interface InspectionOnlineContentProps {
+  sessions: InspectionSessionSummary[];
+  selectedSessionId: string | null;
+  sessionsLoading: boolean;
+  sessionsError: unknown;
+  selectedSessionSummary: InspectionSessionSummary | null;
+  selectedSession: InspectionSessionDetail | undefined;
+  sessionLoading: boolean;
+  sessionError: unknown;
+  keepLast: number;
+  isMutating: boolean;
+  isExportingTrace: boolean;
+  traceSummary: InspectionTraceSummary | null;
+  trace: InspectionTrace | null;
+  messages: InspectionMessage[];
+  isLoadingTraceSummary: boolean;
+  isLoadingTrace: boolean;
+  traceErrorMessage: string | null;
+  isExportingSnapshot: boolean;
+  selfEvolvingRuns: SelfEvolvingRun[];
+  selectedSelfEvolvingRunId: string | null;
+  selectedSelfEvolvingRun: SelfEvolvingRun | null;
+  selfEvolvingCandidates: SelfEvolvingCandidate[];
+  selfEvolvingCampaigns: SelfEvolvingCampaign[];
+  selfEvolvingLineage: SelfEvolvingLineageResponse;
+  selfEvolvingArtifacts: SelfEvolvingArtifactCatalogEntry[];
+  selectedArtifactStreamId: string | null;
+  artifactLineage: SelfEvolvingArtifactLineage | null;
+  artifactCompareMode: 'revision' | 'transition';
+  artifactRevisionDiff: SelfEvolvingArtifactRevisionDiff | null;
+  artifactTransitionDiff: SelfEvolvingArtifactTransitionDiff | null;
+  artifactEvidence: SelfEvolvingArtifactEvidence | null;
+  tacticQuery: string;
+  tacticSearchResponse: SelfEvolvingTacticSearchResponse | null;
+  selectedTacticId: string | null;
+  isArtifactsLoading: boolean;
+  isArtifactLineageLoading: boolean;
+  isArtifactDiffLoading: boolean;
+  isArtifactEvidenceLoading: boolean;
+  promotionApprovals: ApprovalRequest[];
+  onSelectSession: (sessionId: string) => void;
+  onSelectSelfEvolvingRun: (runId: string) => void;
+  onSelectArtifactStream: (artifactStreamId: string) => void;
+  onSelectArtifactCompareMode: (compareMode: 'revision' | 'transition') => void;
+  onSelectArtifactRevisionPair: (fromRevisionId: string, toRevisionId: string) => void;
+  onSelectArtifactTransitionPair: (fromNodeId: string, toNodeId: string) => void;
+  onTacticQueryChange: (query: string) => void;
+  onSelectTacticId: (tacticId: string) => void;
+  onKeepLastChange: (value: number) => void;
+  onCompact: () => void;
+  onClear: () => void;
+  onExportTrace: () => void;
+  onDelete: () => void;
+  onLoadTrace: () => void;
+  onExportSnapshotPayload: (snapshotId: string, role: string | null, spanName: string | null) => Promise<void>;
+}
+
 export function InspectionOnlineContent({
   sessions,
   selectedSessionId,
@@ -86,7 +152,35 @@ export function InspectionOnlineContent({
   isLoadingTrace,
   traceErrorMessage,
   isExportingSnapshot,
+  selfEvolvingRuns,
+  selectedSelfEvolvingRunId,
+  selectedSelfEvolvingRun,
+  selfEvolvingCandidates,
+  selfEvolvingCampaigns,
+  selfEvolvingLineage,
+  selfEvolvingArtifacts,
+  selectedArtifactStreamId,
+  artifactLineage,
+  artifactCompareMode,
+  artifactRevisionDiff,
+  artifactTransitionDiff,
+  artifactEvidence,
+  tacticQuery,
+  tacticSearchResponse,
+  selectedTacticId,
+  isArtifactsLoading,
+  isArtifactLineageLoading,
+  isArtifactDiffLoading,
+  isArtifactEvidenceLoading,
+  promotionApprovals,
   onSelectSession,
+  onSelectSelfEvolvingRun,
+  onSelectArtifactStream,
+  onSelectArtifactCompareMode,
+  onSelectArtifactRevisionPair,
+  onSelectArtifactTransitionPair,
+  onTacticQueryChange,
+  onSelectTacticId,
   onKeepLastChange,
   onCompact,
   onClear,
@@ -94,34 +188,7 @@ export function InspectionOnlineContent({
   onDelete,
   onLoadTrace,
   onExportSnapshotPayload,
-}: {
-  sessions: InspectionSessionSummary[];
-  selectedSessionId: string | null;
-  sessionsLoading: boolean;
-  sessionsError: unknown;
-  selectedSessionSummary: InspectionSessionSummary | null;
-  selectedSession: InspectionSessionDetail | undefined;
-  sessionLoading: boolean;
-  sessionError: unknown;
-  keepLast: number;
-  isMutating: boolean;
-  isExportingTrace: boolean;
-  traceSummary: InspectionTraceSummary | null;
-  trace: InspectionTrace | null;
-  messages: InspectionMessage[];
-  isLoadingTraceSummary: boolean;
-  isLoadingTrace: boolean;
-  traceErrorMessage: string | null;
-  isExportingSnapshot: boolean;
-  onSelectSession: (sessionId: string) => void;
-  onKeepLastChange: (value: number) => void;
-  onCompact: () => void;
-  onClear: () => void;
-  onExportTrace: () => void;
-  onDelete: () => void;
-  onLoadTrace: () => void;
-  onExportSnapshotPayload: (snapshotId: string, role: string | null, spanName: string | null) => Promise<void>;
-}) {
+}: InspectionOnlineContentProps) {
   const selectedSessionView = buildSelectedSessionView(
     selectedSessionId ?? '',
     selectedSessionSummary,
@@ -140,53 +207,69 @@ export function InspectionOnlineContent({
       />
 
       <div className="grid gap-4">
-        {selectedSessionId == null ? (
-          <EmptySelectionPanel />
-        ) : (
-          <>
-            <InspectionSessionHeader
-              title={selectedSessionView.title}
-              channelType={selectedSessionView.channelType}
-              conversationKey={selectedSessionView.conversationKey}
-              updatedAt={selectedSessionView.updatedAt}
-              preview={selectedSessionView.preview}
-              keepLast={keepLast}
-              isMutating={isMutating}
-              isExportingTrace={isExportingTrace}
-              canExportTrace={canExportTrace}
-              onKeepLastChange={onKeepLastChange}
-              onCompact={onCompact}
-              onClear={onClear}
-              onExportTrace={onExportTrace}
-              onDelete={onDelete}
-            />
+        <InspectionSelectedSessionContent
+          selectedSessionId={selectedSessionId}
+          selectedSession={selectedSession}
+          sessionLoading={sessionLoading}
+          sessionError={sessionError}
+          selectedSessionView={selectedSessionView}
+          keepLast={keepLast}
+          isMutating={isMutating}
+          isExportingTrace={isExportingTrace}
+          canExportTrace={canExportTrace}
+          traceSummary={traceSummary}
+          trace={trace}
+          messages={messages}
+          isLoadingTraceSummary={isLoadingTraceSummary}
+          isLoadingTrace={isLoadingTrace}
+          traceErrorMessage={traceErrorMessage}
+          isExportingSnapshot={isExportingSnapshot}
+          onKeepLastChange={onKeepLastChange}
+          onCompact={onCompact}
+          onClear={onClear}
+          onExportTrace={onExportTrace}
+          onDelete={onDelete}
+          onLoadTrace={onLoadTrace}
+          onExportSnapshotPayload={onExportSnapshotPayload}
+        />
 
-            <div className="grid gap-4 2xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-              <InspectionMessagesPanel
-                session={selectedSession}
-                isLoading={sessionLoading}
-                error={sessionError}
-              />
-
-              <InspectionTraceExplorer
-                summary={traceSummary}
-                trace={trace}
-                messages={messages}
-                isLoadingSummary={isLoadingTraceSummary}
-                isLoadingTrace={isLoadingTrace}
-                errorMessage={traceErrorMessage}
-                onLoadTrace={onLoadTrace}
-                onExportTrace={onExportTrace}
-                onExportSnapshotPayload={onExportSnapshotPayload}
-                isExporting={isExportingTrace}
-                isExportingSnapshot={isExportingSnapshot}
-              />
-            </div>
-          </>
-        )}
+        <InspectionSelfEvolvingContent
+          runs={selfEvolvingRuns}
+          selectedRunId={selectedSelfEvolvingRunId}
+          selectedRun={selectedSelfEvolvingRun}
+          candidates={selfEvolvingCandidates}
+          campaigns={selfEvolvingCampaigns}
+          lineage={selfEvolvingLineage}
+          artifacts={selfEvolvingArtifacts}
+          selectedArtifactStreamId={selectedArtifactStreamId}
+          artifactLineage={artifactLineage}
+          artifactCompareMode={artifactCompareMode}
+          artifactRevisionDiff={artifactRevisionDiff}
+          artifactTransitionDiff={artifactTransitionDiff}
+          artifactEvidence={artifactEvidence}
+          tacticQuery={tacticQuery}
+          tacticSearchResponse={tacticSearchResponse}
+          selectedTacticId={selectedTacticId}
+          isArtifactsLoading={isArtifactsLoading}
+          isArtifactLineageLoading={isArtifactLineageLoading}
+          isArtifactDiffLoading={isArtifactDiffLoading}
+          isArtifactEvidenceLoading={isArtifactEvidenceLoading}
+          promotionApprovals={promotionApprovals}
+          onSelectRun={onSelectSelfEvolvingRun}
+          onSelectArtifactStream={onSelectArtifactStream}
+          onSelectArtifactCompareMode={onSelectArtifactCompareMode}
+          onSelectArtifactRevisionPair={onSelectArtifactRevisionPair}
+          onSelectArtifactTransitionPair={onSelectArtifactTransitionPair}
+          onTacticQueryChange={onTacticQueryChange}
+          onSelectTacticId={onSelectTacticId}
+        />
       </div>
     </div>
   );
+}
+
+function InspectionSelfEvolvingContent(props: ComponentProps<typeof InspectionSelfEvolvingSection>) {
+  return <InspectionSelfEvolvingSection {...props} />;
 }
 
 function buildSelectedSessionView(

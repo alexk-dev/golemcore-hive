@@ -22,6 +22,7 @@ coverage/
 .idea/
 .vscode/
 .DS_Store
+.worktrees/
 
 # Logs
 *.log

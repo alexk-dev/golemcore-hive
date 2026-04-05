@@ -1,3 +1,5 @@
+import type { GolemSummary } from './api/golemsApi';
+
 export function formatTimestamp(value: string | null) {
   if (!value) {
     return 'Never';
@@ -22,6 +24,17 @@ export function formatControlLabel(controlState: { runStatus: string; commandSta
     return 'Running';
   }
   return controlState.runStatus.replace(/_/g, ' ');
+}
+
+export function formatGolemDisplayName(golemId: string | null | undefined, golems: GolemSummary[] | null | undefined) {
+  if (!golemId) {
+    return 'Unassigned';
+  }
+  const golem = golems?.find((candidate) => candidate.id === golemId);
+  if (golem?.displayName?.trim()) {
+    return golem.displayName;
+  }
+  return golemId;
 }
 
 export function readErrorMessage(error: unknown) {

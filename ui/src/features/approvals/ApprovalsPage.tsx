@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDeferredValue, useRef, useState } from 'react';
 import { ApprovalDecisionDialog } from './ApprovalDecisionDialog';
 import { approveApproval, listApprovals, rejectApproval, type ApprovalRequest } from '../../lib/api/approvalsApi';
+import { listGolems } from '../../lib/api/golemsApi';
+import { formatGolemDisplayName } from '../../lib/format';
 
 const ROW_HEIGHT = 56;
 
@@ -17,6 +19,10 @@ export function ApprovalsPage() {
   const approvalsQuery = useQuery({
     queryKey: ['approvals', deferredStatus],
     queryFn: () => listApprovals({ status: deferredStatus }),
+  });
+  const golemsQuery = useQuery({
+    queryKey: ['golems', 'approvals'],
+    queryFn: () => listGolems(),
   });
 
   const decisionMutation = useMutation({
@@ -89,7 +95,12 @@ export function ApprovalsPage() {
                       {detail ? <span className="block truncate text-xs text-muted-foreground">{detail}</span> : null}
                     </span>
                     <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">{scope}</span>
-                    <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">{approval.golemId}</span>
+                    <span
+                      className="w-24 shrink-0 truncate text-xs text-muted-foreground"
+                      title={approval.golemId}
+                    >
+                      {formatGolemDisplayName(approval.golemId, golemsQuery.data ?? [])}
+                    </span>
                     <span className="w-20 shrink-0 text-right tabular-nums text-xs text-muted-foreground">{approval.estimatedCostMicros}</span>
                     <span className="flex w-24 shrink-0 justify-end gap-1">
                       {approval.status === 'PENDING' ? (

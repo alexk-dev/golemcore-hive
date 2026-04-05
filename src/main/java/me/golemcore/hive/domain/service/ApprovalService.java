@@ -36,6 +36,7 @@ import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CommandRecord;
 import me.golemcore.hive.domain.model.CommandStatus;
+import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.NotificationEvent;
 import me.golemcore.hive.domain.model.NotificationSeverity;
 import me.golemcore.hive.domain.model.RunProjection;
@@ -61,6 +62,7 @@ public class ApprovalService {
     private final ObjectMapper objectMapper;
     private final HiveProperties properties;
     private final ThreadService threadService;
+    private final GolemRegistryService golemRegistryService;
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final OperatorUpdatesService operatorUpdatesService;
@@ -82,6 +84,7 @@ public class ApprovalService {
             String actorId,
             String actorName) {
         Instant now = Instant.now();
+        String golemDisplayName = resolveGolemDisplayName(command.getGolemId());
         ApprovalRequest approval = ApprovalRequest.builder()
                 .id("apr_" + UUID.randomUUID().toString().replace("-", ""))
                 .subjectType(ApprovalSubjectType.COMMAND)
@@ -127,7 +130,8 @@ public class ApprovalService {
                     .type("APPROVAL_REQUESTED")
                     .severity(NotificationSeverity.WARN)
                     .title("Approval requested")
-                    .message(approval.getRiskLevel() + " command requires operator approval")
+                    .message(approval.getRiskLevel() + " command for " + golemDisplayName
+                            + " requires operator approval")
                     .boardId(card.getBoardId())
                     .cardId(card.getId())
                     .threadId(command.getThreadId())
@@ -354,6 +358,16 @@ public class ApprovalService {
         threadService.appendMessage(thread, command.getId(), run.getId(), null,
                 ThreadMessageType.COMMAND_STATUS, ThreadParticipantType.SYSTEM,
                 "system", "Hive", message, now);
+    }
+
+    private String resolveGolemDisplayName(String golemId) {
+        if (golemId == null || golemId.isBlank()) {
+            return "golem";
+        }
+        return golemRegistryService.findGolem(golemId)
+                .map(Golem::getDisplayName)
+                .filter(displayName -> displayName != null && !displayName.isBlank())
+                .orElse(golemId);
     }
 
     private Optional<ApprovalRequest> loadApproval(String path) {

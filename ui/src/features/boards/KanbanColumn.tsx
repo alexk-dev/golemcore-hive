@@ -3,20 +3,23 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardColumn } from '../../lib/api/boardsApi';
 import type { CardSummary } from '../../lib/api/cardsApi';
-import { formatControlLabel } from '../../lib/format';
+import type { GolemSummary } from '../../lib/api/golemsApi';
+import { formatControlLabel, formatGolemDisplayName } from '../../lib/format';
 
 interface KanbanColumnProps {
   column: BoardColumn;
   cards: CardSummary[];
+  allGolems: GolemSummary[];
   onOpenCard: (cardId: string) => void;
 }
 
 interface SortableCardProps {
   card: CardSummary;
+  allGolems: GolemSummary[];
   onOpenCard: (cardId: string) => void;
 }
 
-function SortableCard({ card, onOpenCard }: SortableCardProps) {
+function SortableCard({ card, allGolems, onOpenCard }: SortableCardProps) {
   const { attributes, isDragging, isOver, listeners, setNodeRef, transform, transition } = useSortable({ id: card.id });
   const controlTone = card.controlState?.cancelRequestedPending
     ? 'bg-rose-100 text-rose-900'
@@ -52,7 +55,7 @@ function SortableCard({ card, onOpenCard }: SortableCardProps) {
           </span>
         ) : null}
       </div>
-      <p className="truncate text-xs text-muted-foreground">{card.assigneeGolemId || 'Unassigned'}</p>
+      <p className="truncate text-xs text-muted-foreground">{formatGolemDisplayName(card.assigneeGolemId, allGolems)}</p>
       {card.controlState?.cancelRequestedPending && card.controlState.cancelRequestedByActorName ? (
         <p className="text-xs text-rose-900">stop by {card.controlState.cancelRequestedByActorName}</p>
       ) : null}
@@ -60,7 +63,7 @@ function SortableCard({ card, onOpenCard }: SortableCardProps) {
   );
 }
 
-export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
+export function KanbanColumn({ column, cards, allGolems, onOpenCard }: KanbanColumnProps) {
   const { over } = useDndContext();
   const laneDrop = useDroppable({ id: `column:${column.id}` });
   const endDrop = useDroppable({ id: `column:${column.id}:end` });
@@ -98,7 +101,7 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
       >
         <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
-            <SortableCard key={card.id} card={card} onOpenCard={onOpenCard} />
+            <SortableCard key={card.id} card={card} allGolems={allGolems} onOpenCard={onOpenCard} />
           ))}
         </SortableContext>
         {hasCards ? (

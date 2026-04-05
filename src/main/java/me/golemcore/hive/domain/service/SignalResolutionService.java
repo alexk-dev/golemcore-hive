@@ -42,12 +42,14 @@ public class SignalResolutionService {
     private final BoardService boardService;
     private final CardService cardService;
     private final ThreadService threadService;
+    private final GolemRegistryService golemRegistryService;
     private final OperatorUpdatesService operatorUpdatesService;
 
     public CardLifecycleSignal resolve(CardLifecycleSignal signal) {
         Card card = cardService.getCard(signal.getCardId());
         Board board = boardService.getBoard(card.getBoardId());
         ThreadRecord thread = threadService.getThreadByCardId(card.getId());
+        String golemDisplayName = resolveGolemDisplayName(signal.getGolemId());
         BoardSignalMapping mapping = resolveMapping(board, signal.getSignalType());
         BoardSignalDecision decision = mapping != null ? mapping.getDecision()
                 : defaultDecision(signal.getSignalType());
@@ -75,14 +77,14 @@ public class SignalResolutionService {
             signal.setResolutionSummary("Suggested transition to " + targetColumnId);
         } else {
             cardService.moveCard(card.getId(), targetColumnId, null, CardTransitionOrigin.BOARD_AUTOMATION,
-                    signal.getGolemId(), signal.getGolemId(),
+                    signal.getGolemId(), golemDisplayName,
                     "Auto-applied from " + signal.getSignalType().name() + ": " + signal.getSummary());
             signal.setResolutionOutcome(SignalResolutionOutcome.AUTO_APPLIED);
             signal.setResolutionSummary("Moved card to " + targetColumnId);
         }
 
         threadService.appendMessage(thread, signal.getCommandId(), signal.getRunId(), signal.getId(),
-                ThreadMessageType.SIGNAL, ThreadParticipantType.SYSTEM, signal.getGolemId(), signal.getGolemId(),
+                ThreadMessageType.SIGNAL, ThreadParticipantType.SYSTEM, signal.getGolemId(), golemDisplayName,
                 buildSignalMessage(signal), signal.getCreatedAt());
 
         operatorUpdatesService.publish(OperatorUpdate.builder()
@@ -130,5 +132,16 @@ public class SignalResolutionService {
             builder.append(" (").append(signal.getResolutionSummary()).append(')');
         }
         return builder.toString();
+    }
+
+    private String resolveGolemDisplayName(String golemId) {
+        if (golemId == null || golemId.isBlank()) {
+            return "";
+        }
+        return golemRegistryService.findGolem(golemId)
+                .map(golem -> golem.getDisplayName() != null && !golem.getDisplayName().isBlank()
+                        ? golem.getDisplayName()
+                        : golemId)
+                .orElse(golemId);
     }
 }

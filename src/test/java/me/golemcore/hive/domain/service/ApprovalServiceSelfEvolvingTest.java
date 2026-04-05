@@ -43,6 +43,7 @@ class ApprovalServiceSelfEvolvingTest {
     void shouldCreatePromotionApprovalWithoutCommandRecord() {
         StoragePort storagePort = mock(StoragePort.class);
         ThreadService threadService = mock(ThreadService.class);
+        GolemRegistryService golemRegistryService = mock(GolemRegistryService.class);
         AuditService auditService = mock(AuditService.class);
         NotificationService notificationService = mock(NotificationService.class);
         OperatorUpdatesService operatorUpdatesService = mock(OperatorUpdatesService.class);
@@ -53,6 +54,7 @@ class ApprovalServiceSelfEvolvingTest {
                 new ObjectMapper().registerModule(new JavaTimeModule()),
                 new HiveProperties(),
                 threadService,
+                golemRegistryService,
                 auditService,
                 notificationService,
                 operatorUpdatesService,

@@ -83,7 +83,7 @@ export function CardDetailsDrawer({
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-foreground/20 backdrop-blur-sm">
       <div className="h-full w-full max-w-[880px] overflow-auto border-l border-border/70 bg-[rgba(255,251,244,0.98)] px-5 py-5 shadow-[0_20px_70px_rgba(26,20,15,0.14)] md:px-6">
-        <CardDetailsHeader card={card} onClose={onClose} />
+        <CardDetailsHeader card={card} allGolems={allGolems} onClose={onClose} />
 
         {controlError ? (
           <div className="mt-3 border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm text-rose-900">
@@ -95,6 +95,7 @@ export function CardDetailsDrawer({
           <div className="grid gap-4">
             <CardDispatchPanel
               card={card}
+              allGolems={allGolems}
               isDispatchPending={isDispatchPending}
               onSubmit={onDispatchCommand}
             />

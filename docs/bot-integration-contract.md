@@ -1,7 +1,6 @@
 # Bot Integration Contract
 
 Status: Draft v1
-Parent spec: [SPEC.md](../SPEC.md)
 
 ## 1. Purpose
 

@@ -48,4 +48,9 @@ public class HeartbeatPing {
     private String lastErrorSummary;
     private long uptimeSeconds;
     private String capabilitySnapshotHash;
+    private String policyGroupId;
+    private Integer targetPolicyVersion;
+    private Integer appliedPolicyVersion;
+    private String syncStatus;
+    private String lastPolicyErrorDigest;
 }

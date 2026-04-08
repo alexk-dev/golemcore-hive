@@ -265,6 +265,7 @@ export function KanbanBoardPage() {
                 cards={cards
                   .filter((card) => card.columnId === column.id && !card.archived)
                   .sort((left, right) => (left.position ?? 0) - (right.position ?? 0))}
+                allGolems={data.golemsQuery.data ?? []}
                 onOpenCard={setSelectedCardId}
               />
             ))}
@@ -339,4 +340,3 @@ export function KanbanBoardPage() {
     </div>
   );
 }
-

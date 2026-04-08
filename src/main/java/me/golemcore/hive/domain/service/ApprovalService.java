@@ -31,14 +31,18 @@ import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.ApprovalRequest;
 import me.golemcore.hive.domain.model.ApprovalRiskLevel;
 import me.golemcore.hive.domain.model.ApprovalStatus;
+import me.golemcore.hive.domain.model.ApprovalSubjectType;
 import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CommandRecord;
 import me.golemcore.hive.domain.model.CommandStatus;
+import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.NotificationEvent;
 import me.golemcore.hive.domain.model.NotificationSeverity;
 import me.golemcore.hive.domain.model.RunProjection;
 import me.golemcore.hive.domain.model.RunStatus;
+import me.golemcore.hive.domain.model.SelfEvolvingCandidateProjection;
+import me.golemcore.hive.domain.model.SelfEvolvingPromotionApprovalContext;
 import me.golemcore.hive.domain.model.ThreadMessageType;
 import me.golemcore.hive.domain.model.ThreadParticipantType;
 import me.golemcore.hive.domain.model.ThreadRecord;
@@ -58,8 +62,10 @@ public class ApprovalService {
     private final ObjectMapper objectMapper;
     private final HiveProperties properties;
     private final ThreadService threadService;
+    private final GolemRegistryService golemRegistryService;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final OperatorUpdatesService operatorUpdatesService;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public ApprovalRiskLevel resolveApprovalRisk(ApprovalRiskLevel requestedRiskLevel, long estimatedCostMicros) {
@@ -78,8 +84,10 @@ public class ApprovalService {
             String actorId,
             String actorName) {
         Instant now = Instant.now();
+        String golemDisplayName = resolveGolemDisplayName(command.getGolemId());
         ApprovalRequest approval = ApprovalRequest.builder()
                 .id("apr_" + UUID.randomUUID().toString().replace("-", ""))
+                .subjectType(ApprovalSubjectType.COMMAND)
                 .commandId(command.getId())
                 .runId(run.getId())
                 .threadId(command.getThreadId())
@@ -122,7 +130,8 @@ public class ApprovalService {
                     .type("APPROVAL_REQUESTED")
                     .severity(NotificationSeverity.WARN)
                     .title("Approval requested")
-                    .message(approval.getRiskLevel() + " command requires operator approval")
+                    .message(approval.getRiskLevel() + " command for " + golemDisplayName
+                            + " requires operator approval")
                     .boardId(card.getBoardId())
                     .cardId(card.getId())
                     .threadId(command.getThreadId())
@@ -135,7 +144,72 @@ public class ApprovalService {
         threadService.appendMessage(thread, command.getId(), run.getId(), null,
                 ThreadMessageType.COMMAND_STATUS, ThreadParticipantType.SYSTEM, actorId, actorName,
                 "Approval required before dispatch: " + approval.getRiskLevel(), now);
+        operatorUpdatesService.publishApprovalUpdate("approval.requested", approval);
 
+        return approval;
+    }
+
+    public ApprovalRequest createPromotionApproval(
+            SelfEvolvingCandidateProjection candidate,
+            String actorId,
+            String actorName) {
+        if (candidate == null || candidate.getId() == null || candidate.getId().isBlank()) {
+            throw new IllegalArgumentException("Candidate is required");
+        }
+
+        Instant now = Instant.now();
+        ApprovalRequest approval = ApprovalRequest.builder()
+                .id("apr_" + UUID.randomUUID().toString().replace("-", ""))
+                .subjectType(ApprovalSubjectType.SELF_EVOLVING_PROMOTION)
+                .runId(candidate.getSourceRunIds() != null && !candidate.getSourceRunIds().isEmpty()
+                        ? candidate.getSourceRunIds().getFirst()
+                        : null)
+                .golemId(candidate.getGolemId())
+                .requestedByActorType("OPERATOR")
+                .requestedByActorId(actorId)
+                .requestedByActorName(actorName)
+                .reason("Awaiting approval before rollout")
+                .estimatedCostMicros(0)
+                .commandBody(null)
+                .status(ApprovalStatus.PENDING)
+                .requestedAt(now)
+                .updatedAt(now)
+                .promotionContext(SelfEvolvingPromotionApprovalContext.builder()
+                        .candidateId(candidate.getId())
+                        .goal(candidate.getGoal())
+                        .artifactType(candidate.getArtifactType())
+                        .riskLevel(candidate.getRiskLevel())
+                        .expectedImpact(candidate.getExpectedImpact())
+                        .sourceRunIds(candidate.getSourceRunIds() != null ? candidate.getSourceRunIds() : List.of())
+                        .build())
+                .build();
+        saveApproval(approval);
+
+        auditService.record(AuditEvent.builder()
+                .eventType("approval.requested")
+                .severity("WARN")
+                .actorType("OPERATOR")
+                .actorId(actorId)
+                .actorName(actorName)
+                .targetType("APPROVAL")
+                .targetId(approval.getId())
+                .golemId(candidate.getGolemId())
+                .runId(approval.getRunId())
+                .approvalId(approval.getId())
+                .summary("Promotion approval requested")
+                .details(candidate.getExpectedImpact()));
+
+        if (notificationService.isApprovalRequestedEnabled()) {
+            notificationService.create(NotificationEvent.builder()
+                    .type("APPROVAL_REQUESTED")
+                    .severity(NotificationSeverity.WARN)
+                    .title("Promotion approval requested")
+                    .message(candidate.getArtifactType() + " candidate requires operator approval")
+                    .golemId(candidate.getGolemId())
+                    .approvalId(approval.getId()));
+        }
+
+        operatorUpdatesService.publishApprovalUpdate("approval.requested", approval);
         return approval;
     }
 
@@ -186,17 +260,22 @@ public class ApprovalService {
         approval.setDecidedByActorName(actorName);
         approval.setDecisionComment(comment);
         saveApproval(approval);
+        operatorUpdatesService.publishApprovalUpdate("approval.approved", approval);
 
-        CommandRecord command = loadCommand(approval.getCommandId());
-        RunProjection run = loadRun(approval.getRunId());
-        command.setStatus(CommandStatus.QUEUED);
-        command.setQueueReason("Approved and awaiting dispatch");
-        command.setUpdatedAt(now);
-        run.setStatus(RunStatus.QUEUED);
-        run.setUpdatedAt(now);
-        saveCommand(command);
-        saveRun(run);
-        appendDecisionMessage(command, run, "Approval granted by " + actorName, now);
+        if (approval.getSubjectType() == ApprovalSubjectType.COMMAND) {
+            CommandRecord command = loadCommand(approval.getCommandId());
+            RunProjection run = loadRun(approval.getRunId());
+            command.setStatus(CommandStatus.QUEUED);
+            command.setQueueReason("Approved and awaiting dispatch");
+            command.setUpdatedAt(now);
+            run.setStatus(RunStatus.QUEUED);
+            run.setUpdatedAt(now);
+            saveCommand(command);
+            saveRun(run);
+            appendDecisionMessage(command, run, "Approval granted by " + actorName, now);
+            applicationEventPublisher
+                    .publishEvent(new ApprovalApprovedEvent(approval.getId(), approval.getCommandId()));
+        }
 
         auditService.record(AuditEvent.builder()
                 .eventType("approval.approved")
@@ -213,10 +292,10 @@ public class ApprovalService {
                 .commandId(approval.getCommandId())
                 .runId(approval.getRunId())
                 .approvalId(approval.getId())
-                .summary("Approval granted")
+                .summary(approval.getSubjectType() == ApprovalSubjectType.SELF_EVOLVING_PROMOTION
+                        ? "Promotion approval granted"
+                        : "Approval granted")
                 .details(comment));
-
-        applicationEventPublisher.publishEvent(new ApprovalApprovedEvent(approval.getId(), approval.getCommandId()));
         return approval;
     }
 
@@ -234,19 +313,22 @@ public class ApprovalService {
         approval.setDecidedByActorName(actorName);
         approval.setDecisionComment(comment);
         saveApproval(approval);
+        operatorUpdatesService.publishApprovalUpdate("approval.rejected", approval);
 
-        CommandRecord command = loadCommand(approval.getCommandId());
-        RunProjection run = loadRun(approval.getRunId());
-        command.setStatus(CommandStatus.REJECTED);
-        command.setQueueReason(comment != null && !comment.isBlank() ? comment : "Rejected by operator");
-        command.setUpdatedAt(now);
-        command.setCompletedAt(now);
-        run.setStatus(RunStatus.REJECTED);
-        run.setUpdatedAt(now);
-        run.setCompletedAt(now);
-        saveCommand(command);
-        saveRun(run);
-        appendDecisionMessage(command, run, "Approval rejected by " + actorName, now);
+        if (approval.getSubjectType() == ApprovalSubjectType.COMMAND) {
+            CommandRecord command = loadCommand(approval.getCommandId());
+            RunProjection run = loadRun(approval.getRunId());
+            command.setStatus(CommandStatus.REJECTED);
+            command.setQueueReason(comment != null && !comment.isBlank() ? comment : "Rejected by operator");
+            command.setUpdatedAt(now);
+            command.setCompletedAt(now);
+            run.setStatus(RunStatus.REJECTED);
+            run.setUpdatedAt(now);
+            run.setCompletedAt(now);
+            saveCommand(command);
+            saveRun(run);
+            appendDecisionMessage(command, run, "Approval rejected by " + actorName, now);
+        }
 
         auditService.record(AuditEvent.builder()
                 .eventType("approval.rejected")
@@ -263,7 +345,9 @@ public class ApprovalService {
                 .commandId(approval.getCommandId())
                 .runId(approval.getRunId())
                 .approvalId(approval.getId())
-                .summary("Approval rejected")
+                .summary(approval.getSubjectType() == ApprovalSubjectType.SELF_EVOLVING_PROMOTION
+                        ? "Promotion approval rejected"
+                        : "Approval rejected")
                 .details(comment));
 
         return approval;
@@ -274,6 +358,16 @@ public class ApprovalService {
         threadService.appendMessage(thread, command.getId(), run.getId(), null,
                 ThreadMessageType.COMMAND_STATUS, ThreadParticipantType.SYSTEM,
                 "system", "Hive", message, now);
+    }
+
+    private String resolveGolemDisplayName(String golemId) {
+        if (golemId == null || golemId.isBlank()) {
+            return "golem";
+        }
+        return golemRegistryService.findGolem(golemId)
+                .map(Golem::getDisplayName)
+                .filter(displayName -> displayName != null && !displayName.isBlank())
+                .orElse(golemId);
     }
 
     private Optional<ApprovalRequest> loadApproval(String path) {

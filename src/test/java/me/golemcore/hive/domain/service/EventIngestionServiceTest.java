@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventBatchRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventPayload;
+import me.golemcore.hive.domain.model.InspectionResponseEvent;
 import me.golemcore.hive.port.outbound.StoragePort;
 import org.junit.jupiter.api.Test;
 
@@ -40,12 +41,14 @@ class EventIngestionServiceTest {
         CommandDispatchService commandDispatchService = mock(CommandDispatchService.class);
         SignalResolutionService signalResolutionService = mock(SignalResolutionService.class);
         GolemInspectionRpcService golemInspectionRpcService = mock(GolemInspectionRpcService.class);
+        SelfEvolvingProjectionService selfEvolvingProjectionService = mock(SelfEvolvingProjectionService.class);
         EventIngestionService service = new EventIngestionService(
                 storagePort,
                 new ObjectMapper(),
                 commandDispatchService,
                 signalResolutionService,
-                golemInspectionRpcService);
+                golemInspectionRpcService,
+                selfEvolvingProjectionService);
 
         EventIngestionService.BatchResult result = service.ingestBatch("golem-1", new GolemEventBatchRequest(
                 1,
@@ -79,25 +82,8 @@ class EventIngestionServiceTest {
         assertEquals(1, result.getAcceptedEvents());
         assertEquals(0, result.getRuntimeEvents());
         assertEquals(0, result.getLifecycleSignals());
-        verify(golemInspectionRpcService).handleInspectionResponse("golem-1", new GolemEventPayload(
-                1,
-                "inspection_response",
-                "golem-1",
-                null,
-                null,
-                null,
-                null,
+        verify(golemInspectionRpcService).handleInspectionResponse(new InspectionResponseEvent(
                 "req-1",
-                null,
-                "inspection:golem-1",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
                 "sessions.list",
                 true,
                 null,

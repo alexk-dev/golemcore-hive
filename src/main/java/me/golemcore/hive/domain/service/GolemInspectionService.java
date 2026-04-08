@@ -27,6 +27,7 @@ import me.golemcore.hive.domain.model.InspectionErrorCode;
 import me.golemcore.hive.domain.model.InspectionRequestBody;
 import me.golemcore.hive.domain.model.InspectionRpcResponse;
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
+import me.golemcore.hive.port.outbound.GolemControlDispatchPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -36,7 +37,7 @@ import reactor.core.publisher.Mono;
 public class GolemInspectionService {
 
     private final GolemDirectoryUseCase golemDirectoryUseCase;
-    private final GolemControlChannelService golemControlChannelService;
+    private final GolemControlDispatchPort golemControlDispatchPort;
     private final GolemInspectionRpcService golemInspectionRpcService;
     private final AuditService auditService;
 
@@ -52,7 +53,7 @@ public class GolemInspectionService {
                     "Unknown golem",
                     false));
         }
-        if (!golemControlChannelService.isConnected(golemId)) {
+        if (!golemControlDispatchPort.isConnected(golemId)) {
             return Mono.error(new InspectionException(
                     HttpStatus.CONFLICT,
                     InspectionErrorCode.GOLEM_OFFLINE,

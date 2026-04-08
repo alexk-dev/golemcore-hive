@@ -28,6 +28,7 @@ import me.golemcore.hive.adapter.inbound.web.dto.golems.ActionReasonRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemAuthResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemCapabilitySnapshotRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemDetailsResponse;
+import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemPolicyBindingResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemSummaryResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemTokenRotateRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.HeartbeatRequest;
@@ -35,11 +36,15 @@ import me.golemcore.hive.adapter.inbound.web.dto.golems.RegisterGolemRequest;
 import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemCapabilitySnapshot;
+import me.golemcore.hive.domain.model.GolemPolicyBinding;
+import me.golemcore.hive.domain.model.GolemScope;
 import me.golemcore.hive.domain.model.HeartbeatPing;
 import me.golemcore.hive.fleet.application.MachineTokenPair;
 import me.golemcore.hive.fleet.application.RegistrationResult;
 import me.golemcore.hive.fleet.application.port.in.GolemEnrollmentUseCase;
 import me.golemcore.hive.fleet.application.port.in.GolemFleetUseCase;
+import me.golemcore.hive.domain.model.PolicySyncStatus;
+import me.golemcore.hive.domain.service.PolicyGroupService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,6 +65,7 @@ public class GolemsController {
 
     private final GolemEnrollmentUseCase golemEnrollmentUseCase;
     private final GolemFleetUseCase golemFleetUseCase;
+    private final PolicyGroupService policyGroupService;
     private final HiveProperties properties;
 
     @PostMapping("/register")
@@ -124,7 +130,10 @@ public class GolemsController {
             @PathVariable String golemId,
             @RequestBody(required = false) HeartbeatRequest request) {
         return Mono.fromCallable(() -> {
-            ControllerActorSupport.requireGolemScope(principal, golemId, "golems:heartbeat");
+            ControllerActorSupport.requireGolemScope(principal, golemId, GolemScope.HEARTBEAT.value());
+            if (request != null && hasPolicySyncState(request)) {
+                ControllerActorSupport.requireGolemScope(principal, golemId, GolemScope.POLICY_WRITE.value());
+            }
             HeartbeatPing heartbeatPing = HeartbeatPing.builder()
                     .golemId(golemId)
                     .receivedAt(Instant.now())
@@ -143,8 +152,23 @@ public class GolemsController {
                     .lastErrorSummary(request != null ? request.lastErrorSummary() : null)
                     .uptimeSeconds(request != null && request.uptimeSeconds() != null ? request.uptimeSeconds() : 0L)
                     .capabilitySnapshotHash(request != null ? request.capabilitySnapshotHash() : null)
+                    .policyGroupId(request != null ? request.policyGroupId() : null)
+                    .targetPolicyVersion(request != null ? request.targetPolicyVersion() : null)
+                    .appliedPolicyVersion(request != null ? request.appliedPolicyVersion() : null)
+                    .syncStatus(request != null ? request.syncStatus() : null)
+                    .lastPolicyErrorDigest(request != null ? request.lastPolicyErrorDigest() : null)
                     .build();
             Golem golem = golemFleetUseCase.updateHeartbeat(golemId, heartbeatPing);
+            if (request != null) {
+                policyGroupService.recordHeartbeatSyncState(
+                        golemId,
+                        request.policyGroupId(),
+                        request.targetPolicyVersion(),
+                        request.appliedPolicyVersion(),
+                        parsePolicySyncStatus(request.syncStatus()),
+                        request.lastPolicyErrorDigest())
+                        .ifPresent(golem::setPolicyBinding);
+            }
             return ResponseEntity.ok(toDetailsResponse(golem));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -206,7 +230,8 @@ public class GolemsController {
                 golem.getLastHeartbeatAt(),
                 golem.getLastSeenAt(),
                 golem.getMissedHeartbeatCount(),
-                golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList());
+                golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList(),
+                toPolicyBindingResponse(golem.getPolicyBinding()));
     }
 
     private GolemDetailsResponse toDetailsResponse(Golem golem) {
@@ -231,7 +256,8 @@ public class GolemsController {
                 golem.getSupportedChannels(),
                 toCapabilitiesRequest(golem.getCapabilitySnapshot()),
                 toHeartbeatRequest(golem.getLastHeartbeat()),
-                golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList());
+                golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList(),
+                toPolicyBindingResponse(golem.getPolicyBinding()));
     }
 
     private GolemCapabilitySnapshot toCapabilitySnapshot(GolemCapabilitySnapshotRequest request) {
@@ -290,7 +316,38 @@ public class GolemsController {
                 heartbeatPing.getHealthSummary(),
                 heartbeatPing.getLastErrorSummary(),
                 heartbeatPing.getUptimeSeconds(),
-                heartbeatPing.getCapabilitySnapshotHash());
+                heartbeatPing.getCapabilitySnapshotHash(),
+                heartbeatPing.getPolicyGroupId(),
+                heartbeatPing.getTargetPolicyVersion(),
+                heartbeatPing.getAppliedPolicyVersion(),
+                heartbeatPing.getSyncStatus(),
+                heartbeatPing.getLastPolicyErrorDigest());
+    }
+
+    private GolemPolicyBindingResponse toPolicyBindingResponse(GolemPolicyBinding policyBinding) {
+        if (policyBinding == null) {
+            return null;
+        }
+        return GolemPolicyController.toBindingResponse(policyBinding);
+    }
+
+    private boolean hasPolicySyncState(HeartbeatRequest request) {
+        return request.policyGroupId() != null
+                || request.targetPolicyVersion() != null
+                || request.appliedPolicyVersion() != null
+                || request.syncStatus() != null
+                || request.lastPolicyErrorDigest() != null;
+    }
+
+    private PolicySyncStatus parsePolicySyncStatus(String rawStatus) {
+        if (rawStatus == null || rawStatus.isBlank()) {
+            return null;
+        }
+        try {
+            return PolicySyncStatus.valueOf(rawStatus.trim());
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown policy sync status: " + rawStatus);
+        }
     }
 
 }

@@ -58,6 +58,7 @@ public class Golem {
     private Set<String> supportedChannels;
     private GolemCapabilitySnapshot capabilitySnapshot;
     private HeartbeatPing lastHeartbeat;
+    private GolemPolicyBinding policyBinding;
 
     @Builder.Default
     private List<GolemRoleBinding> roleBindings = new ArrayList<>();

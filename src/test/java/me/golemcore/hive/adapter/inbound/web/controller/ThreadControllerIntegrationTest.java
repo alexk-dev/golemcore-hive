@@ -326,7 +326,7 @@ class ThreadControllerIntegrationTest {
         BlockingQueue<String> controlMessages = new LinkedBlockingQueue<>();
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
         Disposable subscription = applicationContext
-                .getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
+                .getBean(me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter.class)
                 .register(developer.golemId(), sink)
                 .subscribe(controlMessages::add);
         try {
@@ -406,7 +406,7 @@ class ThreadControllerIntegrationTest {
                     .jsonPath("$.length()").isEqualTo(1);
         } finally {
             subscription.dispose();
-            applicationContext.getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
+            applicationContext.getBean(me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter.class)
                     .unregister(developer.golemId(), sink);
         }
     }
@@ -465,7 +465,7 @@ class ThreadControllerIntegrationTest {
         BlockingQueue<String> controlMessages = new LinkedBlockingQueue<>();
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
         Disposable subscription = applicationContext
-                .getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
+                .getBean(me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter.class)
                 .register(developer.golemId(), sink)
                 .subscribe(controlMessages::add);
         try {
@@ -628,7 +628,7 @@ class ThreadControllerIntegrationTest {
                     .jsonPath("$[0].controlState").isEmpty();
         } finally {
             subscription.dispose();
-            applicationContext.getBean(me.golemcore.hive.domain.service.GolemControlChannelService.class)
+            applicationContext.getBean(me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter.class)
                     .unregister(developer.golemId(), sink);
         }
     }

@@ -33,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemCapabilitySnapshot;
+import me.golemcore.hive.domain.model.GolemPolicyBinding;
 import me.golemcore.hive.domain.model.GolemRole;
 import me.golemcore.hive.domain.model.GolemRoleBinding;
 import me.golemcore.hive.domain.model.GolemState;
@@ -341,6 +342,22 @@ public class GolemFleetApplicationService implements GolemFleetUseCase, Evaluate
                 .summary("Roles unassigned from golem")
                 .details(String.join(", ", roleSlugs))
                 .build());
+        return golem;
+    }
+
+    public Golem updatePolicyBinding(String golemId, GolemPolicyBinding policyBinding) {
+        Golem golem = findGolem(golemId).orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
+        golem.setPolicyBinding(policyBinding);
+        golem.setUpdatedAt(Instant.now());
+        golemRepository.save(golem);
+        return golem;
+    }
+
+    public Golem clearPolicyBinding(String golemId) {
+        Golem golem = findGolem(golemId).orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
+        golem.setPolicyBinding(null);
+        golem.setUpdatedAt(Instant.now());
+        golemRepository.save(golem);
         return golem;
     }
 

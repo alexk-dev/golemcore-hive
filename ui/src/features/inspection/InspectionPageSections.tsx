@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { formatTimestamp, readErrorMessage } from '../../lib/format';
 import type {
   InspectionMessage,
@@ -23,6 +24,28 @@ export function InspectionFeedbackBanner({ feedback }: { feedback: FeedbackState
   return (
     <section className={`border p-3 text-sm font-medium ${feedbackClasses(feedback.tone)}`}>
       {feedback.message}
+    </section>
+  );
+}
+
+export function InspectionReadonlySection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="panel p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-bold text-foreground">{title}</h2>
+          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <div className="mt-4">{children}</div>
     </section>
   );
 }

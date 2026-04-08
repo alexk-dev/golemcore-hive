@@ -54,6 +54,7 @@ import me.golemcore.hive.domain.model.ThreadMessageType;
 import me.golemcore.hive.domain.model.ThreadParticipantType;
 import me.golemcore.hive.domain.model.ThreadRecord;
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
+import me.golemcore.hive.port.outbound.GolemControlDispatchPort;
 import me.golemcore.hive.port.outbound.StoragePort;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -72,7 +73,7 @@ public class CommandDispatchService {
     private final ThreadService threadService;
     private final CardService cardService;
     private final GolemDirectoryUseCase golemDirectoryUseCase;
-    private final GolemControlChannelService golemControlChannelService;
+    private final GolemControlDispatchPort golemControlDispatchPort;
     private final OperatorUpdatesService operatorUpdatesService;
     private final ApprovalService approvalService;
     private final AuditService auditService;
@@ -411,7 +412,7 @@ public class CommandDispatchService {
         Golem golem = golemDirectoryUseCase.findGolem(command.getGolemId())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + command.getGolemId()));
         ControlCommandEnvelope envelope = buildControlEnvelope(CONTROL_EVENT_TYPE_CANCEL, command, now, null);
-        boolean delivered = golemControlChannelService.send(golem.getId(), toJson(envelope));
+        boolean delivered = golemControlDispatchPort.send(golem.getId(), envelope);
         if (!delivered) {
             throw new IllegalStateException("Control channel unavailable for golem: " + golem.getDisplayName());
         }
@@ -508,6 +509,7 @@ public class CommandDispatchService {
         ThreadRecord thread = resolveThread(threadId, run);
         String resolvedCardId = cardId != null ? cardId : run.getCardId();
         Card card = resolvedCardId != null ? cardService.getCard(resolvedCardId) : null;
+        String golemDisplayName = resolveGolemDisplayName(golemId);
 
         if (command != null) {
             command.setUpdatedAt(eventTime);
@@ -537,8 +539,8 @@ public class CommandDispatchService {
         }
         case THREAD_MESSAGE ->
             threadService.appendMessage(thread, command != null ? command.getId() : commandId, run.getId(),
-                    null, ThreadMessageType.GOLEM_RESPONSE, ThreadParticipantType.GOLEM, golemId, golemId,
-                    firstNonBlank(details, summary, "Golem response"), eventTime);
+                    null, ThreadMessageType.GOLEM_RESPONSE, ThreadParticipantType.GOLEM, golemId,
+                    golemDisplayName, firstNonBlank(details, summary, "Golem response"), eventTime);
         case RUN_STARTED, RUN_PROGRESS -> {
             run.setStatus(RunStatus.RUNNING);
             if (run.getStartedAt() == null) {
@@ -582,8 +584,8 @@ public class CommandDispatchService {
 
         if (summary != null && !summary.isBlank() && runtimeEventType != RuntimeEventType.THREAD_MESSAGE) {
             threadService.appendMessage(thread, command != null ? command.getId() : commandId, run.getId(), null,
-                    ThreadMessageType.RUNTIME_EVENT, ThreadParticipantType.SYSTEM, golemId, golemId,
-                    runtimeEventType.name() + ": " + summary, eventTime);
+                    ThreadMessageType.RUNTIME_EVENT, ThreadParticipantType.SYSTEM, golemId,
+                    golemDisplayName, runtimeEventType.name() + ": " + summary, eventTime);
         }
 
         saveRun(run);
@@ -612,7 +614,7 @@ public class CommandDispatchService {
                     .severity(runtimeEventType == RuntimeEventType.RUN_FAILED ? "WARN" : "INFO")
                     .actorType("GOLEM")
                     .actorId(golemId)
-                    .actorName(golemId)
+                    .actorName(golemDisplayName)
                     .targetType("RUN")
                     .targetId(run.getId())
                     .boardId(card != null ? card.getBoardId() : null)
@@ -642,6 +644,7 @@ public class CommandDispatchService {
                 signal.getCardId(), signal.getGolemId(), signal.getCreatedAt());
         CommandRecord command = resolveCommand(signal.getCommandId(), run);
         Instant eventTime = signal.getCreatedAt() != null ? signal.getCreatedAt() : Instant.now();
+        String golemDisplayName = resolveGolemDisplayName(signal.getGolemId());
 
         run.setUpdatedAt(eventTime);
         run.setEventCount(run.getEventCount() + 1);
@@ -745,7 +748,7 @@ public class CommandDispatchService {
                                 : "INFO")
                 .actorType("GOLEM")
                 .actorId(signal.getGolemId())
-                .actorName(signal.getGolemId())
+                .actorName(golemDisplayName)
                 .targetType("RUN")
                 .targetId(run.getId())
                 .boardId(card != null ? card.getBoardId() : null)
@@ -816,7 +819,7 @@ public class CommandDispatchService {
 
         ControlCommandEnvelope envelope = buildControlEnvelope(CONTROL_EVENT_TYPE_COMMAND, command, now,
                 command.getBody());
-        boolean delivered = golemControlChannelService.send(golem.getId(), toJson(envelope));
+        boolean delivered = golemControlDispatchPort.send(golem.getId(), envelope);
         if (delivered) {
             command.setStatus(CommandStatus.DELIVERED);
             command.setDeliveredAt(now);
@@ -827,7 +830,7 @@ public class CommandDispatchService {
         }
 
         command.setStatus(CommandStatus.QUEUED);
-        command.setQueueReason(golemControlChannelService.isConnected(golem.getId())
+        command.setQueueReason(golemControlDispatchPort.isConnected(golem.getId())
                 ? "Command delivery failed"
                 : "Control channel unavailable");
     }
@@ -1018,14 +1021,6 @@ public class CommandDispatchService {
         return threadService.getThread(run.getThreadId());
     }
 
-    private String toJson(ControlCommandEnvelope envelope) {
-        try {
-            return objectMapper.writeValueAsString(envelope);
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize control command envelope", exception);
-        }
-    }
-
     private void publishThreadUpdate(Card card,
             ThreadRecord thread,
             CommandRecord command,
@@ -1084,6 +1079,16 @@ public class CommandDispatchService {
             }
         }
         return "";
+    }
+
+    private String resolveGolemDisplayName(String golemId) {
+        if (golemId == null || golemId.isBlank()) {
+            return "";
+        }
+        return golemDirectoryUseCase.findGolem(golemId)
+                .map(Golem::getDisplayName)
+                .filter(displayName -> displayName != null && !displayName.isBlank())
+                .orElse(golemId);
     }
 
     @Getter

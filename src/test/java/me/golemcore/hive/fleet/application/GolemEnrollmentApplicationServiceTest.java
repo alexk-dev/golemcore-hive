@@ -142,10 +142,20 @@ class GolemEnrollmentApplicationServiceTest {
                 GolemCapabilitySnapshot.builder().snapshotHash("abc123").build(), "et_1"))
                 .thenReturn(golem);
         when(golemTokenPort.issueAccessToken(golem,
-                List.of("golems:control:connect", "golems:events:write", "golems:heartbeat")))
+                List.of(
+                        "golems:control:connect",
+                        "golems:events:write",
+                        "golems:heartbeat",
+                        "golems:policy:read",
+                        "golems:policy:write")))
                 .thenReturn("golem-access-token");
         when(golemTokenPort.issueRefreshToken(eq(golem),
-                eq(List.of("golems:control:connect", "golems:events:write", "golems:heartbeat")),
+                eq(List.of(
+                        "golems:control:connect",
+                        "golems:events:write",
+                        "golems:heartbeat",
+                        "golems:policy:read",
+                        "golems:policy:write")),
                 org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn("golem-refresh-token");
 

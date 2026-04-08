@@ -19,5 +19,6 @@
 package me.golemcore.hive.adapter.inbound.web.dto.approvals;
 
 import java.time.Instant;
+import me.golemcore.hive.domain.model.SelfEvolvingPromotionApprovalContext;
 
-public record ApprovalRequestResponse(String id,String commandId,String runId,String threadId,String boardId,String cardId,String golemId,String requestedByActorId,String requestedByActorName,String riskLevel,String reason,long estimatedCostMicros,String commandBody,String status,Instant requestedAt,Instant updatedAt,Instant decidedAt,String decidedByActorId,String decidedByActorName,String decisionComment){}
+public record ApprovalRequestResponse(String id,String subjectType,String commandId,String runId,String threadId,String boardId,String cardId,String golemId,String requestedByActorId,String requestedByActorName,String riskLevel,String reason,long estimatedCostMicros,String commandBody,String status,Instant requestedAt,Instant updatedAt,Instant decidedAt,String decidedByActorId,String decidedByActorName,String decisionComment,SelfEvolvingPromotionApprovalContext promotionContext){}

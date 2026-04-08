@@ -19,7 +19,8 @@
 package me.golemcore.hive.domain.model;
 
 public enum GolemScope {
-    HEARTBEAT("golems:heartbeat"), EVENTS_WRITE("golems:events:write"), CONTROL_CONNECT("golems:control:connect");
+    HEARTBEAT("golems:heartbeat"), EVENTS_WRITE("golems:events:write"), CONTROL_CONNECT(
+            "golems:control:connect"), POLICY_READ("golems:policy:read"), POLICY_WRITE("golems:policy:write");
 
     private final String scopeValue;
 

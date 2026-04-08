@@ -18,4 +18,9 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
-public record HeartbeatRequest(String status,String currentRunState,String currentCardId,String currentThreadId,String modelTier,Long inputTokens,Long outputTokens,Long accumulatedCostMicros,Integer queueDepth,String healthSummary,String lastErrorSummary,Long uptimeSeconds,String capabilitySnapshotHash,String policyGroupId,Integer targetPolicyVersion,Integer appliedPolicyVersion,String syncStatus,String lastPolicyErrorDigest){}
+import me.golemcore.hive.domain.model.PolicyGroupSpec.PolicyModelCatalog;
+import me.golemcore.hive.domain.model.PolicyGroupSpec.PolicyModelRouter;
+import me.golemcore.hive.domain.model.PolicyGroupSpec.PolicyProviderConfig;
+import java.util.Map;
+
+public record PolicyPackageResponse(String policyGroupId,int targetVersion,String checksum,Map<String,PolicyProviderConfig>llmProviders,PolicyModelRouter modelRouter,PolicyModelCatalog modelCatalog){}

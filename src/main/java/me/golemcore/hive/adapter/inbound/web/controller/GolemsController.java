@@ -39,8 +39,10 @@ import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemCapabilitySnapshot;
 import me.golemcore.hive.domain.model.GolemPolicyBinding;
 import me.golemcore.hive.domain.model.HeartbeatPing;
+import me.golemcore.hive.domain.model.PolicySyncStatus;
 import me.golemcore.hive.domain.service.EnrollmentService;
 import me.golemcore.hive.domain.service.GolemRegistryService;
+import me.golemcore.hive.domain.service.PolicyGroupService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -62,6 +64,7 @@ public class GolemsController {
 
     private final EnrollmentService enrollmentService;
     private final GolemRegistryService golemRegistryService;
+    private final PolicyGroupService policyGroupService;
     private final HiveProperties properties;
 
     @PostMapping("/register")
@@ -145,8 +148,23 @@ public class GolemsController {
                     .lastErrorSummary(request != null ? request.lastErrorSummary() : null)
                     .uptimeSeconds(request != null && request.uptimeSeconds() != null ? request.uptimeSeconds() : 0L)
                     .capabilitySnapshotHash(request != null ? request.capabilitySnapshotHash() : null)
+                    .policyGroupId(request != null ? request.policyGroupId() : null)
+                    .targetPolicyVersion(request != null ? request.targetPolicyVersion() : null)
+                    .appliedPolicyVersion(request != null ? request.appliedPolicyVersion() : null)
+                    .syncStatus(request != null ? request.syncStatus() : null)
+                    .lastPolicyErrorDigest(request != null ? request.lastPolicyErrorDigest() : null)
                     .build();
             Golem golem = golemRegistryService.updateHeartbeat(golemId, heartbeatPing);
+            if (request != null) {
+                policyGroupService.recordHeartbeatSyncState(
+                        golemId,
+                        request.policyGroupId(),
+                        request.targetPolicyVersion(),
+                        request.appliedPolicyVersion(),
+                        parsePolicySyncStatus(request.syncStatus()),
+                        request.lastPolicyErrorDigest())
+                        .ifPresent(golem::setPolicyBinding);
+            }
             return ResponseEntity.ok(toDetailsResponse(golem));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -294,7 +312,12 @@ public class GolemsController {
                 heartbeatPing.getHealthSummary(),
                 heartbeatPing.getLastErrorSummary(),
                 heartbeatPing.getUptimeSeconds(),
-                heartbeatPing.getCapabilitySnapshotHash());
+                heartbeatPing.getCapabilitySnapshotHash(),
+                heartbeatPing.getPolicyGroupId(),
+                heartbeatPing.getTargetPolicyVersion(),
+                heartbeatPing.getAppliedPolicyVersion(),
+                heartbeatPing.getSyncStatus(),
+                heartbeatPing.getLastPolicyErrorDigest());
     }
 
     private GolemPolicyBindingResponse toPolicyBindingResponse(GolemPolicyBinding policyBinding) {
@@ -302,6 +325,17 @@ public class GolemsController {
             return null;
         }
         return GolemPolicyController.toBindingResponse(policyBinding);
+    }
+
+    private PolicySyncStatus parsePolicySyncStatus(String rawStatus) {
+        if (rawStatus == null || rawStatus.isBlank()) {
+            return null;
+        }
+        try {
+            return PolicySyncStatus.valueOf(rawStatus.trim());
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown policy sync status: " + rawStatus);
+        }
     }
 
     private AuthenticatedActor requireOperatorActor(Principal principal) {

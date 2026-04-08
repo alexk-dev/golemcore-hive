@@ -32,6 +32,7 @@ import me.golemcore.hive.domain.model.PolicyGroup;
 import me.golemcore.hive.domain.model.PolicyGroupSpec;
 import me.golemcore.hive.domain.model.PolicyGroupVersion;
 import me.golemcore.hive.domain.service.PolicyGroupService;
+import me.golemcore.hive.domain.service.PolicyRolloutService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,6 +51,7 @@ import reactor.core.scheduler.Schedulers;
 public class PolicyGroupsController {
 
     private final PolicyGroupService policyGroupService;
+    private final PolicyRolloutService policyRolloutService;
 
     @GetMapping
     public Mono<ResponseEntity<List<PolicyGroupResponse>>> listPolicyGroups(Principal principal) {
@@ -112,6 +114,7 @@ public class PolicyGroupsController {
                     request != null ? request.changeSummary() : null,
                     actor.getSubjectId(),
                     actor.getName());
+            triggerSyncForGroup(groupId);
             return ResponseEntity.status(HttpStatus.CREATED).body(toPolicyGroupVersionResponse(version));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -143,6 +146,7 @@ public class PolicyGroupsController {
                     request.changeSummary(),
                     actor.getSubjectId(),
                     actor.getName());
+            triggerSyncForGroup(groupId);
             return ResponseEntity.ok(toPolicyGroupResponse(policyGroup));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -235,5 +239,12 @@ public class PolicyGroupsController {
             return null;
         }
         return new PolicyGroupResponse.PolicyTierBindingResponse(binding.getModel(), binding.getReasoning());
+    }
+
+    private void triggerSyncForGroup(String groupId) {
+        for (me.golemcore.hive.domain.model.GolemPolicyBinding binding : policyGroupService
+                .listBindingsForPolicyGroup(groupId)) {
+            policyRolloutService.requestSyncIfSupported(binding);
+        }
     }
 }

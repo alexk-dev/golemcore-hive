@@ -238,6 +238,77 @@ public class PolicyGroupService {
         return bindings;
     }
 
+    public PolicyGroupVersion getTargetVersionForGolem(String golemId) {
+        GolemPolicyBinding binding = getBinding(golemId);
+        return getVersion(binding.getPolicyGroupId(), binding.getTargetVersion());
+    }
+
+    public GolemPolicyBinding recordApplyResult(
+            String golemId,
+            String policyGroupId,
+            Integer targetVersion,
+            Integer appliedVersion,
+            PolicySyncStatus reportedStatus,
+            String checksum,
+            String errorDigest) {
+        GolemPolicyBinding binding = getBinding(golemId);
+        if (!binding.getPolicyGroupId().equals(policyGroupId)) {
+            throw new IllegalArgumentException("Policy group mismatch for golem: " + golemId);
+        }
+        if (targetVersion == null || targetVersion <= 0) {
+            throw new IllegalArgumentException("Target version is required");
+        }
+
+        PolicyGroupVersion reportedVersion = getVersion(policyGroupId, targetVersion);
+        if (checksum != null && !checksum.isBlank() && !reportedVersion.getChecksum().equals(checksum)) {
+            throw new IllegalArgumentException("Policy package checksum mismatch");
+        }
+        if (appliedVersion != null && appliedVersion > 0) {
+            getVersion(policyGroupId, appliedVersion);
+        }
+
+        Instant now = Instant.now();
+        binding.setAppliedVersion(appliedVersion);
+        binding.setLastAppliedAt(appliedVersion != null ? now : binding.getLastAppliedAt());
+        binding.setSyncStatus(normalizeReportedStatus(binding, targetVersion, appliedVersion, reportedStatus));
+
+        String normalizedErrorDigest = normalizeOptional(errorDigest);
+        binding.setLastErrorDigest(normalizedErrorDigest);
+        binding.setLastErrorAt(normalizedErrorDigest != null ? now : null);
+
+        if (binding.getSyncStatus() == PolicySyncStatus.IN_SYNC) {
+            binding.setDriftSince(null);
+            binding.setLastErrorDigest(null);
+            binding.setLastErrorAt(null);
+        } else if (binding.getDriftSince() == null) {
+            binding.setDriftSince(now);
+        }
+
+        saveBinding(binding);
+        golemRegistryService.updatePolicyBinding(golemId, binding);
+        return binding;
+    }
+
+    public Optional<GolemPolicyBinding> recordHeartbeatSyncState(
+            String golemId,
+            String policyGroupId,
+            Integer targetVersion,
+            Integer appliedVersion,
+            PolicySyncStatus reportedStatus,
+            String errorDigest) {
+        if (policyGroupId == null || targetVersion == null || targetVersion <= 0) {
+            return Optional.empty();
+        }
+        return Optional.of(recordApplyResult(
+                golemId,
+                policyGroupId,
+                targetVersion,
+                appliedVersion,
+                reportedStatus,
+                null,
+                errorDigest));
+    }
+
     private void markBoundGolemsSyncPending(String groupId, int targetVersion, Instant requestedAt) {
         List<GolemPolicyBinding> bindings = listBindingsForPolicyGroup(groupId);
         for (GolemPolicyBinding binding : bindings) {
@@ -248,6 +319,27 @@ public class PolicyGroupService {
             saveBinding(binding);
             golemRegistryService.updatePolicyBinding(binding.getGolemId(), binding);
         }
+    }
+
+    private PolicySyncStatus normalizeReportedStatus(
+            GolemPolicyBinding binding,
+            int reportedTargetVersion,
+            Integer appliedVersion,
+            PolicySyncStatus reportedStatus) {
+        PolicySyncStatus status = reportedStatus != null ? reportedStatus : PolicySyncStatus.OUT_OF_SYNC;
+        if (status == PolicySyncStatus.IN_SYNC
+                && reportedTargetVersion == binding.getTargetVersion()
+                && appliedVersion != null
+                && appliedVersion == binding.getTargetVersion()) {
+            return PolicySyncStatus.IN_SYNC;
+        }
+        if (status == PolicySyncStatus.APPLYING) {
+            return PolicySyncStatus.APPLYING;
+        }
+        if (status == PolicySyncStatus.APPLY_FAILED) {
+            return PolicySyncStatus.APPLY_FAILED;
+        }
+        return PolicySyncStatus.OUT_OF_SYNC;
     }
 
     private Optional<PolicyGroup> loadPolicyGroup(String path) {

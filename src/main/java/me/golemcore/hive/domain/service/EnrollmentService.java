@@ -114,7 +114,9 @@ public class EnrollmentService {
         List<String> scopes = List.of(
                 GolemScope.CONTROL_CONNECT.value(),
                 GolemScope.EVENTS_WRITE.value(),
-                GolemScope.HEARTBEAT.value());
+                GolemScope.HEARTBEAT.value(),
+                GolemScope.POLICY_READ.value(),
+                GolemScope.POLICY_WRITE.value());
         MachineTokenPair tokens = issueMachineTokens(golem, scopes, null);
         enrollmentToken.setLastUsedAt(Instant.now());
         enrollmentToken.setRegistrationCount(enrollmentToken.getRegistrationCount() + 1L);

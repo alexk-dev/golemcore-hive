@@ -21,6 +21,10 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -32,6 +36,9 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import me.golemcore.hive.domain.service.GolemControlChannelService;
+import reactor.core.Disposable;
+import reactor.core.publisher.Sinks;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class PolicyGroupsControllerIntegrationTest {
@@ -66,7 +73,8 @@ class PolicyGroupsControllerIntegrationTest {
     @Test
     void shouldCreatePublishBindRepublishAndRollbackPolicyGroup() throws Exception {
         String operatorToken = loginAsAdmin();
-        String golemId = registerGolem(operatorToken);
+        RegisteredGolem golem = registerGolem(operatorToken, "Policy Runner", false);
+        String golemId = golem.golemId();
 
         EntityExchangeResult<String> createGroupResult = webTestClient.post()
                 .uri("/api/v1/policy-groups")
@@ -253,6 +261,301 @@ class PolicyGroupsControllerIntegrationTest {
                 .jsonPath("$.policyBinding.syncStatus").isEqualTo("SYNC_PENDING");
     }
 
+    @Test
+    void shouldExposePolicyPackageAndAcceptApplyResultFromBoundGolem() throws Exception {
+        String operatorToken = loginAsAdmin();
+        RegisteredGolem golem = registerGolem(operatorToken, "Policy Sync Runner", false);
+
+        EntityExchangeResult<String> createGroupResult = webTestClient.post()
+                .uri("/api/v1/policy-groups")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "slug":"machine-routing",
+                          "name":"Machine Routing",
+                          "description":"Machine policy"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(String.class)
+                .returnResult();
+
+        JsonNode createdGroupPayload = objectMapper.readTree(createGroupResult.getResponseBody());
+        String policyGroupId = createdGroupPayload.get("id").asText();
+
+        webTestClient.put()
+                .uri("/api/v1/policy-groups/{groupId}/draft", policyGroupId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "schemaVersion":1,
+                          "llmProviders":{
+                            "openai":{
+                              "apiKey":"secret-openai",
+                              "baseUrl":"https://api.example.com/openai",
+                              "requestTimeoutSeconds":30,
+                              "apiType":"openai"
+                            }
+                          },
+                          "modelRouter":{
+                            "temperature":0.7,
+                            "dynamicTierEnabled":true,
+                            "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
+                            "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
+                          },
+                          "modelCatalog":{
+                            "defaultModel":"openai/gpt-5.1",
+                            "models":{
+                              "openai/gpt-5.1":{
+                                "provider":"openai",
+                                "displayName":"openai/gpt-5.1",
+                                "supportsVision":true,
+                                "supportsTemperature":true,
+                                "maxInputTokens":200000
+                              }
+                            }
+                          }
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isOk();
+
+        EntityExchangeResult<String> publishResult = webTestClient.post()
+                .uri("/api/v1/policy-groups/{groupId}/publish", policyGroupId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "changeSummary":"Initial publish"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(String.class)
+                .returnResult();
+
+        String checksum = objectMapper.readTree(publishResult.getResponseBody()).get("checksum").asText();
+
+        webTestClient.put()
+                .uri("/api/v1/golems/{golemId}/policy-binding", golem.golemId())
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "policyGroupId":"%s"
+                        }
+                        """.formatted(policyGroupId))
+                .exchange()
+                .expectStatus().isOk();
+
+        webTestClient.get()
+                .uri("/api/v1/golems/{golemId}/policy-package", golem.golemId())
+                .header(HttpHeaders.AUTHORIZATION, golem.accessToken())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.policyGroupId").isEqualTo(policyGroupId)
+                .jsonPath("$.targetVersion").isEqualTo(1)
+                .jsonPath("$.checksum").isEqualTo(checksum)
+                .jsonPath("$.llmProviders.openai.apiKey").isEqualTo("secret-openai");
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/policy-apply-result", golem.golemId())
+                .header(HttpHeaders.AUTHORIZATION, golem.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "policyGroupId":"%s",
+                          "targetVersion":1,
+                          "appliedVersion":1,
+                          "syncStatus":"IN_SYNC",
+                          "checksum":"%s"
+                        }
+                        """.formatted(policyGroupId, checksum))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.policyGroupId").isEqualTo(policyGroupId)
+                .jsonPath("$.appliedVersion").isEqualTo(1)
+                .jsonPath("$.syncStatus").isEqualTo("IN_SYNC");
+
+        webTestClient.get()
+                .uri("/api/v1/golems/{golemId}", golem.golemId())
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.policyBinding.policyGroupId").isEqualTo(policyGroupId)
+                .jsonPath("$.policyBinding.targetVersion").isEqualTo(1)
+                .jsonPath("$.policyBinding.appliedVersion").isEqualTo(1)
+                .jsonPath("$.policyBinding.syncStatus").isEqualTo("IN_SYNC");
+    }
+
+    @Test
+    void shouldProjectHeartbeatPolicyStateAndGateSyncEventDelivery() throws Exception {
+        String operatorToken = loginAsAdmin();
+        RegisteredGolem unsupportedGolem = registerGolem(operatorToken, "Legacy Runner", false);
+        RegisteredGolem supportedGolem = registerGolem(operatorToken, "Managed Runner", true);
+
+        GolemControlChannelService controlChannelService = applicationContext.getBean(GolemControlChannelService.class);
+        BlockingQueue<String> unsupportedMessages = new LinkedBlockingQueue<>();
+        BlockingQueue<String> supportedMessages = new LinkedBlockingQueue<>();
+        Sinks.Many<String> unsupportedSink = Sinks.many().unicast().onBackpressureBuffer();
+        Sinks.Many<String> supportedSink = Sinks.many().unicast().onBackpressureBuffer();
+        Disposable unsupportedSubscription = controlChannelService.register(unsupportedGolem.golemId(), unsupportedSink)
+                .subscribe(unsupportedMessages::add);
+        Disposable supportedSubscription = controlChannelService.register(supportedGolem.golemId(), supportedSink)
+                .subscribe(supportedMessages::add);
+
+        try {
+            EntityExchangeResult<String> createGroupResult = webTestClient.post()
+                    .uri("/api/v1/policy-groups")
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .bodyValue("""
+                            {
+                              "slug":"sync-routing",
+                              "name":"Sync Routing",
+                              "description":"Control-triggered policy"
+                            }
+                            """)
+                    .exchange()
+                    .expectStatus().isCreated()
+                    .expectBody(String.class)
+                    .returnResult();
+
+            String policyGroupId = objectMapper.readTree(createGroupResult.getResponseBody()).get("id").asText();
+
+            webTestClient.put()
+                    .uri("/api/v1/policy-groups/{groupId}/draft", policyGroupId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .bodyValue("""
+                            {
+                              "schemaVersion":1,
+                              "llmProviders":{
+                                "openai":{
+                                  "apiKey":"secret-openai",
+                                  "baseUrl":"https://api.example.com/openai",
+                                  "requestTimeoutSeconds":30,
+                                  "apiType":"openai"
+                                }
+                              },
+                              "modelRouter":{
+                                "temperature":0.7,
+                                "dynamicTierEnabled":true,
+                                "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
+                                "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
+                              },
+                              "modelCatalog":{
+                                "defaultModel":"openai/gpt-5.1",
+                                "models":{
+                                  "openai/gpt-5.1":{
+                                    "provider":"openai",
+                                    "displayName":"openai/gpt-5.1",
+                                    "supportsVision":true,
+                                    "supportsTemperature":true,
+                                    "maxInputTokens":200000
+                                  }
+                                }
+                              }
+                            }
+                            """)
+                    .exchange()
+                    .expectStatus().isOk();
+
+            webTestClient.post()
+                    .uri("/api/v1/policy-groups/{groupId}/publish", policyGroupId)
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .bodyValue("""
+                            {
+                              "changeSummary":"Initial publish"
+                            }
+                            """)
+                    .exchange()
+                    .expectStatus().isCreated();
+
+            webTestClient.put()
+                    .uri("/api/v1/golems/{golemId}/policy-binding", unsupportedGolem.golemId())
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .bodyValue("""
+                            {
+                              "policyGroupId":"%s"
+                            }
+                            """.formatted(policyGroupId))
+                    .exchange()
+                    .expectStatus().isOk();
+
+            webTestClient.put()
+                    .uri("/api/v1/golems/{golemId}/policy-binding", supportedGolem.golemId())
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .bodyValue("""
+                            {
+                              "policyGroupId":"%s"
+                            }
+                            """.formatted(policyGroupId))
+                    .exchange()
+                    .expectStatus().isOk();
+
+            Assertions.assertNull(unsupportedMessages.poll(500, TimeUnit.MILLISECONDS));
+            JsonNode syncEnvelope = objectMapper.readTree(pollControlMessage(supportedMessages));
+            Assertions.assertEquals("policy.sync_requested", syncEnvelope.get("eventType").asText());
+            Assertions.assertEquals(policyGroupId, syncEnvelope.get("policyGroupId").asText());
+            Assertions.assertEquals(1, syncEnvelope.get("targetVersion").asInt());
+            Assertions.assertTrue(syncEnvelope.get("checksum").asText().length() > 10);
+
+            webTestClient.post()
+                    .uri("/api/v1/golems/{golemId}/heartbeat", supportedGolem.golemId())
+                    .header(HttpHeaders.AUTHORIZATION, supportedGolem.accessToken())
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .bodyValue("""
+                            {
+                              "status":"healthy",
+                              "currentRunState":"IDLE",
+                              "modelTier":"pro",
+                              "queueDepth":0,
+                              "healthSummary":"ready",
+                              "uptimeSeconds":120,
+                              "policyGroupId":"%s",
+                              "targetPolicyVersion":1,
+                              "appliedPolicyVersion":1,
+                              "syncStatus":"IN_SYNC"
+                            }
+                            """.formatted(policyGroupId))
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.lastHeartbeat.targetPolicyVersion").isEqualTo(1)
+                    .jsonPath("$.lastHeartbeat.appliedPolicyVersion").isEqualTo(1)
+                    .jsonPath("$.lastHeartbeat.syncStatus").isEqualTo("IN_SYNC")
+                    .jsonPath("$.policyBinding.appliedVersion").isEqualTo(1)
+                    .jsonPath("$.policyBinding.syncStatus").isEqualTo("IN_SYNC");
+
+            webTestClient.get()
+                    .uri("/api/v1/golems/{golemId}", supportedGolem.golemId())
+                    .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody()
+                    .jsonPath("$.lastHeartbeat.targetPolicyVersion").isEqualTo(1)
+                    .jsonPath("$.lastHeartbeat.appliedPolicyVersion").isEqualTo(1)
+                    .jsonPath("$.lastHeartbeat.syncStatus").isEqualTo("IN_SYNC")
+                    .jsonPath("$.policyBinding.appliedVersion").isEqualTo(1)
+                    .jsonPath("$.policyBinding.syncStatus").isEqualTo("IN_SYNC");
+        } finally {
+            controlChannelService.unregister(unsupportedGolem.golemId(), unsupportedSink);
+            controlChannelService.unregister(supportedGolem.golemId(), supportedSink);
+            unsupportedSubscription.dispose();
+            supportedSubscription.dispose();
+        }
+    }
+
     private String loginAsAdmin() throws Exception {
         EntityExchangeResult<String> loginResult = webTestClient.post()
                 .uri("/api/v1/auth/login")
@@ -269,7 +572,8 @@ class PolicyGroupsControllerIntegrationTest {
         return "Bearer " + loginPayload.get("accessToken").asText();
     }
 
-    private String registerGolem(String operatorToken) throws Exception {
+    private RegisteredGolem registerGolem(String operatorToken, String displayName, boolean supportsPolicySync)
+            throws Exception {
         EntityExchangeResult<String> enrollmentTokenResult = webTestClient.post()
                 .uri("/api/v1/enrollment-tokens")
                 .header(HttpHeaders.AUTHORIZATION, operatorToken)
@@ -291,7 +595,7 @@ class PolicyGroupsControllerIntegrationTest {
                 .bodyValue("""
                         {
                           "enrollmentToken":"%s",
-                          "displayName":"Policy Runner",
+                          "displayName":"%s",
                           "hostLabel":"host-a",
                           "runtimeVersion":"bot-1.2.3",
                           "buildVersion":"build-42",
@@ -300,20 +604,34 @@ class PolicyGroupsControllerIntegrationTest {
                             "providers":["openai"],
                             "modelFamilies":["gpt"],
                             "enabledTools":["shell"],
-                            "enabledAutonomyFeatures":["planning"],
+                            "enabledAutonomyFeatures":[%s],
                             "capabilityTags":["policy"],
                             "supportedChannels":["control","events"],
                             "snapshotHash":"abc123",
                             "defaultModel":"gpt-5"
                           }
                         }
-                        """.formatted(enrollmentToken))
+                        """.formatted(
+                        enrollmentToken,
+                        displayName,
+                        supportsPolicySync ? "\"planning\",\"policy-sync-v1\"" : "\"planning\""))
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody(String.class)
                 .returnResult();
 
         JsonNode registerPayload = objectMapper.readTree(registerResult.getResponseBody());
-        return registerPayload.get("golemId").asText();
+        return new RegisteredGolem(
+                registerPayload.get("golemId").asText(),
+                "Bearer " + registerPayload.get("accessToken").asText());
+    }
+
+    private record RegisteredGolem(String golemId, String accessToken) {
+    }
+
+    private String pollControlMessage(BlockingQueue<String> controlMessages) throws InterruptedException {
+        String payload = controlMessages.poll(2, TimeUnit.SECONDS);
+        Assertions.assertNotNull(payload, "Expected a control-channel message");
+        return payload;
     }
 }

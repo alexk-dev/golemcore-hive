@@ -20,7 +20,7 @@ package me.golemcore.hive.domain.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -35,7 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventPayload;
+import me.golemcore.hive.domain.model.ControlCommandEnvelope;
 import me.golemcore.hive.domain.model.InspectionRequestBody;
+import me.golemcore.hive.port.outbound.GolemControlDispatchPort;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import reactor.test.StepVerifier;
@@ -44,10 +46,10 @@ class GolemInspectionRpcServiceTest {
 
     @Test
     void shouldCorrelateInspectionResponseToPendingRequest() throws Exception {
-        GolemControlChannelService controlChannelService = mock(GolemControlChannelService.class);
-        when(controlChannelService.send(eq("golem-1"), anyString())).thenReturn(true);
+        GolemControlDispatchPort controlDispatchPort = mock(GolemControlDispatchPort.class);
+        when(controlDispatchPort.send(eq("golem-1"), any(ControlCommandEnvelope.class))).thenReturn(true);
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        GolemInspectionRpcService service = new GolemInspectionRpcService(controlChannelService, objectMapper,
+        GolemInspectionRpcService service = new GolemInspectionRpcService(controlDispatchPort, objectMapper,
                 Duration.ofSeconds(1));
 
         reactor.core.publisher.Mono<me.golemcore.hive.domain.model.InspectionRpcResponse> responseMono = service
@@ -61,12 +63,12 @@ class GolemInspectionRpcServiceTest {
                                 .channel("web")
                                 .build());
 
-        ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
-        verify(controlChannelService).send(eq("golem-1"), payloadCaptor.capture());
-        JsonNode envelope = objectMapper.readTree(payloadCaptor.getValue());
-        String requestId = envelope.get("requestId").asText();
-        assertEquals("inspection.request", envelope.get("eventType").asText());
-        assertEquals("sessions.list", envelope.get("inspection").get("operation").asText());
+        ArgumentCaptor<ControlCommandEnvelope> payloadCaptor = ArgumentCaptor.forClass(ControlCommandEnvelope.class);
+        verify(controlDispatchPort).send(eq("golem-1"), payloadCaptor.capture());
+        ControlCommandEnvelope envelope = payloadCaptor.getValue();
+        String requestId = envelope.getRequestId();
+        assertEquals("inspection.request", envelope.getEventType());
+        assertEquals("sessions.list", envelope.getInspection().getOperation());
 
         service.handleInspectionResponse("golem-1", new GolemEventPayload(
                 1,
@@ -107,10 +109,10 @@ class GolemInspectionRpcServiceTest {
 
     @Test
     void shouldTimeoutPendingInspectionRequest() {
-        GolemControlChannelService controlChannelService = mock(GolemControlChannelService.class);
-        when(controlChannelService.send(eq("golem-1"), anyString())).thenReturn(true);
+        GolemControlDispatchPort controlDispatchPort = mock(GolemControlDispatchPort.class);
+        when(controlDispatchPort.send(eq("golem-1"), any(ControlCommandEnvelope.class))).thenReturn(true);
         GolemInspectionRpcService service = new GolemInspectionRpcService(
-                controlChannelService,
+                controlDispatchPort,
                 new ObjectMapper().registerModule(new JavaTimeModule()),
                 Duration.ofMillis(50));
 

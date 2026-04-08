@@ -21,15 +21,15 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 import java.security.Principal;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.PolicyApplyResultRequest;
-import me.golemcore.hive.adapter.inbound.web.dto.golems.PolicyPackageResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemPolicyBindingResponse;
+import me.golemcore.hive.adapter.inbound.web.dto.golems.PolicyPackageResponse;
 import me.golemcore.hive.domain.model.GolemScope;
 import me.golemcore.hive.adapter.inbound.web.dto.policies.UpdateGolemPolicyBindingRequest;
 import me.golemcore.hive.domain.model.GolemPolicyBinding;
 import me.golemcore.hive.domain.model.PolicyGroupVersion;
 import me.golemcore.hive.domain.model.PolicySyncStatus;
+import me.golemcore.hive.domain.service.PolicyLifecycleService;
 import me.golemcore.hive.domain.service.PolicyGroupService;
-import me.golemcore.hive.domain.service.PolicyRolloutService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,7 +49,7 @@ import reactor.core.scheduler.Schedulers;
 public class GolemPolicyController {
 
     private final PolicyGroupService policyGroupService;
-    private final PolicyRolloutService policyRolloutService;
+    private final PolicyLifecycleService policyLifecycleService;
 
     @GetMapping("/{golemId}/policy-package")
     public Mono<ResponseEntity<PolicyPackageResponse>> getPolicyPackage(Principal principal,
@@ -58,13 +58,11 @@ public class GolemPolicyController {
             ControllerActorSupport.requireGolemScope(principal, golemId, GolemScope.POLICY_READ.value());
             GolemPolicyBinding binding = policyGroupService.getBinding(golemId);
             PolicyGroupVersion version = policyGroupService.getTargetVersionForGolem(golemId);
-            return ResponseEntity.ok(new PolicyPackageResponse(
+            return ResponseEntity.ok(PolicyMappingSupport.toPolicyPackageResponse(
                     binding.getPolicyGroupId(),
                     binding.getTargetVersion(),
-                    version.getChecksum(),
-                    version.getSpecSnapshot().getLlmProviders(),
-                    version.getSpecSnapshot().getModelRouter(),
-                    version.getSpecSnapshot().getModelCatalog()));
+                    version.getSpecSnapshot(),
+                    version.getChecksum()));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -96,12 +94,11 @@ public class GolemPolicyController {
         return Mono.fromCallable(() -> {
             me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor actor = ControllerActorSupport
                     .requirePrivilegedOperator(principal);
-            GolemPolicyBinding binding = policyGroupService.bindGolem(
+            GolemPolicyBinding binding = policyLifecycleService.bindGolem(
                     golemId,
                     request.policyGroupId(),
                     actor.getSubjectId(),
                     actor.getName());
-            policyRolloutService.requestSyncIfSupported(binding);
             return ResponseEntity.ok(toBindingResponse(binding));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -111,7 +108,7 @@ public class GolemPolicyController {
         return Mono.<ResponseEntity<Void>>fromCallable(() -> {
             me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor actor = ControllerActorSupport
                     .requirePrivilegedOperator(principal);
-            policyGroupService.unbindGolem(golemId, actor.getSubjectId(), actor.getName());
+            policyLifecycleService.unbindGolem(golemId, actor.getSubjectId(), actor.getName());
             return ResponseEntity.<Void>noContent().build();
         }).subscribeOn(Schedulers.boundedElastic());
     }

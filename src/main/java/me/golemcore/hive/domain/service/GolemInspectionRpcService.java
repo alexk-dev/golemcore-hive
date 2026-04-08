@@ -18,7 +18,6 @@
 
 package me.golemcore.hive.domain.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,6 +28,7 @@ import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventPayload;
 import me.golemcore.hive.domain.model.ControlCommandEnvelope;
 import me.golemcore.hive.domain.model.InspectionRequestBody;
 import me.golemcore.hive.domain.model.InspectionRpcResponse;
+import me.golemcore.hive.port.outbound.GolemControlDispatchPort;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -40,23 +40,23 @@ public class GolemInspectionRpcService {
     private static final String EVENT_TYPE_INSPECTION_REQUEST = "inspection.request";
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
-    private final GolemControlChannelService golemControlChannelService;
+    private final GolemControlDispatchPort golemControlDispatchPort;
     private final ObjectMapper objectMapper;
     private final Duration requestTimeout;
     private final Map<String, Sinks.One<InspectionRpcResponse>> pendingRequests = new ConcurrentHashMap<>();
 
     @Autowired
     public GolemInspectionRpcService(
-            GolemControlChannelService golemControlChannelService,
+            GolemControlDispatchPort golemControlDispatchPort,
             ObjectMapper objectMapper) {
-        this(golemControlChannelService, objectMapper, DEFAULT_TIMEOUT);
+        this(golemControlDispatchPort, objectMapper, DEFAULT_TIMEOUT);
     }
 
     GolemInspectionRpcService(
-            GolemControlChannelService golemControlChannelService,
+            GolemControlDispatchPort golemControlDispatchPort,
             ObjectMapper objectMapper,
             Duration requestTimeout) {
-        this.golemControlChannelService = golemControlChannelService;
+        this.golemControlDispatchPort = golemControlDispatchPort;
         this.objectMapper = objectMapper;
         this.requestTimeout = requestTimeout;
     }
@@ -81,7 +81,7 @@ public class GolemInspectionRpcService {
                 .inspection(requestBody)
                 .createdAt(Instant.now())
                 .build();
-        if (!golemControlChannelService.send(golemId, toJson(envelope))) {
+        if (!golemControlDispatchPort.send(golemId, envelope)) {
             pendingRequests.remove(requestId);
             return Mono.error(new IllegalStateException("Failed to deliver inspection request"));
         }
@@ -119,11 +119,4 @@ public class GolemInspectionRpcService {
         return objectMapper.convertValue(payload, Object.class);
     }
 
-    private String toJson(ControlCommandEnvelope envelope) {
-        try {
-            return objectMapper.writeValueAsString(envelope);
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize inspection request envelope", exception);
-        }
-    }
 }

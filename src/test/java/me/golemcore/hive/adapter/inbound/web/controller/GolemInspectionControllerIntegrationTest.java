@@ -26,9 +26,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter;
 import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.service.AuditService;
-import me.golemcore.hive.domain.service.GolemControlChannelService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,7 +80,8 @@ class GolemInspectionControllerIntegrationTest {
         RegisteredGolem golem = registerOnlineGolem("Atlas Inspect", "host-inspect");
         BlockingQueue<String> controlMessages = new LinkedBlockingQueue<>();
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
-        GolemControlChannelService controlChannelService = applicationContext.getBean(GolemControlChannelService.class);
+        InMemoryGolemControlChannelAdapter controlChannelService = applicationContext.getBean(
+                InMemoryGolemControlChannelAdapter.class);
         Disposable subscription = controlChannelService.register(golem.golemId(), sink).subscribe(controlMessages::add);
         try {
             CompletableFuture<EntityExchangeResult<String>> inspectionFuture = CompletableFuture

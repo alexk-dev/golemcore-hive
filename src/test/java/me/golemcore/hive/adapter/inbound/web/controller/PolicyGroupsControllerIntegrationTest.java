@@ -37,9 +37,9 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter;
 import me.golemcore.hive.adapter.inbound.web.security.JwtTokenProvider;
 import me.golemcore.hive.domain.model.Golem;
-import me.golemcore.hive.domain.service.GolemControlChannelService;
 import me.golemcore.hive.domain.service.GolemRegistryService;
 import reactor.core.Disposable;
 import reactor.core.publisher.Sinks;
@@ -410,7 +410,8 @@ class PolicyGroupsControllerIntegrationTest {
         RegisteredGolem unsupportedGolem = registerGolem(operatorToken, "Legacy Runner", false);
         RegisteredGolem supportedGolem = registerGolem(operatorToken, "Managed Runner", true);
 
-        GolemControlChannelService controlChannelService = applicationContext.getBean(GolemControlChannelService.class);
+        InMemoryGolemControlChannelAdapter controlChannelService = applicationContext.getBean(
+                InMemoryGolemControlChannelAdapter.class);
         BlockingQueue<String> unsupportedMessages = new LinkedBlockingQueue<>();
         BlockingQueue<String> supportedMessages = new LinkedBlockingQueue<>();
         Sinks.Many<String> unsupportedSink = Sinks.many().unicast().onBackpressureBuffer();

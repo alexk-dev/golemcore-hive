@@ -16,17 +16,24 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.domain.service;
+package me.golemcore.hive.adapter.inbound.ws;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
+import me.golemcore.hive.domain.model.ControlCommandEnvelope;
+import me.golemcore.hive.port.outbound.GolemControlDispatchPort;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
-@Service
-public class GolemControlChannelService {
+@Component
+@RequiredArgsConstructor
+public class InMemoryGolemControlChannelAdapter implements GolemControlDispatchPort {
 
+    private final ObjectMapper objectMapper;
     private final Map<String, Sinks.Many<String>> sessions = new ConcurrentHashMap<>();
 
     public Flux<String> register(String golemId, Sinks.Many<String> sink) {
@@ -42,15 +49,25 @@ public class GolemControlChannelService {
         sink.tryEmitComplete();
     }
 
+    @Override
     public boolean isConnected(String golemId) {
         return sessions.containsKey(golemId);
     }
 
-    public boolean send(String golemId, String payload) {
+    @Override
+    public boolean send(String golemId, ControlCommandEnvelope envelope) {
         Sinks.Many<String> sink = sessions.get(golemId);
         if (sink == null) {
             return false;
         }
-        return sink.tryEmitNext(payload).isSuccess();
+        return sink.tryEmitNext(toJson(envelope)).isSuccess();
+    }
+
+    private String toJson(ControlCommandEnvelope envelope) {
+        try {
+            return objectMapper.writeValueAsString(envelope);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Failed to serialize control command envelope", exception);
+        }
     }
 }

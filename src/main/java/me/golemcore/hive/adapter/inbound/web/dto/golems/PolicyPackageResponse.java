@@ -18,9 +18,23 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
-import me.golemcore.hive.domain.model.PolicyGroupSpec.PolicyModelCatalog;
-import me.golemcore.hive.domain.model.PolicyGroupSpec.PolicyModelRouter;
-import me.golemcore.hive.domain.model.PolicyGroupSpec.PolicyProviderConfig;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-public record PolicyPackageResponse(String policyGroupId,int targetVersion,String checksum,Map<String,PolicyProviderConfig>llmProviders,PolicyModelRouter modelRouter,PolicyModelCatalog modelCatalog){}
+public record PolicyPackageResponse(String policyGroupId,int targetVersion,String checksum,Map<String,PolicyProviderConfigResponse>llmProviders,PolicyModelRouterResponse modelRouter,PolicyModelCatalogResponse modelCatalog){
+
+public PolicyPackageResponse{llmProviders=llmProviders!=null?llmProviders:new LinkedHashMap<>();}
+
+public record PolicyProviderConfigResponse(String apiKey,String baseUrl,Integer requestTimeoutSeconds,String apiType,Boolean legacyApi){}
+
+public record PolicyModelRouterResponse(Double temperature,PolicyTierBindingResponse routing,Map<String,PolicyTierBindingResponse>tiers,Boolean dynamicTierEnabled){
+
+public PolicyModelRouterResponse{tiers=tiers!=null?tiers:new LinkedHashMap<>();}}
+
+public record PolicyTierBindingResponse(String model,String reasoning){}
+
+public record PolicyModelCatalogResponse(String defaultModel,Map<String,PolicyModelConfigResponse>models){
+
+public PolicyModelCatalogResponse{models=models!=null?models:new LinkedHashMap<>();}}
+
+public record PolicyModelConfigResponse(String provider,String displayName,Boolean supportsVision,Boolean supportsTemperature,Integer maxInputTokens){}}

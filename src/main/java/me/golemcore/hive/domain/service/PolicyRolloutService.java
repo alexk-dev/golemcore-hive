@@ -18,8 +18,6 @@
 
 package me.golemcore.hive.domain.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +25,7 @@ import me.golemcore.hive.domain.model.ControlCommandEnvelope;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemPolicyBinding;
 import me.golemcore.hive.domain.model.PolicyGroupVersion;
+import me.golemcore.hive.port.outbound.GolemControlDispatchPort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,12 +37,17 @@ public class PolicyRolloutService {
 
     private final GolemRegistryService golemRegistryService;
     private final PolicyGroupService policyGroupService;
-    private final GolemControlChannelService golemControlChannelService;
-    private final ObjectMapper objectMapper;
+    private final GolemControlDispatchPort golemControlDispatchPort;
+
+    public void requestSyncForGroup(String groupId) {
+        for (GolemPolicyBinding binding : policyGroupService.listBindingsForPolicyGroup(groupId)) {
+            requestSyncIfSupported(binding);
+        }
+    }
 
     public boolean requestSyncIfSupported(GolemPolicyBinding binding) {
         Golem golem = golemRegistryService.findGolem(binding.getGolemId()).orElse(null);
-        if (golem == null || !supportsPolicySync(golem) || !golemControlChannelService.isConnected(golem.getId())) {
+        if (golem == null || !supportsPolicySync(golem) || !golemControlDispatchPort.isConnected(golem.getId())) {
             return false;
         }
 
@@ -57,7 +61,7 @@ public class PolicyRolloutService {
                 .checksum(version.getChecksum())
                 .createdAt(Instant.now())
                 .build();
-        return golemControlChannelService.send(golem.getId(), toJson(envelope));
+        return golemControlDispatchPort.send(golem.getId(), envelope);
     }
 
     private boolean supportsPolicySync(Golem golem) {
@@ -72,13 +76,5 @@ public class PolicyRolloutService {
                 || (golem.getCapabilitySnapshot().getSupportedChannels() != null && golem.getCapabilitySnapshot()
                         .getSupportedChannels().contains("control"));
         return advertisesFeature && supportsControlChannel;
-    }
-
-    private String toJson(ControlCommandEnvelope envelope) {
-        try {
-            return objectMapper.writeValueAsString(envelope);
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize policy rollout envelope", exception);
-        }
     }
 }

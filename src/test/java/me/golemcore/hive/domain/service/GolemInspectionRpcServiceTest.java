@@ -34,8 +34,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventPayload;
 import me.golemcore.hive.domain.model.ControlCommandEnvelope;
+import me.golemcore.hive.domain.model.InspectionResponseEvent;
 import me.golemcore.hive.domain.model.InspectionRequestBody;
 import me.golemcore.hive.port.outbound.GolemControlDispatchPort;
 import org.junit.jupiter.api.Test;
@@ -70,25 +70,8 @@ class GolemInspectionRpcServiceTest {
         assertEquals("inspection.request", envelope.getEventType());
         assertEquals("sessions.list", envelope.getInspection().getOperation());
 
-        service.handleInspectionResponse("golem-1", new GolemEventPayload(
-                1,
-                "inspection_response",
-                "golem-1",
-                null,
-                null,
-                null,
-                null,
+        service.handleInspectionResponse(new InspectionResponseEvent(
                 requestId,
-                null,
-                "inspection:golem-1",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
                 "sessions.list",
                 true,
                 null,

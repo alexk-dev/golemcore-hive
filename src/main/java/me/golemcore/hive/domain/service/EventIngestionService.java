@@ -33,6 +33,7 @@ import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventBatchRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventPayload;
 import me.golemcore.hive.domain.model.CardLifecycleSignal;
 import me.golemcore.hive.domain.model.EvidenceRef;
+import me.golemcore.hive.domain.model.InspectionResponseEvent;
 import me.golemcore.hive.domain.model.LifecycleSignalType;
 import me.golemcore.hive.domain.model.RuntimeEventType;
 import me.golemcore.hive.port.outbound.StoragePort;
@@ -63,7 +64,7 @@ public class EventIngestionService {
                 throw new IllegalArgumentException("Event golemId does not match request path");
             }
             if ("inspection_response".equals(event.eventType())) {
-                golemInspectionRpcService.handleInspectionResponse(golemId, event);
+                golemInspectionRpcService.handleInspectionResponse(toInspectionResponseEvent(event));
                 acceptedEvents++;
             } else if ("selfevolving.run.upserted".equals(event.eventType())) {
                 selfEvolvingProjectionService.applyRunEvent(golemId, event);
@@ -177,6 +178,17 @@ public class EventIngestionService {
                         : List.of())
                 .createdAt(createdAt)
                 .build();
+    }
+
+    private InspectionResponseEvent toInspectionResponseEvent(GolemEventPayload event) {
+        return new InspectionResponseEvent(
+                event.requestId(),
+                event.operation(),
+                Boolean.TRUE.equals(event.success()),
+                event.errorCode(),
+                event.errorMessage(),
+                event.payload(),
+                event.createdAt());
     }
 
     private EvidenceRef toEvidenceRef(EvidenceRefPayload payload) {

@@ -24,9 +24,9 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventPayload;
 import me.golemcore.hive.domain.model.ControlCommandEnvelope;
 import me.golemcore.hive.domain.model.InspectionRequestBody;
+import me.golemcore.hive.domain.model.InspectionResponseEvent;
 import me.golemcore.hive.domain.model.InspectionRpcResponse;
 import me.golemcore.hive.port.outbound.GolemControlDispatchPort;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,7 +91,7 @@ public class GolemInspectionRpcService {
                 .doFinally(signalType -> pendingRequests.remove(requestId));
     }
 
-    public boolean handleInspectionResponse(String golemId, GolemEventPayload event) {
+    public boolean handleInspectionResponse(InspectionResponseEvent event) {
         if (event == null || event.requestId() == null || event.requestId().isBlank()) {
             return false;
         }

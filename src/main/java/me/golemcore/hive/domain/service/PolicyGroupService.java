@@ -269,9 +269,15 @@ public class PolicyGroupService {
         }
 
         Instant now = Instant.now();
+        PolicySyncStatus normalizedStatus = normalizeReportedStatus(binding, targetVersion, appliedVersion,
+                reportedStatus);
         binding.setAppliedVersion(appliedVersion);
-        binding.setLastAppliedAt(appliedVersion != null ? now : binding.getLastAppliedAt());
-        binding.setSyncStatus(normalizeReportedStatus(binding, targetVersion, appliedVersion, reportedStatus));
+        if (normalizedStatus == PolicySyncStatus.IN_SYNC
+                && appliedVersion != null
+                && appliedVersion == binding.getTargetVersion()) {
+            binding.setLastAppliedAt(now);
+        }
+        binding.setSyncStatus(normalizedStatus);
 
         String normalizedErrorDigest = normalizeOptional(errorDigest);
         binding.setLastErrorDigest(normalizedErrorDigest);
@@ -298,6 +304,13 @@ public class PolicyGroupService {
             PolicySyncStatus reportedStatus,
             String errorDigest) {
         if (policyGroupId == null || targetVersion == null || targetVersion <= 0) {
+            return Optional.empty();
+        }
+        Optional<GolemPolicyBinding> binding = findBinding(golemId);
+        if (binding.isEmpty()) {
+            return Optional.empty();
+        }
+        if (!policyGroupId.equals(binding.get().getPolicyGroupId())) {
             return Optional.empty();
         }
         return Optional.of(recordApplyResult(

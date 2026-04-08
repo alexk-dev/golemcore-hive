@@ -21,6 +21,7 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +37,10 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import me.golemcore.hive.adapter.inbound.web.security.JwtTokenProvider;
+import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.service.GolemControlChannelService;
+import me.golemcore.hive.domain.service.GolemRegistryService;
 import reactor.core.Disposable;
 import reactor.core.publisher.Sinks;
 
@@ -51,6 +55,12 @@ class PolicyGroupsControllerIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private GolemRegistryService golemRegistryService;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     private WebTestClient webTestClient;
 
@@ -556,6 +566,106 @@ class PolicyGroupsControllerIntegrationTest {
         }
     }
 
+    @Test
+    void shouldIgnoreStaleHeartbeatPolicyStateAfterUnbindOrRebind() throws Exception {
+        String operatorToken = loginAsAdmin();
+        RegisteredGolem golem = registerGolem(operatorToken, "Stale Heartbeat Runner", false);
+        String firstPolicyGroupId = createAndPublishPolicyGroup(operatorToken, "stale-routing-a", "Stale Routing A");
+        String secondPolicyGroupId = createAndPublishPolicyGroup(operatorToken, "stale-routing-b", "Stale Routing B");
+
+        bindPolicyGroup(operatorToken, golem.golemId(), firstPolicyGroupId);
+
+        webTestClient.delete()
+                .uri("/api/v1/golems/{golemId}/policy-binding", golem.golemId())
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isNoContent();
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/heartbeat", golem.golemId())
+                .header(HttpHeaders.AUTHORIZATION, golem.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "status":"healthy",
+                          "currentRunState":"IDLE",
+                          "modelTier":"pro",
+                          "queueDepth":0,
+                          "healthSummary":"ready",
+                          "uptimeSeconds":120,
+                          "policyGroupId":"%s",
+                          "targetPolicyVersion":1,
+                          "appliedPolicyVersion":1,
+                          "syncStatus":"IN_SYNC"
+                        }
+                        """.formatted(firstPolicyGroupId))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.policyBinding").isEmpty();
+
+        bindPolicyGroup(operatorToken, golem.golemId(), secondPolicyGroupId);
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/heartbeat", golem.golemId())
+                .header(HttpHeaders.AUTHORIZATION, golem.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "status":"healthy",
+                          "currentRunState":"IDLE",
+                          "modelTier":"pro",
+                          "queueDepth":0,
+                          "healthSummary":"ready",
+                          "uptimeSeconds":120,
+                          "policyGroupId":"%s",
+                          "targetPolicyVersion":1,
+                          "appliedPolicyVersion":1,
+                          "syncStatus":"IN_SYNC"
+                        }
+                        """.formatted(firstPolicyGroupId))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.policyBinding.policyGroupId").isEqualTo(secondPolicyGroupId)
+                .jsonPath("$.policyBinding.syncStatus").isEqualTo("SYNC_PENDING");
+    }
+
+    @Test
+    void shouldRequirePolicyWriteScopeWhenHeartbeatCarriesPolicySyncState() throws Exception {
+        String operatorToken = loginAsAdmin();
+        RegisteredGolem golem = registerGolem(operatorToken, "Restricted Heartbeat Runner", false);
+        String policyGroupId = createAndPublishPolicyGroup(operatorToken, "restricted-routing", "Restricted Routing");
+
+        bindPolicyGroup(operatorToken, golem.golemId(), policyGroupId);
+
+        Golem storedGolem = golemRegistryService.findGolem(golem.golemId()).orElseThrow();
+        String heartbeatOnlyToken = "Bearer " + jwtTokenProvider.generateGolemAccessToken(
+                storedGolem,
+                List.of("golems:heartbeat"));
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/heartbeat", golem.golemId())
+                .header(HttpHeaders.AUTHORIZATION, heartbeatOnlyToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "status":"healthy",
+                          "currentRunState":"IDLE",
+                          "modelTier":"pro",
+                          "queueDepth":0,
+                          "healthSummary":"ready",
+                          "uptimeSeconds":120,
+                          "policyGroupId":"%s",
+                          "targetPolicyVersion":1,
+                          "appliedPolicyVersion":1,
+                          "syncStatus":"IN_SYNC"
+                        }
+                        """.formatted(policyGroupId))
+                .exchange()
+                .expectStatus().isForbidden();
+    }
+
     private String loginAsAdmin() throws Exception {
         EntityExchangeResult<String> loginResult = webTestClient.post()
                 .uri("/api/v1/auth/login")
@@ -624,6 +734,92 @@ class PolicyGroupsControllerIntegrationTest {
         return new RegisteredGolem(
                 registerPayload.get("golemId").asText(),
                 "Bearer " + registerPayload.get("accessToken").asText());
+    }
+
+    private String createAndPublishPolicyGroup(String operatorToken, String slug, String name) throws Exception {
+        EntityExchangeResult<String> createGroupResult = webTestClient.post()
+                .uri("/api/v1/policy-groups")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "slug":"%s",
+                          "name":"%s",
+                          "description":"Policy test group"
+                        }
+                        """.formatted(slug, name))
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(String.class)
+                .returnResult();
+
+        String policyGroupId = objectMapper.readTree(createGroupResult.getResponseBody()).get("id").asText();
+
+        webTestClient.put()
+                .uri("/api/v1/policy-groups/{groupId}/draft", policyGroupId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "schemaVersion":1,
+                          "llmProviders":{
+                            "openai":{
+                              "apiKey":"secret-openai",
+                              "baseUrl":"https://api.example.com/openai",
+                              "requestTimeoutSeconds":30,
+                              "apiType":"openai"
+                            }
+                          },
+                          "modelRouter":{
+                            "temperature":0.7,
+                            "dynamicTierEnabled":true,
+                            "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
+                            "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
+                          },
+                          "modelCatalog":{
+                            "defaultModel":"openai/gpt-5.1",
+                            "models":{
+                              "openai/gpt-5.1":{
+                                "provider":"openai",
+                                "displayName":"openai/gpt-5.1",
+                                "supportsVision":true,
+                                "supportsTemperature":true,
+                                "maxInputTokens":200000
+                              }
+                            }
+                          }
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isOk();
+
+        webTestClient.post()
+                .uri("/api/v1/policy-groups/{groupId}/publish", policyGroupId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "changeSummary":"Initial publish"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isCreated();
+
+        return policyGroupId;
+    }
+
+    private void bindPolicyGroup(String operatorToken, String golemId, String policyGroupId) {
+        webTestClient.put()
+                .uri("/api/v1/golems/{golemId}/policy-binding", golemId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "policyGroupId":"%s"
+                        }
+                        """.formatted(policyGroupId))
+                .exchange()
+                .expectStatus().isOk();
     }
 
     private record RegisteredGolem(String golemId, String accessToken) {

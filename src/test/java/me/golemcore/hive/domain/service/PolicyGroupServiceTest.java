@@ -166,6 +166,83 @@ class PolicyGroupServiceTest {
         assertEquals(45, updatedGroup.getDraftSpec().getLlmProviders().get("openai").getRequestTimeoutSeconds());
     }
 
+    @Test
+    void shouldKeepLastAppliedAtWhenNewTargetFailsToApply() throws Exception {
+        HiveProperties properties = new HiveProperties();
+        properties.getStorage().setBasePath(tempDir.toString());
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
+        LocalJsonStorageAdapter storagePort = new LocalJsonStorageAdapter(properties);
+        storagePort.init();
+
+        AuditService auditService = new AuditService(storagePort, objectMapper);
+        GolemPresenceService golemPresenceService = mock(GolemPresenceService.class);
+        when(golemPresenceService.calculateMissedHeartbeats(any(Golem.class), any(Instant.class))).thenReturn(0);
+        when(golemPresenceService.resolveState(any(Golem.class), any(Instant.class)))
+                .thenReturn(GolemState.PENDING_ENROLLMENT);
+
+        GolemRegistryService golemRegistryService = new GolemRegistryService(
+                storagePort,
+                objectMapper,
+                properties,
+                golemPresenceService,
+                auditService);
+
+        PolicyGroupService service = new PolicyGroupService(storagePort, objectMapper, auditService,
+                golemRegistryService);
+
+        PolicyGroup group = service.createPolicyGroup("default-routing", "Default Routing", "Primary policy", "op-1",
+                "Hive Admin");
+        group = service.updateDraft(group.getId(), buildSpec("openai", "openai/gpt-5.1", "openai/gpt-5.1"));
+
+        PolicyGroupVersion version1 = service.publish(group.getId(), "Initial publish", "op-1", "Hive Admin");
+
+        Golem golem = golemRegistryService.registerGolem(
+                "Builder",
+                "lab-a",
+                "1.0.0",
+                "build-1",
+                Set.of("control"),
+                GolemCapabilitySnapshot.builder()
+                        .providers(new LinkedHashSet<>(Set.of("openai")))
+                        .build(),
+                "token-1");
+
+        service.bindGolem(golem.getId(), group.getId(), "op-1", "Hive Admin");
+        GolemPolicyBinding syncedBinding = service.recordApplyResult(
+                golem.getId(),
+                group.getId(),
+                version1.getVersion(),
+                version1.getVersion(),
+                PolicySyncStatus.IN_SYNC,
+                version1.getChecksum(),
+                null);
+
+        Instant successfulApplyAt = syncedBinding.getLastAppliedAt();
+        assertNotNull(successfulApplyAt);
+
+        Thread.sleep(10L);
+
+        group = service.updateDraft(group.getId(), buildSpec("anthropic", "anthropic/claude-opus-4-1",
+                "anthropic/claude-opus-4-1"));
+        PolicyGroupVersion version2 = service.publish(group.getId(), "Switch provider", "op-1", "Hive Admin");
+
+        GolemPolicyBinding failedBinding = service.recordApplyResult(
+                golem.getId(),
+                group.getId(),
+                version2.getVersion(),
+                version1.getVersion(),
+                PolicySyncStatus.APPLY_FAILED,
+                version2.getChecksum(),
+                "provider timeout");
+
+        assertEquals(PolicySyncStatus.APPLY_FAILED, failedBinding.getSyncStatus());
+        assertEquals(version1.getVersion(), failedBinding.getAppliedVersion());
+        assertEquals(successfulApplyAt, failedBinding.getLastAppliedAt());
+        assertEquals("provider timeout", failedBinding.getLastErrorDigest());
+    }
+
     private PolicyGroupSpec buildSpec(String providerName, String defaultModel, String routingModel) {
         Map<String, PolicyGroupSpec.PolicyProviderConfig> providers = new LinkedHashMap<>();
         providers.put(providerName, PolicyGroupSpec.PolicyProviderConfig.builder()

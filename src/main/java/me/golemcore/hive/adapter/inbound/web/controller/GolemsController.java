@@ -38,6 +38,7 @@ import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemCapabilitySnapshot;
 import me.golemcore.hive.domain.model.GolemPolicyBinding;
+import me.golemcore.hive.domain.model.GolemScope;
 import me.golemcore.hive.domain.model.HeartbeatPing;
 import me.golemcore.hive.domain.model.PolicySyncStatus;
 import me.golemcore.hive.domain.service.EnrollmentService;
@@ -129,7 +130,10 @@ public class GolemsController {
             @PathVariable String golemId,
             @RequestBody(required = false) HeartbeatRequest request) {
         return Mono.fromCallable(() -> {
-            requireGolemScope(principal, golemId, "golems:heartbeat");
+            requireGolemScope(principal, golemId, GolemScope.HEARTBEAT.value());
+            if (request != null && hasPolicySyncState(request)) {
+                requireGolemScope(principal, golemId, GolemScope.POLICY_WRITE.value());
+            }
             HeartbeatPing heartbeatPing = HeartbeatPing.builder()
                     .golemId(golemId)
                     .receivedAt(Instant.now())
@@ -325,6 +329,14 @@ public class GolemsController {
             return null;
         }
         return GolemPolicyController.toBindingResponse(policyBinding);
+    }
+
+    private boolean hasPolicySyncState(HeartbeatRequest request) {
+        return request.policyGroupId() != null
+                || request.targetPolicyVersion() != null
+                || request.appliedPolicyVersion() != null
+                || request.syncStatus() != null
+                || request.lastPolicyErrorDigest() != null;
     }
 
     private PolicySyncStatus parsePolicySyncStatus(String rawStatus) {

@@ -259,6 +259,8 @@ The event payload should include only:
 
 No secret payload should be sent over WebSocket.
 
+Hive should send this event only to golems that advertise `policy-sync-v1` inside `enabledAutonomyFeatures` and support the `control` channel.
+
 ### 11.3 Fetch
 
 After receiving the trigger, the bot fetches the full package through an authenticated machine endpoint using its existing machine JWT.
@@ -327,6 +329,18 @@ The system does not fail closed.
 - `errorDigest`
 - `errorDetails`
 
+### `policy-apply-result` response
+
+- `policyGroupId`
+- `targetVersion`
+- `appliedVersion`
+- `syncStatus`
+- `lastSyncRequestedAt`
+- `lastAppliedAt`
+- `lastErrorDigest`
+- `lastErrorAt`
+- `driftSince`
+
 ## 13. Heartbeat Extensions
 
 Heartbeat should be extended so Hive can see convergence without a separate polling view.
@@ -336,7 +350,7 @@ Add these fields:
 - `policyGroupId`
 - `targetPolicyVersion`
 - `appliedPolicyVersion`
-- `policySyncStatus`
+- `syncStatus`
 - `lastPolicyErrorDigest`
 
 This keeps rollout state visible in the same fleet surface that already carries queue depth, current run, and cost telemetry.
@@ -370,12 +384,14 @@ Hive stores raw provider API keys because the chosen product direction is full c
 That requires three rules:
 
 1. Secrets must be encrypted at rest in Hive storage.
-2. Operator read APIs must never return raw secret values after initial write.
+2. Operator read APIs must never return raw secret values after initial write and instead expose presence metadata such as `apiKeyPresent`.
 3. Full policy packages including secrets must be available only to machine-scoped bot endpoints.
 
 The control channel must never transport raw API keys.
 
 Secret delivery should happen only over the machine-authenticated HTTPS package fetch.
+
+If an operator updates a draft policy and omits an existing provider `apiKey`, Hive preserves the stored key instead of clearing it.
 
 ## 16. Validation Rules
 
@@ -469,6 +485,15 @@ Hive UI should expose:
 - diff preview before publish,
 - drift and failure states,
 - rollback action from version history.
+
+The implemented v1 operator UI uses:
+
+- a policy list plus detail layout,
+- a JSON draft editor over the normalized `draftSpec`,
+- published version history with rollback,
+- bound golem attach and detach actions,
+- rollout counts on the policy list,
+- policy status visibility inside fleet rows and golem detail.
 
 ### Policy group list columns
 

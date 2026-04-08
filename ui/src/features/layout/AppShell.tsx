@@ -6,6 +6,7 @@ const navGroups = [
     label: 'Operate',
     items: [
       { to: '/boards', label: 'Boards' },
+      { to: '/policies', label: 'Policies' },
       { to: '/approvals', label: 'Approvals' },
     ],
   },

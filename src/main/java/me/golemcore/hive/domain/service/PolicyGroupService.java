@@ -102,7 +102,8 @@ public class PolicyGroupService {
 
     public PolicyGroup updateDraft(String groupId, PolicyGroupSpec draftSpec) {
         PolicyGroup policyGroup = getPolicyGroup(groupId);
-        PolicyGroupSpec normalizedDraftSpec = normalizeSpec(draftSpec);
+        PolicyGroupSpec mergedDraftSpec = mergeSecrets(policyGroup.getDraftSpec(), draftSpec);
+        PolicyGroupSpec normalizedDraftSpec = normalizeSpec(mergedDraftSpec);
         policyGroup.setDraftSpec(normalizedDraftSpec);
         policyGroup.setUpdatedAt(Instant.now());
         savePolicyGroup(policyGroup);
@@ -444,6 +445,35 @@ public class PolicyGroupService {
         }
         copy.setChecksum(calculateChecksum(copy));
         return copy;
+    }
+
+    private PolicyGroupSpec mergeSecrets(PolicyGroupSpec existingSpec, PolicyGroupSpec nextSpec) {
+        if (nextSpec == null) {
+            throw new IllegalArgumentException("Policy group spec is required");
+        }
+
+        PolicyGroupSpec mergedSpec = copy(nextSpec, PolicyGroupSpec.class);
+        if (mergedSpec.getLlmProviders() == null) {
+            return mergedSpec;
+        }
+        if (existingSpec == null || existingSpec.getLlmProviders() == null) {
+            return mergedSpec;
+        }
+
+        for (java.util.Map.Entry<String, PolicyGroupSpec.PolicyProviderConfig> entry : mergedSpec.getLlmProviders()
+                .entrySet()) {
+            PolicyGroupSpec.PolicyProviderConfig incomingProvider = entry.getValue();
+            PolicyGroupSpec.PolicyProviderConfig existingProvider = existingSpec.getLlmProviders().get(entry.getKey());
+            if (incomingProvider == null || existingProvider == null) {
+                continue;
+            }
+            if ((incomingProvider.getApiKey() == null || incomingProvider.getApiKey().isBlank())
+                    && existingProvider.getApiKey() != null
+                    && !existingProvider.getApiKey().isBlank()) {
+                incomingProvider.setApiKey(existingProvider.getApiKey());
+            }
+        }
+        return mergedSpec;
     }
 
     private <T> T copy(T source, Class<T> type) {

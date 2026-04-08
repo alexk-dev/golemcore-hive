@@ -126,6 +126,46 @@ class PolicyGroupServiceTest {
         assertEquals(PolicySyncStatus.SYNC_PENDING, rolledBackBinding.getSyncStatus());
     }
 
+    @Test
+    void shouldPreserveProviderSecretsWhenDraftUpdateOmitsApiKey() {
+        HiveProperties properties = new HiveProperties();
+        properties.getStorage().setBasePath(tempDir.toString());
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
+        LocalJsonStorageAdapter storagePort = new LocalJsonStorageAdapter(properties);
+        storagePort.init();
+
+        AuditService auditService = new AuditService(storagePort, objectMapper);
+        GolemPresenceService golemPresenceService = mock(GolemPresenceService.class);
+        when(golemPresenceService.calculateMissedHeartbeats(any(Golem.class), any(Instant.class))).thenReturn(0);
+        when(golemPresenceService.resolveState(any(Golem.class), any(Instant.class)))
+                .thenReturn(GolemState.PENDING_ENROLLMENT);
+
+        GolemRegistryService golemRegistryService = new GolemRegistryService(
+                storagePort,
+                objectMapper,
+                properties,
+                golemPresenceService,
+                auditService);
+
+        PolicyGroupService service = new PolicyGroupService(storagePort, objectMapper, auditService,
+                golemRegistryService);
+
+        PolicyGroup group = service.createPolicyGroup("default-routing", "Default Routing", "Primary policy", "op-1",
+                "Hive Admin");
+        group = service.updateDraft(group.getId(), buildSpec("openai", "openai/gpt-5.1", "openai/gpt-5.1"));
+
+        PolicyGroupSpec updatedWithoutSecret = buildSpec("openai", "openai/gpt-5.1", "openai/gpt-5.1");
+        updatedWithoutSecret.getLlmProviders().get("openai").setApiKey(null);
+        updatedWithoutSecret.getLlmProviders().get("openai").setRequestTimeoutSeconds(45);
+
+        PolicyGroup updatedGroup = service.updateDraft(group.getId(), updatedWithoutSecret);
+
+        assertEquals("secret-openai", updatedGroup.getDraftSpec().getLlmProviders().get("openai").getApiKey());
+        assertEquals(45, updatedGroup.getDraftSpec().getLlmProviders().get("openai").getRequestTimeoutSeconds());
+    }
+
     private PolicyGroupSpec buildSpec(String providerName, String defaultModel, String routingModel) {
         Map<String, PolicyGroupSpec.PolicyProviderConfig> providers = new LinkedHashMap<>();
         providers.put(providerName, PolicyGroupSpec.PolicyProviderConfig.builder()

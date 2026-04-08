@@ -71,10 +71,12 @@ export function GolemFiltersPanel({
 
 export function GolemRegistryPanel({
   golems,
+  policyNameById,
   selectedGolemId,
   onSelect,
 }: {
   golems: GolemSummary[];
+  policyNameById: Record<string, string>;
   selectedGolemId: string | null;
   onSelect: (golemId: string) => void;
 }) {
@@ -122,6 +124,9 @@ export function GolemRegistryPanel({
                     <span className="min-w-0 flex-1 truncate font-semibold text-foreground">{golem.displayName}</span>
                     <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{golem.hostLabel || golem.id}</span>
                     <span className="hidden shrink-0 text-xs text-muted-foreground md:inline">{golem.roleSlugs.join(', ') || '—'}</span>
+                    <span className="hidden shrink-0 text-xs text-muted-foreground lg:inline">
+                      {formatPolicyRolloutLabel(golem, policyNameById)}
+                    </span>
                     <span className="shrink-0 text-xs text-muted-foreground">{formatTimestamp(golem.lastSeenAt)}</span>
                     <Link
                       to={`/fleet/chat/${golem.id}`}
@@ -152,6 +157,15 @@ export function GolemRegistryPanel({
       )}
     </div>
   );
+}
+
+function formatPolicyRolloutLabel(golem: GolemSummary, policyNameById: Record<string, string>) {
+  if (!golem.policyBinding) {
+    return 'No policy';
+  }
+  const policyLabel = policyNameById[golem.policyBinding.policyGroupId] || golem.policyBinding.policyGroupId;
+  const appliedVersion = golem.policyBinding.appliedVersion ? `v${golem.policyBinding.appliedVersion}` : '—';
+  return `${policyLabel} · ${golem.policyBinding.syncStatus || 'UNKNOWN'} · v${golem.policyBinding.targetVersion}/${appliedVersion}`;
 }
 
 export function GolemActionDialog({

@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import type { GolemDetails, GolemRole } from '../../lib/api/golemsApi';
+import type { PolicyGroup } from '../../lib/api/policiesApi';
 import { GolemStatusBadge } from './GolemStatusBadge';
 import { formatTimestamp } from '../../lib/format';
 
 interface GolemDetailsModalProps {
   golem: GolemDetails | null;
   roles: GolemRole[];
+  policies: PolicyGroup[];
   isBusy: boolean;
   onClose: () => void;
   onToggleRole: (roleSlug: string, nextAssigned: boolean) => Promise<void>;
@@ -17,6 +19,7 @@ interface GolemDetailsModalProps {
 export function GolemDetailsModal({
   golem,
   roles,
+  policies,
   isBusy,
   onClose,
   onToggleRole,
@@ -51,6 +54,8 @@ export function GolemDetailsModal({
         </div>
 
         <GolemStatsGrid golem={golem} />
+
+        <GolemPolicySection golem={golem} policies={policies} />
 
         <GolemRolesSection
           roleSlugs={golem.roleSlugs}
@@ -91,6 +96,46 @@ function GolemStatsGrid({ golem }: { golem: GolemDetails }) {
         <Row label="Channels" value={golem.supportedChannels.length ? golem.supportedChannels.join(', ') : 'n/a'} />
         <Row label="Providers" value={golem.capabilities?.providers.length ? golem.capabilities.providers.join(', ') : 'n/a'} />
       </dl>
+    </div>
+  );
+}
+
+function GolemPolicySection({ golem, policies }: { golem: GolemDetails; policies: PolicyGroup[] }) {
+  const binding = golem.policyBinding;
+  const policyGroupId = binding?.policyGroupId ?? golem.lastHeartbeat?.policyGroupId ?? null;
+  const policyLabel = policies.find((policy) => policy.id === policyGroupId)?.slug || policyGroupId;
+
+  return (
+    <div className="mt-3 border border-border/60 bg-white/70 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Policy control</p>
+          {policyGroupId ? (
+            <Link to={`/policies/${policyGroupId}`} className="mt-1 inline-flex text-sm font-semibold text-foreground hover:underline">
+              {policyLabel}
+            </Link>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">No policy group bound.</p>
+          )}
+        </div>
+        {binding?.syncStatus ? (
+          <span className="pill">{binding.syncStatus}</span>
+        ) : null}
+      </div>
+
+      {policyGroupId ? (
+        <div className="mt-3 grid gap-1 text-xs md:grid-cols-2">
+          <Row label="Target" value={binding?.targetVersion ? `Target v${binding.targetVersion}` : '—'} />
+          <Row
+            label="Applied"
+            value={binding?.appliedVersion ? `Applied v${binding.appliedVersion}` : 'Applied —'}
+          />
+          <Row label="Drift since" value={formatTimestamp(binding?.driftSince || null)} />
+          <Row label="Last apply" value={formatTimestamp(binding?.lastAppliedAt || null)} />
+          <Row label="Heartbeat sync" value={golem.lastHeartbeat?.syncStatus || 'n/a'} />
+          <Row label="Last error" value={binding?.lastErrorDigest || golem.lastHeartbeat?.lastPolicyErrorDigest || '—'} />
+        </div>
+      ) : null}
     </div>
   );
 }

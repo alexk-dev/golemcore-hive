@@ -10,6 +10,7 @@ import {
   resumeGolem,
   unassignGolemRoles,
 } from '../../lib/api/golemsApi';
+import { listPolicyGroups } from '../../lib/api/policiesApi';
 import { GolemDetailsModal } from './GolemDetailsPanel';
 import {
   GolemActionDialog,
@@ -42,6 +43,10 @@ function useGolemsPageState() {
   const rolesQuery = useQuery({
     queryKey: ['golem-roles'],
     queryFn: listGolemRoles,
+  });
+  const policiesQuery = useQuery({
+    queryKey: ['policy-groups'],
+    queryFn: listPolicyGroups,
   });
 
   const roleBindingMutation = useMutation({
@@ -95,6 +100,7 @@ function useGolemsPageState() {
     golemsQuery,
     golemDetailsQuery,
     rolesQuery,
+    policiesQuery,
     roleBindingMutation,
     golemActionMutation,
     setQuery,
@@ -140,6 +146,7 @@ export function GolemsPage() {
 
       <GolemRegistryPanel
         golems={state.golemsQuery.data ?? []}
+        policyNameById={Object.fromEntries((state.policiesQuery.data ?? []).map((policy) => [policy.id, policy.slug]))}
         selectedGolemId={state.selectedGolemId}
         onSelect={state.openDetailsModal}
       />
@@ -149,6 +156,7 @@ export function GolemsPage() {
       <GolemDetailsModal
         golem={state.golemDetailsQuery.data ?? null}
         roles={state.rolesQuery.data ?? []}
+        policies={state.policiesQuery.data ?? []}
         isBusy={state.roleBindingMutation.isPending || state.golemActionMutation.isPending}
         onClose={state.closeDetailsModal}
         onToggleRole={async (roleSlug, nextAssigned) => {

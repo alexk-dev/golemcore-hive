@@ -18,4 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
-public record HeartbeatRequest(String status,String currentRunState,String currentCardId,String currentThreadId,String modelTier,Long inputTokens,Long outputTokens,Long accumulatedCostMicros,Integer queueDepth,String healthSummary,String lastErrorSummary,Long uptimeSeconds,String capabilitySnapshotHash){}
+public record HeartbeatRequest(String status,String currentRunState,String currentCardId,String currentThreadId,String modelTier,Long inputTokens,Long outputTokens,Long accumulatedCostMicros,Integer queueDepth,String healthSummary,String lastErrorSummary,Long uptimeSeconds,String capabilitySnapshotHash,String policyGroupId,Integer targetPolicyVersion,Integer appliedPolicyVersion,String syncStatus,String lastPolicyErrorDigest){}

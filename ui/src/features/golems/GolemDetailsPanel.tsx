@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import type { GolemDetails, GolemRole } from '../../lib/api/golemsApi';
+import type { PolicyGroup } from '../../lib/api/policiesApi';
 import { GolemStatusBadge } from './GolemStatusBadge';
 import { formatTimestamp } from '../../lib/format';
 
 interface GolemDetailsModalProps {
   golem: GolemDetails | null;
   roles: GolemRole[];
+  policies: PolicyGroup[];
   isBusy: boolean;
   onClose: () => void;
   onToggleRole: (roleSlug: string, nextAssigned: boolean) => Promise<void>;
@@ -17,6 +19,7 @@ interface GolemDetailsModalProps {
 export function GolemDetailsModal({
   golem,
   roles,
+  policies,
   isBusy,
   onClose,
   onToggleRole,
@@ -51,6 +54,8 @@ export function GolemDetailsModal({
         </div>
 
         <GolemStatsGrid golem={golem} />
+
+        <GolemPolicySection golem={golem} policies={policies} />
 
         <GolemRolesSection
           roleSlugs={golem.roleSlugs}
@@ -93,6 +98,102 @@ function GolemStatsGrid({ golem }: { golem: GolemDetails }) {
       </dl>
     </div>
   );
+}
+
+function GolemPolicySection({ golem, policies }: { golem: GolemDetails; policies: PolicyGroup[] }) {
+  const summary = buildGolemPolicySummary(golem, policies);
+
+  return (
+    <div className="mt-3 border border-border/60 bg-white/70 p-3">
+      <GolemPolicyHeader
+        policyGroupId={summary.policyGroupId}
+        policyLabel={summary.policyLabel}
+        syncStatus={summary.syncStatus}
+      />
+      {summary.rows.length ? <GolemPolicyRows rows={summary.rows} /> : null}
+    </div>
+  );
+}
+
+function GolemPolicyHeader({
+  policyGroupId,
+  policyLabel,
+  syncStatus,
+}: {
+  policyGroupId: string | null;
+  policyLabel: string | null;
+  syncStatus: string | null;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Policy control</p>
+        {policyGroupId ? (
+          <Link to={`/policies/${policyGroupId}`} className="mt-1 inline-flex text-sm font-semibold text-foreground hover:underline">
+            {policyLabel}
+          </Link>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">No policy group bound.</p>
+        )}
+      </div>
+      {syncStatus ? <span className="pill">{syncStatus}</span> : null}
+    </div>
+  );
+}
+
+function GolemPolicyRows({ rows }: { rows: Array<{ label: string; value: string }> }) {
+  return (
+    <div className="mt-3 grid gap-1 text-xs md:grid-cols-2">
+      {rows.map((row) => (
+        <Row key={row.label} label={row.label} value={row.value} />
+      ))}
+    </div>
+  );
+}
+
+function buildGolemPolicySummary(golem: GolemDetails, policies: PolicyGroup[]) {
+  const binding = golem.policyBinding;
+  const policyGroupId = binding?.policyGroupId ?? golem.lastHeartbeat?.policyGroupId ?? null;
+  const policyLabel = policyGroupId
+    ? policies.find((policy) => policy.id === policyGroupId)?.slug || policyGroupId
+    : null;
+  const rows = policyGroupId ? buildGolemPolicyRows(golem) : [];
+
+  return {
+    policyGroupId,
+    policyLabel,
+    syncStatus: binding?.syncStatus ?? null,
+    rows,
+  };
+}
+
+function buildGolemPolicyRows(golem: GolemDetails) {
+  return [
+    { label: 'Target', value: formatPolicyTargetVersion(golem.policyBinding?.targetVersion ?? null) },
+    { label: 'Applied', value: formatPolicyAppliedVersion(golem.policyBinding?.appliedVersion ?? null) },
+    { label: 'Drift since', value: formatTimestamp(golem.policyBinding?.driftSince || null) },
+    { label: 'Last apply', value: formatTimestamp(golem.policyBinding?.lastAppliedAt || null) },
+    { label: 'Heartbeat sync', value: golem.lastHeartbeat?.syncStatus || 'n/a' },
+    { label: 'Last error', value: resolvePolicyErrorDigest(golem) },
+  ];
+}
+
+function formatPolicyTargetVersion(targetVersion: number | null) {
+  if (!targetVersion) {
+    return '—';
+  }
+  return `Target v${targetVersion}`;
+}
+
+function formatPolicyAppliedVersion(appliedVersion: number | null) {
+  if (!appliedVersion) {
+    return 'Applied —';
+  }
+  return `Applied v${appliedVersion}`;
+}
+
+function resolvePolicyErrorDigest(golem: GolemDetails) {
+  return golem.policyBinding?.lastErrorDigest || golem.lastHeartbeat?.lastPolicyErrorDigest || '—';
 }
 
 function GolemRolesSection({

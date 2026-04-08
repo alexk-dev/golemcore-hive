@@ -14,6 +14,7 @@ import { AuditPage } from '../features/audit/AuditPage';
 import { BudgetsPage } from '../features/budgets/BudgetsPage';
 import { SystemSettingsPage } from '../features/settings/SystemSettingsPage';
 import { InspectionPage } from '../features/inspection/InspectionPage';
+import { PolicyGroupsPage } from '../features/policies/PolicyGroupsPage';
 
 export const routes = createBrowserRouter([
   {
@@ -41,6 +42,14 @@ export const routes = createBrowserRouter([
           {
             path: '/boards',
             element: <BoardsPage />,
+          },
+          {
+            path: '/policies',
+            element: <PolicyGroupsPage />,
+          },
+          {
+            path: '/policies/:groupId',
+            element: <PolicyGroupsPage />,
           },
           {
             path: '/approvals',

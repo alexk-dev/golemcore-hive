@@ -23,7 +23,6 @@ import me.golemcore.hive.adapter.inbound.web.security.JwtTokenProvider;
 import me.golemcore.hive.adapter.inbound.web.security.SubjectType;
 import me.golemcore.hive.domain.model.GolemScope;
 import me.golemcore.hive.domain.service.CommandDispatchService;
-import me.golemcore.hive.domain.service.GolemControlChannelService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
@@ -36,7 +35,7 @@ import reactor.core.publisher.Sinks;
 public class GolemControlChannelHandler implements WebSocketHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final GolemControlChannelService golemControlChannelService;
+    private final InMemoryGolemControlChannelAdapter golemControlChannelAdapter;
     private final CommandDispatchService commandDispatchService;
 
     @Override
@@ -52,12 +51,12 @@ public class GolemControlChannelHandler implements WebSocketHandler {
 
         String golemId = jwtTokenProvider.getSubjectId(token);
         Sinks.Many<String> sink = Sinks.many().unicast().onBackpressureBuffer();
-        Mono<Void> output = session.send(golemControlChannelService.register(golemId, sink).map(session::textMessage));
+        Mono<Void> output = session.send(golemControlChannelAdapter.register(golemId, sink).map(session::textMessage));
         Mono<Void> input = session.receive().then();
 
         commandDispatchService.dispatchPendingCommands(golemId);
         return Mono.when(input, output)
-                .doFinally(signalType -> golemControlChannelService.unregister(golemId, sink));
+                .doFinally(signalType -> golemControlChannelAdapter.unregister(golemId, sink));
     }
 
     private String extractToken(WebSocketSession session) {

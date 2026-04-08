@@ -24,6 +24,7 @@ describe('AppShell', () => {
     expect(screen.getByText('Fleet')).toBeInTheDocument();
     expect(screen.getByText('Observe')).toBeInTheDocument();
     expect(screen.getByText('Boards')).toBeInTheDocument();
+    expect(screen.getByText('Policies')).toBeInTheDocument();
     expect(screen.getByText('Golems')).toBeInTheDocument();
     expect(screen.getByText('Roles')).toBeInTheDocument();
   });
@@ -43,6 +44,7 @@ function renderShell(initialEntry: string) {
         <Route element={<AppShell />}>
           <Route path="/boards" element={<div>Boards page</div>} />
           <Route path="/boards/:boardId" element={<div>Board page</div>} />
+          <Route path="/policies" element={<div>Policies page</div>} />
         </Route>
       </Routes>
     </MemoryRouter>,

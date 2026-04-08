@@ -25,6 +25,23 @@ export interface HeartbeatSnapshot {
   lastErrorSummary: string | null;
   uptimeSeconds: number;
   capabilitySnapshotHash: string | null;
+  policyGroupId?: string | null;
+  targetPolicyVersion?: number | null;
+  appliedPolicyVersion?: number | null;
+  syncStatus?: string | null;
+  lastPolicyErrorDigest?: string | null;
+}
+
+export interface GolemPolicyBinding {
+  policyGroupId: string;
+  targetVersion: number;
+  appliedVersion: number | null;
+  syncStatus: string | null;
+  lastSyncRequestedAt: string | null;
+  lastAppliedAt: string | null;
+  lastErrorDigest: string | null;
+  lastErrorAt: string | null;
+  driftSince: string | null;
 }
 
 export interface GolemSummary {
@@ -37,6 +54,7 @@ export interface GolemSummary {
   lastSeenAt: string | null;
   missedHeartbeatCount: number;
   roleSlugs: string[];
+  policyBinding?: GolemPolicyBinding | null;
 }
 
 export interface GolemDetails {
@@ -61,6 +79,7 @@ export interface GolemDetails {
   capabilities: GolemCapabilitySnapshot | null;
   lastHeartbeat: HeartbeatSnapshot | null;
   roleSlugs: string[];
+  policyBinding?: GolemPolicyBinding | null;
 }
 
 export interface EnrollmentToken {

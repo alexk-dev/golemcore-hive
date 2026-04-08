@@ -21,4 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.golems;
 import java.time.Instant;
 import java.util.List;
 
-public record GolemSummaryResponse(String id,String displayName,String hostLabel,String runtimeVersion,String state,Instant lastHeartbeatAt,Instant lastSeenAt,int missedHeartbeatCount,List<String>roleSlugs){}
+public record GolemSummaryResponse(String id,String displayName,String hostLabel,String runtimeVersion,String state,Instant lastHeartbeatAt,Instant lastSeenAt,int missedHeartbeatCount,List<String>roleSlugs,GolemPolicyBindingResponse policyBinding){}

@@ -1,7 +1,6 @@
 # Bot Integration Contract
 
 Status: Draft v1
-Parent spec: [SPEC.md](../SPEC.md)
 
 ## 1. Purpose
 
@@ -100,6 +99,14 @@ Required behavior:
   - heartbeat interval
   - scopes
 
+Registration response scopes currently include:
+
+- `golems:heartbeat`
+- `golems:events:write`
+- `golems:control:connect`
+- `golems:policy:read`
+- `golems:policy:write`
+
 ### 6.3 Machine token rotation
 
 - `POST /api/v1/golems/{golemId}/auth:rotate`
@@ -108,11 +115,74 @@ Required behavior:
 
 - `POST /api/v1/golems/{golemId}/heartbeat`
 
-### 6.5 Event ingestion
+Heartbeat request contains the operational telemetry already used by Hive fleet views:
+
+- `status`
+- `currentRunState`
+- `currentCardId`
+- `currentThreadId`
+- `modelTier`
+- `inputTokens`
+- `outputTokens`
+- `accumulatedCostMicros`
+- `queueDepth`
+- `healthSummary`
+- `lastErrorSummary`
+- `uptimeSeconds`
+- `capabilitySnapshotHash`
+
+Heartbeat also carries policy convergence state so rollout drift is visible without a second poll:
+
+- `policyGroupId`
+- `targetPolicyVersion`
+- `appliedPolicyVersion`
+- `syncStatus`
+- `lastPolicyErrorDigest`
+
+### 6.5 Policy package fetch
+
+- `GET /api/v1/golems/{golemId}/policy-package`
+- requires machine scope `golems:policy:read`
+- returns:
+  - `policyGroupId`
+  - `targetVersion`
+  - `checksum`
+  - `llmProviders`
+  - `modelRouter`
+  - `modelCatalog`
+
+Rule:
+
+- this endpoint may return raw provider API keys because it is machine-only.
+
+### 6.6 Policy apply reporting
+
+- `POST /api/v1/golems/{golemId}/policy-apply-result`
+- requires machine scope `golems:policy:write`
+- request contains:
+  - `policyGroupId`
+  - `targetVersion`
+  - `appliedVersion`
+  - `syncStatus`
+  - `checksum`
+  - `errorDigest`
+  - `errorDetails`
+- response returns the normalized Hive binding state:
+  - `policyGroupId`
+  - `targetVersion`
+  - `appliedVersion`
+  - `syncStatus`
+  - `lastSyncRequestedAt`
+  - `lastAppliedAt`
+  - `lastErrorDigest`
+  - `lastErrorAt`
+  - `driftSince`
+
+### 6.7 Event ingestion
 
 - `POST /api/v1/golems/{golemId}/events:batch`
 
-### 6.6 Control channel
+### 6.8 Control channel
 
 - `GET /ws/golems/control`
 - outbound WebSocket from bot to Hive
@@ -126,11 +196,17 @@ Control command envelope event types:
   - stop/cancel request for an already issued command/run
   - carries the same `commandId`, `threadId`, `cardId`, `runId`, and `golemId`
   - `body` may be omitted
+- `policy.sync_requested`
+  - requests that the bot refresh Hive-managed policy state
+  - carries `policyGroupId`, `targetVersion`, and `checksum`
+  - never carries raw provider secrets
 
 Rule:
 
 - Hive may locally cancel commands that were never delivered.
 - Once a command is delivered, Hive must request cancellation through `command.cancel` and wait for runtime/lifecycle events from the bot before marking the run terminal.
+- Hive must emit `policy.sync_requested` only to bots that advertise feature `policy-sync-v1` in `enabledAutonomyFeatures` and support the `control` channel.
+- Pull-based convergence through `policy-package` remains required even when WebSocket delivery is enabled, because the trigger may be missed while the bot is offline or reconnecting.
 
 ## 7. Security Rules
 
@@ -139,3 +215,6 @@ Rule:
 - Refresh JWTs are longer-lived and bot-local.
 - Operator browser refresh tokens remain `HttpOnly` cookies.
 - Bot machine scopes must stay separate from operator scopes.
+- Operator policy read APIs must redact provider secrets and expose only presence metadata such as `apiKeyPresent`.
+- If an operator updates a draft policy and omits an existing provider `apiKey`, Hive preserves the stored secret instead of clearing it.
+- Raw provider API keys are allowed only on machine-scoped policy package fetches and must never travel over the control channel.

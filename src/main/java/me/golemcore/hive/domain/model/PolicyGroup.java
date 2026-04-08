@@ -19,9 +19,6 @@
 package me.golemcore.hive.domain.model;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,35 +28,21 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Golem {
+public class PolicyGroup {
 
     @Builder.Default
     private int schemaVersion = 1;
 
     private String id;
-    private String displayName;
-    private String hostLabel;
-    private String runtimeVersion;
-    private String buildVersion;
-    private String controlChannelUrl;
-    private GolemState state;
+    private String slug;
+    private String name;
+    private String description;
+    private String status;
+    private int currentVersion;
+    private PolicyGroupSpec draftSpec;
     private Instant createdAt;
     private Instant updatedAt;
-    private Instant registeredAt;
-    private Instant lastHeartbeatAt;
-    private Instant lastSeenAt;
-    private Instant lastStateChangeAt;
-    private Instant lastSuccessfulCommandAt;
-    private String enrollmentTokenId;
-    private String pauseReason;
-    private String revokeReason;
-    private int heartbeatIntervalSeconds;
-    private int missedHeartbeatCount;
-    private Set<String> supportedChannels;
-    private GolemCapabilitySnapshot capabilitySnapshot;
-    private HeartbeatPing lastHeartbeat;
-    private GolemPolicyBinding policyBinding;
-
-    @Builder.Default
-    private List<GolemRoleBinding> roleBindings = new ArrayList<>();
+    private Instant lastPublishedAt;
+    private String lastPublishedBy;
+    private String lastPublishedByName;
 }

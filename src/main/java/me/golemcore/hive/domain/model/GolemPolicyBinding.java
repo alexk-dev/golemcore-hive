@@ -16,9 +16,31 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.adapter.inbound.web.dto.golems;
+package me.golemcore.hive.domain.model;
 
 import java.time.Instant;
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record GolemSummaryResponse(String id,String displayName,String hostLabel,String runtimeVersion,String state,Instant lastHeartbeatAt,Instant lastSeenAt,int missedHeartbeatCount,List<String>roleSlugs,GolemPolicyBindingResponse policyBinding){}
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class GolemPolicyBinding {
+
+    @Builder.Default
+    private int schemaVersion = 1;
+
+    private String golemId;
+    private String policyGroupId;
+    private int targetVersion;
+    private Integer appliedVersion;
+    private PolicySyncStatus syncStatus;
+    private Instant lastSyncRequestedAt;
+    private Instant lastAppliedAt;
+    private String lastErrorDigest;
+    private Instant lastErrorAt;
+    private Instant driftSince;
+}

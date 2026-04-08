@@ -16,9 +16,9 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.adapter.inbound.web.dto.golems;
+package me.golemcore.hive.domain.model;
 
-import java.time.Instant;
-import java.util.List;
+public enum PolicySyncStatus {
 
-public record GolemSummaryResponse(String id,String displayName,String hostLabel,String runtimeVersion,String state,Instant lastHeartbeatAt,Instant lastSeenAt,int missedHeartbeatCount,List<String>roleSlugs,GolemPolicyBindingResponse policyBinding){}
+    IN_SYNC, SYNC_PENDING, APPLYING, OUT_OF_SYNC, APPLY_FAILED
+}

@@ -16,9 +16,6 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.adapter.inbound.web.dto.golems;
+package me.golemcore.hive.adapter.inbound.web.dto.policies;
 
-import java.time.Instant;
-import java.util.List;
-
-public record GolemSummaryResponse(String id,String displayName,String hostLabel,String runtimeVersion,String state,Instant lastHeartbeatAt,Instant lastSeenAt,int missedHeartbeatCount,List<String>roleSlugs,GolemPolicyBindingResponse policyBinding){}
+public record CreatePolicyGroupRequest(String slug,String name,String description){}

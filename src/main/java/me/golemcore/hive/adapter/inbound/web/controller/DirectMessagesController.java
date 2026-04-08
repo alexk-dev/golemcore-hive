@@ -37,8 +37,8 @@ import me.golemcore.hive.domain.model.RunProjection;
 import me.golemcore.hive.domain.model.ThreadMessage;
 import me.golemcore.hive.domain.model.ThreadRecord;
 import me.golemcore.hive.domain.service.CommandDispatchService;
-import me.golemcore.hive.domain.service.GolemRegistryService;
 import me.golemcore.hive.domain.service.ThreadService;
+import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -56,7 +56,7 @@ import reactor.core.scheduler.Schedulers;
 public class DirectMessagesController {
 
     private final ThreadService threadService;
-    private final GolemRegistryService golemRegistryService;
+    private final GolemDirectoryUseCase golemDirectoryUseCase;
     private final CommandDispatchService commandDispatchService;
 
     @GetMapping
@@ -64,7 +64,7 @@ public class DirectMessagesController {
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
             ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
             return ResponseEntity.ok(toDirectThreadResponse(thread, golem));
@@ -79,7 +79,7 @@ public class DirectMessagesController {
             @RequestParam(required = false) String before) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
             ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
             Instant beforeInstant = before != null ? Instant.parse(before) : null;
@@ -99,7 +99,7 @@ public class DirectMessagesController {
             @Valid @RequestBody PostThreadMessageRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
             ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
             ThreadMessage message = threadService.postOperatorMessage(thread.getId(), request.body(),
@@ -115,7 +115,7 @@ public class DirectMessagesController {
             @Valid @RequestBody CreateThreadCommandRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
             ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
             CommandDispatchService.DispatchResult result = commandDispatchService.createDirectCommand(
@@ -129,7 +129,7 @@ public class DirectMessagesController {
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
             ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
             List<CommandRecordResponse> response = commandDispatchService.listCommands(thread.getId()).stream()
@@ -144,7 +144,7 @@ public class DirectMessagesController {
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
             ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
             List<RunProjectionResponse> response = commandDispatchService.listRuns(thread.getId()).stream()

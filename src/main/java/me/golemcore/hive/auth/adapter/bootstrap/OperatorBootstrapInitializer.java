@@ -16,35 +16,29 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.domain.service;
+package me.golemcore.hive.auth.adapter.bootstrap;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.golemcore.hive.auth.application.port.out.OperatorAccountRepository;
+import me.golemcore.hive.auth.application.port.out.PasswordHashPort;
 import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.OperatorAccount;
 import me.golemcore.hive.domain.model.Role;
-import me.golemcore.hive.port.outbound.StoragePort;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+@Component
 @RequiredArgsConstructor
 @Slf4j
-public class OperatorBootstrapService {
-
-    private static final String OPERATORS_DIR = "operators";
+public class OperatorBootstrapInitializer {
 
     private final HiveProperties properties;
-    private final StoragePort storagePort;
-    private final PasswordEncoder passwordEncoder;
-    private final ObjectMapper objectMapper;
+    private final OperatorAccountRepository operatorAccountRepository;
+    private final PasswordHashPort passwordHashPort;
 
     @PostConstruct
     public void init() {
@@ -53,28 +47,21 @@ public class OperatorBootstrapService {
             return;
         }
 
-        storagePort.ensureDirectory(OPERATORS_DIR);
-        List<String> existingOperators = storagePort.listObjects(OPERATORS_DIR, "");
-        if (!existingOperators.isEmpty()) {
+        if (!operatorAccountRepository.list().isEmpty()) {
             return;
         }
 
         Instant now = Instant.now();
-        OperatorAccount operator = OperatorAccount.builder()
+        OperatorAccount operatorAccount = OperatorAccount.builder()
                 .id("op_" + UUID.randomUUID().toString().replace("-", ""))
                 .username(adminProperties.getUsername())
                 .displayName(adminProperties.getDisplayName())
-                .passwordHash(passwordEncoder.encode(adminProperties.getPassword()))
+                .passwordHash(passwordHashPort.encode(adminProperties.getPassword()))
                 .roles(Set.of(Role.ADMIN, Role.OPERATOR))
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
-        try {
-            storagePort.putTextAtomic(OPERATORS_DIR, operator.getId() + ".json",
-                    objectMapper.writeValueAsString(operator));
-            log.info("[Auth] Bootstrapped default admin operator '{}'", operator.getUsername());
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize bootstrap operator", exception);
-        }
+        operatorAccountRepository.save(operatorAccount);
+        log.info("[Auth] Bootstrapped default admin operator '{}'", operatorAccount.getUsername());
     }
 }

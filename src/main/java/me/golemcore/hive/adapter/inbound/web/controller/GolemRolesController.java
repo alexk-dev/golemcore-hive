@@ -26,13 +26,12 @@ import me.golemcore.hive.adapter.inbound.web.dto.golems.CreateGolemRoleRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemRoleResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.RoleBindingRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.UpdateGolemRoleRequest;
-import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemRole;
-import me.golemcore.hive.domain.service.GolemRegistryService;
+import me.golemcore.hive.fleet.application.ActorContext;
+import me.golemcore.hive.fleet.application.port.in.GolemFleetUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,13 +46,13 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class GolemRolesController {
 
-    private final GolemRegistryService golemRegistryService;
+    private final GolemFleetUseCase golemFleetUseCase;
 
     @GetMapping("/api/v1/golem-roles")
     public Mono<ResponseEntity<List<GolemRoleResponse>>> listRoles(Principal principal) {
         return Mono.fromCallable(() -> {
-            requireOperatorActor(principal);
-            List<GolemRoleResponse> roles = golemRegistryService.listRoles().stream().map(this::toRoleResponse)
+            ControllerActorSupport.requireOperatorActor(principal);
+            List<GolemRoleResponse> roles = golemFleetUseCase.listRoles().stream().map(this::toRoleResponse)
                     .toList();
             return ResponseEntity.ok(roles);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -64,8 +63,8 @@ public class GolemRolesController {
             Principal principal,
             @Valid @RequestBody CreateGolemRoleRequest request) {
         return Mono.fromCallable(() -> {
-            requirePrivilegedOperator(principal);
-            GolemRole role = golemRegistryService.createRole(
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            GolemRole role = golemFleetUseCase.createRole(
                     request.slug(),
                     request.name(),
                     request.description(),
@@ -80,8 +79,8 @@ public class GolemRolesController {
             @PathVariable String roleSlug,
             @RequestBody UpdateGolemRoleRequest request) {
         return Mono.fromCallable(() -> {
-            requirePrivilegedOperator(principal);
-            GolemRole role = golemRegistryService.updateRole(
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            GolemRole role = golemFleetUseCase.updateRole(
                     roleSlug,
                     request != null ? request.name() : null,
                     request != null ? request.description() : null,
@@ -96,8 +95,10 @@ public class GolemRolesController {
             @PathVariable String golemId,
             @Valid @RequestBody RoleBindingRequest request) {
         return Mono.fromCallable(() -> {
-            AuthenticatedActor actor = requirePrivilegedOperator(principal);
-            Golem golem = golemRegistryService.assignRoles(golemId, request.roleSlugs(), actor);
+            me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor actor = ControllerActorSupport
+                    .requirePrivilegedOperator(principal);
+            Golem golem = golemFleetUseCase.assignRoles(golemId, request.roleSlugs(),
+                    new ActorContext(actor.getSubjectId(), actor.getName()));
             return ResponseEntity
                     .ok(golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList());
         }).subscribeOn(Schedulers.boundedElastic());
@@ -109,8 +110,8 @@ public class GolemRolesController {
             @PathVariable String golemId,
             @Valid @RequestBody RoleBindingRequest request) {
         return Mono.fromCallable(() -> {
-            requirePrivilegedOperator(principal);
-            Golem golem = golemRegistryService.unassignRoles(golemId, request.roleSlugs());
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Golem golem = golemFleetUseCase.unassignRoles(golemId, request.roleSlugs());
             return ResponseEntity
                     .ok(golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList());
         }).subscribeOn(Schedulers.boundedElastic());
@@ -126,30 +127,4 @@ public class GolemRolesController {
                 role.getUpdatedAt());
     }
 
-    private AuthenticatedActor requireOperatorActor(Principal principal) {
-        AuthenticatedActor actor = extractActor(principal);
-        if (actor == null || !actor.isOperator()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Operator token required");
-        }
-        return actor;
-    }
-
-    private AuthenticatedActor requirePrivilegedOperator(Principal principal) {
-        AuthenticatedActor actor = requireOperatorActor(principal);
-        if (!actor.hasAnyRole(List.of("ADMIN", "OPERATOR"))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin or operator role required");
-        }
-        return actor;
-    }
-
-    private AuthenticatedActor extractActor(Principal principal) {
-        if (principal instanceof AuthenticatedActor actor) {
-            return actor;
-        }
-        if (principal instanceof Authentication authentication
-                && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
-            return actor;
-        }
-        return null;
-    }
 }

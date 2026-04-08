@@ -27,10 +27,11 @@ import me.golemcore.hive.adapter.inbound.web.dto.LoginResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.OperatorResponse;
 import me.golemcore.hive.adapter.inbound.web.security.JwtTokenProvider;
 import me.golemcore.hive.adapter.inbound.web.security.RefreshCookieFactory;
+import me.golemcore.hive.auth.application.OperatorAuthResult;
+import me.golemcore.hive.auth.application.service.OperatorAuthApplicationService;
 import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.OperatorAccount;
-import me.golemcore.hive.domain.service.AuthService;
 import me.golemcore.hive.domain.service.AuditService;
 import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpStatus;
@@ -50,7 +51,7 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService authService;
+    private final OperatorAuthApplicationService operatorAuthApplicationService;
     private final RefreshCookieFactory refreshCookieFactory;
     private final HiveProperties properties;
     private final JwtTokenProvider jwtTokenProvider;
@@ -59,8 +60,10 @@ public class AuthController {
     @PostMapping("/login")
     public Mono<ResponseEntity<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         return Mono.defer(() -> {
-            AuthService.TokenPair tokens = authService.authenticate(request.username(), request.password());
-            if (tokens == null) {
+            OperatorAuthResult result = operatorAuthApplicationService
+                    .authenticate(request.username(), request.password())
+                    .orElse(null);
+            if (result == null) {
                 auditService.record(AuditEvent.builder()
                         .eventType("auth.login_failed")
                         .severity("WARN")
@@ -72,7 +75,7 @@ public class AuthController {
                 return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
             }
             return Mono.fromCallable(() -> {
-                OperatorAccount operator = authService.getOperatorByUsername(request.username());
+                OperatorAccount operator = result.operator();
                 auditService.record(AuditEvent.builder()
                         .eventType("auth.login")
                         .severity("INFO")
@@ -83,8 +86,8 @@ public class AuthController {
                         .targetId(operator.getId())
                         .summary("Operator logged in"));
                 return ResponseEntity.ok()
-                        .header("Set-Cookie", refreshCookieFactory.build(tokens.getRefreshToken()).toString())
-                        .body(new LoginResponse(tokens.getAccessToken(), toOperatorResponse(operator)));
+                        .header("Set-Cookie", refreshCookieFactory.build(result.refreshToken()).toString())
+                        .body(new LoginResponse(result.accessToken(), toOperatorResponse(operator)));
             }).subscribeOn(Schedulers.boundedElastic());
         });
     }
@@ -97,8 +100,8 @@ public class AuthController {
             if (cookie == null) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No refresh token");
             }
-            AuthService.TokenPair tokens = authService.refreshAccessToken(cookie.getValue());
-            if (tokens == null) {
+            OperatorAuthResult result = operatorAuthApplicationService.refresh(cookie.getValue()).orElse(null);
+            if (result == null) {
                 auditService.record(AuditEvent.builder()
                         .eventType("auth.refresh_failed")
                         .severity("WARN")
@@ -107,8 +110,7 @@ public class AuthController {
                         .summary("Refresh token rejected"));
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
             }
-            OperatorAccount operator = authService
-                    .getOperatorByUsername(jwtTokenProvider.getUsername(tokens.getAccessToken()));
+            OperatorAccount operator = result.operator();
             auditService.record(AuditEvent.builder()
                     .eventType("auth.refresh")
                     .severity("INFO")
@@ -119,8 +121,8 @@ public class AuthController {
                     .targetId(operator.getId())
                     .summary("Access token refreshed"));
             return ResponseEntity.ok()
-                    .header("Set-Cookie", refreshCookieFactory.build(tokens.getRefreshToken()).toString())
-                    .body(new LoginResponse(tokens.getAccessToken(), toOperatorResponse(operator)));
+                    .header("Set-Cookie", refreshCookieFactory.build(result.refreshToken()).toString())
+                    .body(new LoginResponse(result.accessToken(), toOperatorResponse(operator)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -144,7 +146,7 @@ public class AuthController {
                             .targetId(operatorId)
                             .summary("Operator logged out"));
                 }
-                authService.logout(cookie.getValue());
+                operatorAuthApplicationService.logout(cookie.getValue());
             }
         }).subscribeOn(Schedulers.boundedElastic())
                 .thenReturn(ResponseEntity.ok()
@@ -158,7 +160,8 @@ public class AuthController {
             if (principal == null) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
             }
-            OperatorAccount operator = authService.getOperatorByUsername(principal.getName());
+            OperatorAccount operator = operatorAuthApplicationService.findOperatorByUsername(principal.getName())
+                    .orElse(null);
             if (operator == null) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unknown operator");
             }

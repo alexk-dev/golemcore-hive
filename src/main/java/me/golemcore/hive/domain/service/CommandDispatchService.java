@@ -53,6 +53,7 @@ import me.golemcore.hive.domain.model.RuntimeEventType;
 import me.golemcore.hive.domain.model.ThreadMessageType;
 import me.golemcore.hive.domain.model.ThreadParticipantType;
 import me.golemcore.hive.domain.model.ThreadRecord;
+import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.port.outbound.StoragePort;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -70,7 +71,7 @@ public class CommandDispatchService {
     private final ObjectMapper objectMapper;
     private final ThreadService threadService;
     private final CardService cardService;
-    private final GolemRegistryService golemRegistryService;
+    private final GolemDirectoryUseCase golemDirectoryUseCase;
     private final GolemControlChannelService golemControlChannelService;
     private final OperatorUpdatesService operatorUpdatesService;
     private final ApprovalService approvalService;
@@ -94,7 +95,7 @@ public class CommandDispatchService {
         if (card.getAssigneeGolemId() == null || card.getAssigneeGolemId().isBlank()) {
             throw new IllegalArgumentException("Card must be assigned before dispatching commands");
         }
-        Golem golem = golemRegistryService.findGolem(card.getAssigneeGolemId())
+        Golem golem = golemDirectoryUseCase.findGolem(card.getAssigneeGolemId())
                 .orElseThrow(
                         () -> new IllegalArgumentException("Unknown assignee golem: " + card.getAssigneeGolemId()));
 
@@ -200,7 +201,7 @@ public class CommandDispatchService {
         if (thread.getAssignedGolemId() == null || thread.getAssignedGolemId().isBlank()) {
             throw new IllegalArgumentException("DM thread has no assigned golem");
         }
-        Golem golem = golemRegistryService.findGolem(thread.getAssignedGolemId())
+        Golem golem = golemDirectoryUseCase.findGolem(thread.getAssignedGolemId())
                 .orElseThrow(
                         () -> new IllegalArgumentException("Unknown golem: " + thread.getAssignedGolemId()));
 
@@ -407,7 +408,7 @@ public class CommandDispatchService {
             return run;
         }
 
-        Golem golem = golemRegistryService.findGolem(command.getGolemId())
+        Golem golem = golemDirectoryUseCase.findGolem(command.getGolemId())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + command.getGolemId()));
         ControlCommandEnvelope envelope = buildControlEnvelope(CONTROL_EVENT_TYPE_CANCEL, command, now, null);
         boolean delivered = golemControlChannelService.send(golem.getId(), toJson(envelope));
@@ -450,7 +451,7 @@ public class CommandDispatchService {
     }
 
     public void dispatchPendingCommands(String golemId) {
-        Golem golem = golemRegistryService.findGolem(golemId).orElse(null);
+        Golem golem = golemDirectoryUseCase.findGolem(golemId).orElse(null);
         if (golem == null) {
             return;
         }
@@ -771,7 +772,7 @@ public class CommandDispatchService {
         }
         RunProjection run = findRun(command.getRunId()).orElse(null);
         Card card = cardService.getCard(command.getCardId());
-        Golem golem = golemRegistryService.findGolem(command.getGolemId())
+        Golem golem = golemDirectoryUseCase.findGolem(command.getGolemId())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + command.getGolemId()));
         dispatchToControlChannel(command, run, Instant.now(), golem);
         saveCommand(command);

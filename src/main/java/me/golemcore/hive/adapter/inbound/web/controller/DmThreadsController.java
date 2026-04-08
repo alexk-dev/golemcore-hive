@@ -25,8 +25,8 @@ import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.threads.DirectThreadResponse;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.ThreadRecord;
-import me.golemcore.hive.domain.service.GolemRegistryService;
 import me.golemcore.hive.domain.service.ThreadService;
+import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,7 +41,7 @@ import reactor.core.scheduler.Schedulers;
 public class DmThreadsController {
 
     private final ThreadService threadService;
-    private final GolemRegistryService golemRegistryService;
+    private final GolemDirectoryUseCase golemDirectoryUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<List<DirectThreadResponse>>> listDmThreads(Principal principal,
@@ -58,7 +58,7 @@ public class DmThreadsController {
                 if (golemId == null) {
                     continue;
                 }
-                Golem golem = golemRegistryService.findGolem(golemId).orElse(null);
+                Golem golem = golemDirectoryUseCase.findGolem(golemId).orElse(null);
                 if (golem == null) {
                     continue;
                 }

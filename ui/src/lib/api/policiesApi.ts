@@ -159,7 +159,7 @@ export function bindGolemPolicyGroup(golemId: string, policyGroupId: string) {
 }
 
 export function unbindGolemPolicyGroup(golemId: string) {
-  return apiRequest<void>(`/api/v1/golems/${golemId}/policy-binding`, {
+  return apiRequest<undefined>(`/api/v1/golems/${golemId}/policy-binding`, {
     method: 'DELETE',
   });
 }

@@ -20,7 +20,7 @@ export function InspectionSelfEvolvingVerdictPanel({ run }: { run: SelfEvolvingR
               detail={run.promotionRecommendation}
             />
           </div>
-          <div className="border border-border/70 bg-white/70 p-3">
+          <div className="border border-border/70 bg-muted/70 p-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               Process findings
             </p>
@@ -42,7 +42,7 @@ export function InspectionSelfEvolvingVerdictPanel({ run }: { run: SelfEvolvingR
 
 function VerdictCard({ label, value, detail }: { label: string; value: string; detail: string | null }) {
   return (
-    <div className="border border-border/70 bg-white/80 p-3">
+    <div className="border border-border/70 bg-panel/80 p-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
       <p className="mt-2 text-lg font-bold text-foreground">{value}</p>
       <p className="mt-1 text-xs text-muted-foreground">{detail ?? 'No detail recorded.'}</p>

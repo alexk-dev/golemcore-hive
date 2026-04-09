@@ -50,7 +50,7 @@ export function InspectionTraceSpanDetail({
         <button
           type="button"
           onClick={onClose}
-          className="border border-border bg-white px-3 py-1 text-xs font-semibold text-foreground"
+          className="border border-border bg-panel px-3 py-1 text-xs font-semibold text-foreground"
         >
           Close
         </button>
@@ -64,8 +64,8 @@ export function InspectionTraceSpanDetail({
             onClick={() => setActiveTab(tab.key)}
             className={
               activeTab === tab.key
-                ? 'bg-foreground px-3 py-1.5 text-xs font-semibold text-white'
-                : 'border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground'
+                ? 'bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground'
+                : 'border border-border bg-panel px-3 py-1.5 text-xs font-semibold text-foreground'
             }
           >
             {tab.label} ({tab.count})
@@ -121,7 +121,7 @@ function EventsTab({ span }: { span: InspectionTraceSpan }) {
   return (
     <div className="mt-4 grid gap-2">
       {span.events.map((event, index) => (
-        <div key={`${event.name ?? 'event'}-${index}`} className="border border-border/70 bg-white/70 p-3">
+        <div key={`${event.name ?? 'event'}-${index}`} className="border border-border/70 bg-muted/70 p-3">
           <div className="flex flex-wrap items-center gap-2">
             <TracePill>{event.name ?? 'event'}</TracePill>
             {event.timestamp ? <span className="text-xs text-muted-foreground">{formatTraceTimestamp(event.timestamp)}</span> : null}

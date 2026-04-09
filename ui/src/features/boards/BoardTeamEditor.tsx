@@ -44,7 +44,7 @@ export function BoardTeamEditor({ board, golems, roles, resolvedTeam, isPending,
               filters: roleSlugs.map((value) => ({ type: 'ROLE_SLUG', value })),
             })
           }
-          className="bg-foreground px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
         >
           Save team
         </button>
@@ -58,13 +58,13 @@ export function BoardTeamEditor({ board, golems, roles, resolvedTeam, isPending,
               value={golemQuery}
               onChange={(event) => setGolemQuery(event.target.value)}
               placeholder="Filter"
-              className="min-w-[180px] border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-primary"
+              className="min-w-[180px] border border-border bg-panel px-3 py-1.5 text-sm outline-none focus:border-primary"
             />
           </div>
           {visibleGolems.map((golem) => {
             const checked = explicitIds.includes(golem.id);
             return (
-              <label key={golem.id} className="flex items-center gap-3 border border-border/70 bg-white/70 p-3">
+              <label key={golem.id} className="flex items-center gap-3 border border-border/70 bg-muted/70 p-3">
                 <input
                   type="checkbox"
                   checked={checked}
@@ -93,7 +93,7 @@ export function BoardTeamEditor({ board, golems, roles, resolvedTeam, isPending,
             roles.map((role) => {
               const checked = roleSlugs.includes(role.slug);
               return (
-                <label key={role.slug} className="flex items-center gap-3 border border-border/70 bg-white/70 p-3">
+                <label key={role.slug} className="flex items-center gap-3 border border-border/70 bg-muted/70 p-3">
                   <input
                     type="checkbox"
                     checked={checked}

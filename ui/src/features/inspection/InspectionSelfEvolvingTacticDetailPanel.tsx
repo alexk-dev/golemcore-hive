@@ -31,7 +31,7 @@ export function InspectionSelfEvolvingTacticDetailPanel({
           <button
             type="button"
             onClick={() => onOpenArtifactStream(artifactStreamId)}
-            className="border border-border bg-white/80 px-3 py-1.5 text-xs font-semibold text-foreground"
+            className="border border-border bg-panel/80 px-3 py-1.5 text-xs font-semibold text-foreground"
           >
             Open artifact workspace
           </button>

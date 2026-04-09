@@ -58,7 +58,7 @@ function TacticSearchQueryPanel({
           value={query}
           placeholder="planner, tool routing, failure recovery"
           onChange={(event) => onQueryChange(event.target.value)}
-          className="border border-border bg-white px-3 py-2 text-sm font-normal text-foreground outline-none transition focus:border-primary"
+          className="border border-border bg-panel px-3 py-2 text-sm font-normal text-foreground outline-none transition focus:border-primary"
         />
       </label>
     </div>

@@ -15,7 +15,7 @@ export function ThreadMessageList({ messages }: ThreadMessageListProps) {
               key={message.id}
               className={[
                 ' border p-3',
-                message.participantType === 'OPERATOR' ? 'border-primary/30 bg-primary/5' : 'border-border bg-white/70',
+                message.participantType === 'OPERATOR' ? 'border-primary/30 bg-primary/5' : 'border-border bg-muted/70',
               ].join(' ')}
             >
               <div className="flex items-center justify-between gap-2">

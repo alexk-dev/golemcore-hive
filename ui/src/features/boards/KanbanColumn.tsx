@@ -22,9 +22,9 @@ interface SortableCardProps {
 function SortableCard({ card, allGolems, onOpenCard }: SortableCardProps) {
   const { attributes, isDragging, isOver, listeners, setNodeRef, transform, transition } = useSortable({ id: card.id });
   const controlTone = card.controlState?.cancelRequestedPending
-    ? 'bg-rose-100 text-rose-900'
+    ? 'bg-rose-900/40 text-rose-300'
     : card.controlState?.runStatus === 'BLOCKED'
-      ? 'bg-amber-100 text-amber-900'
+      ? 'bg-amber-900/40 text-amber-300'
       : card.controlState?.runStatus === 'RUNNING'
         ? 'bg-primary/10 text-foreground'
         : 'bg-muted text-muted-foreground';
@@ -41,7 +41,7 @@ function SortableCard({ card, allGolems, onOpenCard }: SortableCardProps) {
         transition,
       }}
       className={[
-        'relative border border-border/70 bg-white/95 px-2 py-1.5 text-left transition hover:bg-white',
+        'relative border border-border/70 bg-panel/95 px-2 py-1.5 text-left transition hover:bg-muted',
         isDragging ? 'opacity-50' : 'opacity-100',
         isOver ? 'ring-1 ring-primary/30' : '',
       ].join(' ')}
@@ -57,7 +57,7 @@ function SortableCard({ card, allGolems, onOpenCard }: SortableCardProps) {
       </div>
       <p className="truncate text-xs text-muted-foreground">{formatGolemDisplayName(card.assigneeGolemId, allGolems)}</p>
       {card.controlState?.cancelRequestedPending && card.controlState.cancelRequestedByActorName ? (
-        <p className="text-xs text-rose-900">stop by {card.controlState.cancelRequestedByActorName}</p>
+        <p className="text-xs text-rose-300">stop by {card.controlState.cancelRequestedByActorName}</p>
       ) : null}
     </button>
   );
@@ -79,7 +79,7 @@ export function KanbanColumn({ column, cards, allGolems, onOpenCard }: KanbanCol
       className={[
         'flex min-h-[200px] flex-col border p-2 transition',
         hasCards ? 'min-w-[240px]' : 'min-w-[200px]',
-        isPrimaryLane ? 'border-border bg-white/88' : 'border-border/70 bg-white/55',
+        isPrimaryLane ? 'border-border bg-panel/90' : 'border-border/70 bg-muted/55',
         isLaneActive ? 'border-primary/40 bg-primary/5' : '',
       ].join(' ')}
     >
@@ -109,13 +109,13 @@ export function KanbanColumn({ column, cards, allGolems, onOpenCard }: KanbanCol
             ref={endDrop.setNodeRef}
             className={[
               'flex min-h-6 items-center justify-center border border-dashed px-2 py-1 text-xs transition',
-              endDrop.isOver ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-white/60 text-muted-foreground',
+              endDrop.isOver ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-muted/60 text-muted-foreground',
             ].join(' ')}
           >
             Drop to end
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-center border border-dashed border-border/70 bg-white/45 px-3 py-4 text-xs text-muted-foreground">
+          <div className="flex flex-1 items-center justify-center border border-dashed border-border/70 bg-muted/45 px-3 py-4 text-xs text-muted-foreground">
             Drop here
           </div>
         )}

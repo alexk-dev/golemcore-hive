@@ -28,14 +28,14 @@ export function CardDetailsHeader({
       <div className="flex flex-wrap gap-2">
         <Link
           to={`/cards/${card.id}/thread`}
-          className="border border-border bg-white/85 px-3 py-1.5 text-sm font-semibold text-foreground"
+          className="border border-border bg-panel/85 px-3 py-1.5 text-sm font-semibold text-foreground"
         >
           Thread
         </Link>
         <button
           type="button"
           onClick={onClose}
-          className="border border-border bg-white/85 px-3 py-1.5 text-sm font-semibold text-foreground"
+          className="border border-border bg-panel/85 px-3 py-1.5 text-sm font-semibold text-foreground"
         >
           Close
         </button>

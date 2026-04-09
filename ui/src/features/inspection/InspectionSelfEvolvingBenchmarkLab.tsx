@@ -22,13 +22,13 @@ export function InspectionSelfEvolvingBenchmarkLab({
       ) : (
         <div className="grid gap-3">
           {campaigns.map((campaign) => (
-            <article key={campaign.id} className="border border-border/70 bg-white/80 p-3">
+            <article key={campaign.id} className="border border-border/70 bg-panel/80 p-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-foreground">{campaign.id}</p>
                   <p className="text-xs text-muted-foreground">Suite {campaign.suiteId ?? 'n/a'}</p>
                 </div>
-                <span className="inline-flex items-center border border-border bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <span className="inline-flex items-center border border-border bg-panel px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   {campaign.status ?? 'unknown'}
                 </span>
               </div>

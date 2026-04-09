@@ -32,7 +32,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="sticky top-0 flex h-screen w-48 shrink-0 flex-col border-r border-border/70 bg-white/60 backdrop-blur">
+      <aside className="sticky top-0 flex h-screen w-48 shrink-0 flex-col border-r border-border/70 bg-muted/60 backdrop-blur">
         <div className="px-4 py-4">
           <span className="text-sm font-bold tracking-tight text-foreground">Hive</span>
         </div>
@@ -53,8 +53,8 @@ export function AppShell() {
                       [
                         'px-3 py-1.5 text-sm transition',
                         isActive
-                          ? 'bg-foreground text-white font-semibold'
-                          : 'text-foreground hover:bg-white',
+                          ? 'bg-primary text-primary-foreground font-semibold'
+                          : 'text-foreground hover:bg-muted',
                       ].join(' ')
                     }
                   >
@@ -73,8 +73,8 @@ export function AppShell() {
               [
                 'px-3 py-1.5 text-sm transition',
                 isActive
-                  ? 'bg-foreground text-white font-semibold'
-                  : 'text-foreground hover:bg-white',
+                  ? 'bg-primary text-primary-foreground font-semibold'
+                  : 'text-foreground hover:bg-muted',
               ].join(' ')
             }
           >

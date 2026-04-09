@@ -5,13 +5,13 @@ interface SignalBadgeProps {
 export function SignalBadge({ signalType }: SignalBadgeProps) {
   const tone =
     signalType === 'BLOCKER_RAISED'
-      ? 'bg-rose-100 text-rose-900'
+      ? 'bg-rose-900/40 text-rose-300'
       : signalType === 'WORK_FAILED' || signalType === 'WORK_CANCELLED'
         ? 'bg-stone-200 text-stone-900'
         : signalType === 'REVIEW_REQUESTED'
-          ? 'bg-amber-100 text-amber-900'
+          ? 'bg-amber-900/40 text-amber-300'
       : signalType === 'WORK_COMPLETED'
-        ? 'bg-emerald-100 text-emerald-900'
+        ? 'bg-emerald-900/40 text-emerald-300'
         : signalType === 'WORK_STARTED'
           ? 'bg-primary/10 text-foreground'
           : 'bg-muted text-muted-foreground';

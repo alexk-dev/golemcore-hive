@@ -71,7 +71,7 @@ export function CardEditorPanel({
         <button
           type="submit"
           disabled={isPending || !title.trim() || !prompt.trim()}
-          className="bg-foreground px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+          className="bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
         >
           Save
         </button>
@@ -81,7 +81,7 @@ export function CardEditorPanel({
         <input
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
-          className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
         />
       </label>
       <label className="grid gap-1.5">
@@ -90,7 +90,7 @@ export function CardEditorPanel({
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value)}
           rows={3}
-          className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
         />
       </label>
       <label className="grid gap-1.5">
@@ -99,14 +99,14 @@ export function CardEditorPanel({
           value={prompt}
           onChange={(event) => onPromptChange(event.target.value)}
           rows={4}
-          className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
         />
       </label>
       <div className="flex items-center justify-between gap-3">
         <select
           value={assignmentPolicy}
           onChange={(event) => onAssignmentPolicyChange(event.target.value)}
-          className="border border-border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
         >
           <option value="MANUAL">MANUAL</option>
           <option value="SUGGESTED">SUGGESTED</option>
@@ -143,7 +143,7 @@ export function ExecutionControlPanel({
             type="button"
             disabled={isCancelPending}
             onClick={() => void onCancelRun(controlState.runId)}
-            className="border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
+            className="border border-rose-700 bg-rose-950/40 px-3 py-1.5 text-xs font-semibold text-rose-300 transition hover:bg-rose-900/40 disabled:opacity-60"
           >
             {isCancelPending ? 'Stopping...' : controlState.commandStatus === 'QUEUED' && controlState.runStatus === 'QUEUED' ? 'Cancel' : 'Stop'}
           </button>
@@ -153,7 +153,7 @@ export function ExecutionControlPanel({
         <p className="mt-2 text-sm text-muted-foreground">{controlState.summary}</p>
       ) : null}
       {controlState?.cancelRequestedPending ? (
-        <p className="mt-2 text-xs text-rose-900">
+        <p className="mt-2 text-xs text-rose-300">
           Stop requested{controlState.cancelRequestedByActorName ? ` by ${controlState.cancelRequestedByActorName}` : ''}
         </p>
       ) : null}
@@ -207,7 +207,7 @@ export function TransitionHistoryPanel({
           type="button"
           disabled={isPending || card.archived}
           onClick={() => void onArchive()}
-          className="border border-rose-300 bg-rose-100 px-3 py-1.5 text-xs font-semibold text-rose-900 disabled:opacity-60"
+          className="border border-rose-700 bg-rose-900/40 px-3 py-1.5 text-xs font-semibold text-rose-300 disabled:opacity-60"
         >
           Archive
         </button>
@@ -215,7 +215,7 @@ export function TransitionHistoryPanel({
       <div className="mt-2 grid gap-2">
         {card.transitions.length ? (
           card.transitions.map((transition, index) => (
-            <div key={`${transition.occurredAt}-${index}`} className="border border-border bg-white/70 p-2.5 text-sm">
+            <div key={`${transition.occurredAt}-${index}`} className="border border-border bg-muted/70 p-2.5 text-sm">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-medium text-foreground">
                   {transition.fromColumnId || '—'} → {transition.toColumnId}

@@ -52,14 +52,14 @@ export function GolemRolesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <NavLink
           to="/fleet"
-          className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+          className="border border-border bg-panel/80 px-4 py-2 text-sm font-semibold text-foreground"
         >
           Back to fleet
         </NavLink>
         <button
           type="button"
           onClick={openCreateDialog}
-          className="bg-foreground px-4 py-2 text-sm font-semibold text-white"
+          className="bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
         >
           Create role
         </button>
@@ -77,7 +77,7 @@ export function GolemRolesPage() {
                 <button
                   type="button"
                   onClick={() => openEditDialog(role)}
-                  className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
+                  className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground"
                 >
                   Edit
                 </button>

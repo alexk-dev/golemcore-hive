@@ -14,7 +14,7 @@ type TimelineItem =
 
 function CommandTimelineItem({ item }: { item: Extract<TimelineItem, { kind: 'command' }> }) {
   return (
-    <article className="border border-border bg-white/70 p-3">
+    <article className="border border-border bg-muted/70 p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-muted-foreground">Command</span>
         <span className="text-xs text-muted-foreground">{item.payload.status}</span>
@@ -26,7 +26,7 @@ function CommandTimelineItem({ item }: { item: Extract<TimelineItem, { kind: 'co
         </p>
       ) : null}
       {item.payload.cancelRequestedAt ? (
-        <p className="mt-1 text-xs text-rose-900">
+        <p className="mt-1 text-xs text-rose-300">
           Stop requested{item.payload.cancelRequestedByActorName ? ` by ${item.payload.cancelRequestedByActorName}` : ''}
         </p>
       ) : null}
@@ -37,7 +37,7 @@ function CommandTimelineItem({ item }: { item: Extract<TimelineItem, { kind: 'co
 
 function RunTimelineItemCard({ item }: { item: Extract<TimelineItem, { kind: 'run' }> }) {
   return (
-    <article className="border border-border bg-white/70 p-3">
+    <article className="border border-border bg-muted/70 p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-muted-foreground">Run</span>
         <span className="text-xs text-muted-foreground">{item.payload.status}</span>
@@ -46,7 +46,7 @@ function RunTimelineItemCard({ item }: { item: Extract<TimelineItem, { kind: 'ru
         {item.payload.summary || 'No summary'} · {item.payload.eventCount} events
       </p>
       {item.payload.cancelRequestedAt ? (
-        <p className="mt-1 text-xs text-rose-900">
+        <p className="mt-1 text-xs text-rose-300">
           Stop requested{item.payload.cancelRequestedByActorName ? ` by ${item.payload.cancelRequestedByActorName}` : ''}
         </p>
       ) : null}
@@ -60,7 +60,7 @@ function RunTimelineItemCard({ item }: { item: Extract<TimelineItem, { kind: 'ru
 
 function SignalTimelineItemCard({ item }: { item: Extract<TimelineItem, { kind: 'signal' }> }) {
   return (
-    <article className="border border-border bg-white/70 p-3">
+    <article className="border border-border bg-muted/70 p-3">
       <div className="flex items-center justify-between gap-2">
         <SignalBadge signalType={item.payload.signalType} />
         <span className="text-xs text-muted-foreground">
@@ -76,7 +76,7 @@ function SignalTimelineItemCard({ item }: { item: Extract<TimelineItem, { kind: 
           {item.payload.evidenceRefs.map((ref) => (
             <span
               key={`${item.payload.id}-${ref.kind}-${ref.ref}`}
-              className="border border-border bg-white/90 px-2 py-0.5 text-xs text-muted-foreground"
+              className="border border-border bg-panel/90 px-2 py-0.5 text-xs text-muted-foreground"
             >
               {ref.kind}: {ref.ref}
             </span>

@@ -13,7 +13,7 @@ export function InspectionSelfEvolvingLineageGraph({ lineage }: { lineage: SelfE
           <p className="text-sm text-muted-foreground">No lineage nodes available yet.</p>
         ) : (
           lineage.nodes.map((node) => (
-            <div key={node.id} className="border border-border/70 bg-white/70 p-3">
+            <div key={node.id} className="border border-border/70 bg-muted/70 p-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-foreground">{node.id}</span>
                 <span className="text-xs text-muted-foreground">{node.status ?? 'unknown'}</span>

@@ -32,7 +32,7 @@ export function AuditTimeline({ events }: AuditTimelineProps) {
 
   return (
     <div className="border border-border/70">
-      <div className="flex items-center gap-3 border-b border-border/50 bg-white/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+      <div className="flex items-center gap-3 border-b border-border/50 bg-muted/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
         <span className="w-40 shrink-0">Time</span>
         <span className="w-40 shrink-0">Type</span>
         <span className="w-16 shrink-0">Severity</span>
@@ -49,7 +49,7 @@ export function AuditTimeline({ events }: AuditTimelineProps) {
             return (
               <div
                 key={event.id}
-                className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-white/80"
+                className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-panel/80"
                 style={{ height: ROW_HEIGHT, top: virtualRow.start }}
               >
                 <span className="w-40 shrink-0 text-xs text-muted-foreground">

@@ -113,7 +113,7 @@ export function InspectionSelfEvolvingArtifactWorkspace({
               <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
                 Transition pair
                 <select
-                  className="border border-border bg-panel px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+                  className="border border-border bg-panel px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
                   onChange={(event) => {
                     const value = event.target.value;
                     const option = transitionOptions.find((candidate) => `${candidate.fromId}::${candidate.toId}` === value);
@@ -134,7 +134,7 @@ export function InspectionSelfEvolvingArtifactWorkspace({
               <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
                 Revision pair
                 <select
-                  className="border border-border bg-panel px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+                  className="border border-border bg-panel px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
                   onChange={(event) => {
                     const value = event.target.value;
                     const option = revisionOptions.find((candidate) => `${candidate.fromId}::${candidate.toId}` === value);

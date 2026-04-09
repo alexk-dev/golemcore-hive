@@ -61,12 +61,12 @@ export function GolemsSelfEvolvingArtifactsPanel({ golems }: { golems: GolemSumm
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search evolved artifacts"
-          className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         />
         <select
           value={artifactType}
           onChange={(event) => setArtifactType(event.target.value)}
-          className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         >
           {ARTIFACT_TYPES.map((value) => (
             <option key={value || 'all'} value={value}>

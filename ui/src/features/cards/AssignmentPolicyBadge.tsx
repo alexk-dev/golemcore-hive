@@ -3,9 +3,9 @@ interface AssignmentPolicyBadgeProps {
 }
 
 const toneMap: Record<string, string> = {
-  MANUAL: 'bg-slate-100 text-slate-900 border-slate-200',
-  SUGGESTED: 'bg-amber-900/40 text-amber-300 border-amber-200',
-  AUTOMATIC: 'bg-emerald-900/40 text-emerald-300 border-emerald-200',
+  MANUAL: 'bg-slate-800 text-slate-200 border-slate-600',
+  SUGGESTED: 'bg-amber-900/40 text-amber-300 border-amber-700',
+  AUTOMATIC: 'bg-emerald-900/40 text-emerald-300 border-emerald-700',
 };
 
 export function AssignmentPolicyBadge({ policy }: AssignmentPolicyBadgeProps) {

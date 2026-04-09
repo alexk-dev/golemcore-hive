@@ -197,7 +197,7 @@ export function InspectionOnlineContent({
   const canExportTrace = hasTraceSummaryData(traceSummary);
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+    <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
       <InspectionSessionsSidebar
         sessions={sessions}
         selectedSessionId={selectedSessionId}

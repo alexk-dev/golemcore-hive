@@ -66,11 +66,11 @@ export function ApprovalsPage() {
         <div className="border border-border/70">
           <div className="flex items-center gap-3 border-b border-border/50 bg-muted/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
             <span className="w-36 shrink-0">Type</span>
-            <span className="w-20 shrink-0">Status</span>
+            <span className="hidden w-20 shrink-0 sm:inline">Status</span>
             <span className="min-w-0 flex-1">Subject</span>
-            <span className="w-28 shrink-0">Scope</span>
-            <span className="w-24 shrink-0">Golem</span>
-            <span className="w-20 shrink-0 text-right">Cost</span>
+            <span className="hidden w-28 shrink-0 lg:inline">Scope</span>
+            <span className="hidden w-24 shrink-0 md:inline">Golem</span>
+            <span className="hidden w-20 shrink-0 text-right md:inline">Cost</span>
             <span className="w-24 shrink-0 text-right">Actions</span>
           </div>
           <div ref={parentRef} className="max-h-[70vh] overflow-auto">
@@ -85,23 +85,23 @@ export function ApprovalsPage() {
                 return (
                   <div
                     key={approval.id}
-                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-panel/80"
+                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-muted/60"
                     style={{ height: ROW_HEIGHT, top: virtualRow.start }}
                   >
                     <span className="w-36 shrink-0 text-xs font-medium text-foreground">{approval.subjectType}</span>
-                    <span className="w-20 shrink-0 text-xs text-muted-foreground">{approval.status}</span>
+                    <span className="hidden w-20 shrink-0 text-xs text-muted-foreground sm:inline">{approval.status}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm text-foreground">{summary}</span>
                       {detail ? <span className="block truncate text-xs text-muted-foreground">{detail}</span> : null}
                     </span>
-                    <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">{scope}</span>
+                    <span className="hidden w-28 shrink-0 truncate text-xs text-muted-foreground lg:inline">{scope}</span>
                     <span
-                      className="w-24 shrink-0 truncate text-xs text-muted-foreground"
+                      className="hidden w-24 shrink-0 truncate text-xs text-muted-foreground md:inline"
                       title={approval.golemId}
                     >
                       {formatGolemDisplayName(approval.golemId, golemsQuery.data ?? [])}
                     </span>
-                    <span className="w-20 shrink-0 text-right tabular-nums text-xs text-muted-foreground">{approval.estimatedCostMicros}</span>
+                    <span className="hidden w-20 shrink-0 text-right tabular-nums text-xs text-muted-foreground md:inline">{approval.estimatedCostMicros}</span>
                     <span className="flex w-24 shrink-0 justify-end gap-1">
                       {approval.status === 'PENDING' ? (
                         <>

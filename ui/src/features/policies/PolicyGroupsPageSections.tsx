@@ -50,7 +50,7 @@ export function PolicyGroupsSidebar({
             <input
               value={createForm.slug}
               onChange={(event) => onCreateFieldChange('slug', event.target.value)}
-              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               placeholder="default-routing"
             />
           </label>
@@ -59,7 +59,7 @@ export function PolicyGroupsSidebar({
             <input
               value={createForm.name}
               onChange={(event) => onCreateFieldChange('name', event.target.value)}
-              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               placeholder="Default Routing"
             />
           </label>
@@ -69,7 +69,7 @@ export function PolicyGroupsSidebar({
               value={createForm.description}
               onChange={(event) => onCreateFieldChange('description', event.target.value)}
               rows={2}
-              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               placeholder="Primary policy for engineering golems"
             />
           </label>
@@ -241,7 +241,7 @@ export function PolicyDraftSection({
           value={draftEditorValue}
           onChange={(event) => onDraftEditorChange(event.target.value)}
           rows={26}
-          className="min-h-[520px] border border-border bg-panel px-3 py-3 font-mono text-xs leading-6 text-foreground outline-none transition focus:border-primary"
+          className="min-h-[520px] border border-border bg-panel px-3 py-3 font-mono text-xs leading-6 text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         />
       </label>
       {draftEditorError ? (

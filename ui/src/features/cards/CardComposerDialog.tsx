@@ -72,13 +72,13 @@ export function CardComposerDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm">
-      <div className="panel max-h-[90vh] w-full max-w-4xl overflow-auto p-5">
+      <div className="panel max-h-[90vh] w-full max-w-4xl overflow-auto p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold tracking-tight text-foreground">New card in {board.name}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="border border-border bg-muted/70 px-3 py-1.5 text-sm font-semibold text-foreground"
+            className="border border-border bg-muted/70 px-3 py-1.5 text-sm font-semibold text-foreground transition hover:bg-muted"
           >
             Close
           </button>
@@ -91,7 +91,7 @@ export function CardComposerDialog({
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
                 placeholder="Implement board filters"
               />
             </label>
@@ -101,7 +101,7 @@ export function CardComposerDialog({
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
                 rows={5}
-                className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
                 placeholder="Starting instruction dispatched when moved to In Progress."
               />
             </label>
@@ -111,7 +111,7 @@ export function CardComposerDialog({
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 rows={6}
-                className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
                 placeholder="Context, acceptance criteria, links."
               />
             </label>
@@ -121,7 +121,7 @@ export function CardComposerDialog({
                 <select
                   value={columnId}
                   onChange={(event) => setColumnId(event.target.value)}
-                  className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                  className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
                 >
                   {board.flow.columns.map((column) => (
                     <option key={column.id} value={column.id}>
@@ -135,7 +135,7 @@ export function CardComposerDialog({
                 <select
                   value={assignmentPolicy}
                   onChange={(event) => setAssignmentPolicy(event.target.value)}
-                  className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                  className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
                 >
                   <option value="MANUAL">MANUAL</option>
                   <option value="SUGGESTED">SUGGESTED</option>

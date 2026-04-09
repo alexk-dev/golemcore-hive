@@ -74,7 +74,7 @@ export function EnrollmentTokenDialog({
           <button
             type="button"
             onClick={onClose}
-            className="border border-border bg-muted/70 px-3 py-1.5 text-sm font-semibold text-foreground"
+            className="border border-border bg-muted/70 px-3 py-1.5 text-sm font-semibold text-foreground transition hover:bg-muted"
           >
             Close
           </button>
@@ -118,7 +118,7 @@ export function EnrollmentTokenDialog({
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 placeholder="staging bot, research box"
-                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               />
             </label>
             <label className="grid gap-1.5">
@@ -126,7 +126,7 @@ export function EnrollmentTokenDialog({
               <select
                 value={expirationPreset}
                 onChange={(event) => setExpirationPreset(event.target.value as EnrollmentTokenExpirationPreset)}
-                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               >
                 {EXPIRATION_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>

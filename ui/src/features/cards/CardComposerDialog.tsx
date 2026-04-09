@@ -72,7 +72,7 @@ export function CardComposerDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm">
-      <div className="panel max-h-[90vh] w-full max-w-4xl overflow-auto p-5">
+      <div className="panel max-h-[90vh] w-full max-w-4xl overflow-auto p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold tracking-tight text-foreground">New card in {board.name}</h2>
           <button

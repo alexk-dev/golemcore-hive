@@ -43,7 +43,7 @@ export function BoardsPage() {
 
   return (
     <div className="grid gap-5">
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_320px]">
         <div className="grid gap-4">
           {boardsQuery.data?.length ? (
             boardsQuery.data.map((board) => (

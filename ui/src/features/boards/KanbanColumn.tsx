@@ -78,7 +78,7 @@ export function KanbanColumn({ column, cards, allGolems, onOpenCard }: KanbanCol
     <section
       className={[
         'flex min-h-[200px] flex-col border p-2 transition',
-        hasCards ? 'min-w-[240px]' : 'min-w-[200px]',
+        hasCards ? 'md:min-w-[240px]' : 'md:min-w-[200px]',
         isPrimaryLane ? 'border-border bg-panel/90' : 'border-border/70 bg-muted/55',
         isLaneActive ? 'border-primary/40 bg-primary/5' : '',
       ].join(' ')}

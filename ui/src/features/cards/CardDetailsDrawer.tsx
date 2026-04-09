@@ -82,7 +82,7 @@ export function CardDetailsDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
-      <div className="h-full w-full max-w-[880px] overflow-auto border-l border-border/70 bg-panel px-5 py-5 shadow-[0_20px_70px_rgba(26,20,15,0.14)] md:px-6">
+      <div className="h-full w-full overflow-auto border-l border-border/70 bg-panel px-4 py-5 shadow-[0_20px_70px_rgba(26,20,15,0.14)] md:max-w-[880px] md:px-6">
         <CardDetailsHeader card={card} allGolems={allGolems} onClose={onClose} />
 
         {controlError ? (

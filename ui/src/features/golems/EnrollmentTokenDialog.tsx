@@ -1,12 +1,25 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import type { EnrollmentTokenCreated } from '../../lib/api/golemsApi';
+import type {
+  EnrollmentTokenCreated,
+  EnrollmentTokenExpirationPreset,
+} from '../../lib/api/golemsApi';
+
+const EXPIRATION_OPTIONS: Array<{ value: EnrollmentTokenExpirationPreset; label: string }> = [
+  { value: 'ONE_HOUR', label: '1 hour' },
+  { value: 'EIGHT_HOURS', label: '8 hours' },
+  { value: 'ONE_DAY', label: '1 day' },
+  { value: 'SEVEN_DAYS', label: '7 days' },
+  { value: 'ONE_MONTH', label: '1 month' },
+  { value: 'ONE_YEAR', label: '1 year' },
+  { value: 'UNLIMITED', label: 'Unlimited' },
+];
 
 interface EnrollmentTokenDialogProps {
   open: boolean;
   isPending: boolean;
   createdToken: EnrollmentTokenCreated | null;
   onClose: () => void;
-  onCreate: (input: { note: string; expiresInMinutes: number | null }) => Promise<void>;
+  onCreate: (input: { note: string; expirationPreset: EnrollmentTokenExpirationPreset }) => Promise<void>;
 }
 
 export function EnrollmentTokenDialog({
@@ -17,13 +30,13 @@ export function EnrollmentTokenDialog({
   onCreate,
 }: EnrollmentTokenDialogProps) {
   const [note, setNote] = useState('');
-  const [expiresInMinutes, setExpiresInMinutes] = useState('30');
+  const [expirationPreset, setExpirationPreset] = useState<EnrollmentTokenExpirationPreset>('ONE_HOUR');
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   useEffect(() => {
     if (!open) {
       setNote('');
-      setExpiresInMinutes('30');
+      setExpirationPreset('ONE_HOUR');
       setCopyState('idle');
     }
   }, [open]);
@@ -34,10 +47,9 @@ export function EnrollmentTokenDialog({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsedTtl = expiresInMinutes.trim() ? Number.parseInt(expiresInMinutes, 10) : null;
     await onCreate({
       note,
-      expiresInMinutes: Number.isNaN(parsedTtl) ? null : parsedTtl,
+      expirationPreset,
     });
   }
 
@@ -85,7 +97,10 @@ export function EnrollmentTokenDialog({
                 {createdToken.joinCode}
               </pre>
               <p className="mt-2 text-xs text-muted-foreground">
-                Expires {new Date(createdToken.expiresAt).toLocaleString()} · reusable until revoked
+                {createdToken.expiresAt
+                  ? `Expires ${new Date(createdToken.expiresAt).toLocaleString()}`
+                  : 'Unlimited expiration'}{' '}
+                · reusable until revoked
               </p>
             </div>
             <details className="text-sm">
@@ -107,13 +122,18 @@ export function EnrollmentTokenDialog({
               />
             </label>
             <label className="grid gap-1.5">
-              <span className="text-sm font-semibold text-foreground">TTL (minutes)</span>
-              <input
-                value={expiresInMinutes}
-                onChange={(event) => setExpiresInMinutes(event.target.value)}
-                inputMode="numeric"
+              <span className="text-sm font-semibold text-foreground">Expiration</span>
+              <select
+                value={expirationPreset}
+                onChange={(event) => setExpirationPreset(event.target.value as EnrollmentTokenExpirationPreset)}
                 className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
-              />
+              >
+                {EXPIRATION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
             <button
               type="submit"

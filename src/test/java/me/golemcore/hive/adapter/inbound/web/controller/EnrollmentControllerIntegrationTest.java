@@ -20,6 +20,8 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
+import java.time.Instant;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,6 +102,28 @@ class EnrollmentControllerIntegrationTest {
                 .jsonPath("$[0].registrationCount").isEqualTo(2)
                 .jsonPath("$[0].lastUsedAt").exists()
                 .jsonPath("$[0].lastRegisteredGolemId").isEqualTo(secondGolemId);
+    }
+
+    @Test
+    void shouldFallbackLegacyExpiresInMinutesToOneHour() throws Exception {
+        String operatorToken = loginAsAdmin();
+
+        EntityExchangeResult<String> createResult = webTestClient.post()
+                .uri("/api/v1/enrollment-tokens")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {"note":"legacy-client","expiresInMinutes":15}
+                        """)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(String.class)
+                .returnResult();
+
+        JsonNode createdPayload = objectMapper.readTree(createResult.getResponseBody());
+        Instant createdAt = Instant.parse(createdPayload.path("createdAt").asText());
+        Instant expiresAt = Instant.parse(createdPayload.path("expiresAt").asText());
+        Assertions.assertEquals(Duration.ofHours(1), Duration.between(createdAt, expiresAt));
     }
 
     private String registerGolem(String enrollmentToken, String displayName, String hostLabel) throws Exception {

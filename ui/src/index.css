@@ -13,9 +13,9 @@
     --panel: 224 14% 13%;
     --panel-foreground: 210 20% 90%;
     --primary: 22 90% 55%;
-    --primary-foreground: 225 15% 10%;
+    --primary-foreground: 0 0% 100%;
     --accent: 160 50% 45%;
-    --accent-foreground: 225 15% 10%;
+    --accent-foreground: 0 0% 100%;
     --border: 220 10% 22%;
     --ring: 22 90% 55%;
     font-family: 'Inter', sans-serif;

@@ -1,16 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const ROUTES = [
-  { path: '/', name: 'home' },
-  { path: '/boards', name: 'boards' },
-  { path: '/policies', name: 'policies' },
-  { path: '/approvals', name: 'approvals' },
-  { path: '/fleet', name: 'golems' },
-  { path: '/fleet/chat', name: 'chat' },
-  { path: '/fleet/roles', name: 'roles' },
-  { path: '/audit', name: 'audit' },
-  { path: '/budgets', name: 'budgets' },
-  { path: '/settings', name: 'settings' },
+  { path: '/', name: 'home', waitFor: 'Create board' },
+  { path: '/boards', name: 'boards', waitFor: 'Create board' },
+  { path: '/policies', name: 'policies', waitFor: 'Policy groups' },
+  { path: '/approvals', name: 'approvals', waitFor: 'PENDING' },
+  { path: '/fleet', name: 'golems', waitFor: 'golems' },
+  { path: '/fleet/chat', name: 'chat', waitFor: 'Chats' },
+  { path: '/fleet/roles', name: 'roles', waitFor: 'Back to fleet' },
+  { path: '/audit', name: 'audit', waitFor: 'Event type' },
+  { path: '/budgets', name: 'budgets', waitFor: 'All scopes' },
+  { path: '/settings', name: 'settings', waitFor: 'Production mode' },
 ];
 
 async function login(page: Page) {
@@ -59,8 +59,8 @@ test.describe('walkthrough all sections', () => {
     for (const route of ROUTES) {
       await page.goto(route.path);
       await page.waitForLoadState('domcontentloaded');
-      // Wait for React to render
-      await page.waitForTimeout(1000);
+      // Wait for route-specific content to confirm navigation completed
+      await page.getByText(route.waitFor, { exact: false }).first().waitFor({ timeout: 8000 });
 
       // Page should not be blank
       const rootContent = await page.locator('#root').innerHTML();

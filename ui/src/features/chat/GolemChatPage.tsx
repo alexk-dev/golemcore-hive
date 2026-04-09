@@ -91,11 +91,13 @@ export function GolemChatPage() {
 
   return (
     <div className="flex gap-0 -m-3 sm:-m-4" style={{ height: 'calc(100vh - 0px)' }}>
-      <DmSidebar />
+      <div className={golemId ? 'hidden sm:flex' : 'flex'}>
+        <DmSidebar />
+      </div>
       {golemId ? (
         <DmChatPane golemId={golemId} />
       ) : (
-        <div className="flex flex-1 items-center justify-center">
+        <div className="hidden flex-1 items-center justify-center sm:flex">
           <p className="text-sm text-muted-foreground">Select a golem to start chatting</p>
         </div>
       )}

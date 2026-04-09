@@ -55,7 +55,7 @@ export function SystemSettingsPage() {
 
   return (
     <div className="grid gap-5">
-      <section className="grid gap-3 lg:grid-cols-3">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <SettingCard label="Production mode" value={settings.productionMode ? 'Enabled' : 'Disabled'} />
         <SettingCard label="Storage path" value={settings.storageBasePath} />
         <SettingCard label="Secure refresh cookie" value={settings.secureRefreshCookie ? 'Enabled' : 'Disabled'} />
@@ -128,7 +128,9 @@ export function SystemSettingsPage() {
               </article>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground">No notifications yet.</p>
+            <div className="soft-card px-4 py-6 text-center">
+              <p className="text-sm text-muted-foreground">No notifications yet.</p>
+            </div>
           )}
         </div>
       </section>

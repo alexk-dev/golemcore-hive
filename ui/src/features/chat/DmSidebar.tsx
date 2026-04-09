@@ -114,7 +114,9 @@ export function DmSidebar() {
           </NavLink>
         ))}
         {!recentThreads.length && !threadsQuery.isLoading ? (
-          <p className="px-3 py-4 text-xs text-muted-foreground">No conversations yet</p>
+          <div className="px-3 py-6 text-center">
+            <p className="text-xs text-muted-foreground">No conversations yet</p>
+          </div>
         ) : null}
       </nav>
     </aside>

@@ -216,7 +216,9 @@ export function PolicyBindingsSection({
           </table>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-muted-foreground">No golems are bound to this policy group yet.</p>
+        <div className="mt-4 soft-card px-4 py-6 text-center">
+          <p className="text-sm text-muted-foreground">No golems are bound to this policy group yet.</p>
+        </div>
       )}
     </section>
   );

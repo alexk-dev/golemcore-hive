@@ -135,7 +135,9 @@ export function ApprovalsPage() {
           </div>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">No approval requests match this filter.</p>
+        <div className="soft-card px-5 py-8 text-center">
+          <p className="text-sm text-muted-foreground">No approval requests match this filter.</p>
+        </div>
       )}
 
       <ApprovalDecisionDialog

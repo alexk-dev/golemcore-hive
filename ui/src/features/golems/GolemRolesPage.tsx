@@ -95,7 +95,9 @@ export function GolemRolesPage() {
             </article>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground">No roles yet.</p>
+          <div className="soft-card px-5 py-8 text-center">
+            <p className="text-sm text-muted-foreground">No roles yet.</p>
+          </div>
         )}
       </section>
 

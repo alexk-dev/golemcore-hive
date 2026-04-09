@@ -90,7 +90,9 @@ export function BudgetsPage() {
           </div>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">No budget snapshots for this filter.</p>
+        <div className="soft-card px-5 py-8 text-center">
+          <p className="text-sm text-muted-foreground">No budget snapshots for this filter.</p>
+        </div>
       )}
     </div>
   );

@@ -21,11 +21,6 @@ package me.golemcore.hive.domain.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -39,12 +34,18 @@ import me.golemcore.hive.adapter.outbound.storage.LocalJsonStorageAdapter;
 import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemCapabilitySnapshot;
-import me.golemcore.hive.domain.model.GolemState;
 import me.golemcore.hive.domain.model.GolemPolicyBinding;
 import me.golemcore.hive.domain.model.PolicyGroup;
 import me.golemcore.hive.domain.model.PolicyGroupSpec;
 import me.golemcore.hive.domain.model.PolicyGroupVersion;
 import me.golemcore.hive.domain.model.PolicySyncStatus;
+import me.golemcore.hive.fleet.adapter.out.persistence.JsonGolemRepository;
+import me.golemcore.hive.fleet.adapter.out.persistence.JsonGolemRoleRepository;
+import me.golemcore.hive.fleet.adapter.out.persistence.JsonHeartbeatRepository;
+import me.golemcore.hive.fleet.adapter.out.support.AuditServiceFleetAuditAdapter;
+import me.golemcore.hive.fleet.application.FleetSettings;
+import me.golemcore.hive.fleet.application.port.out.FleetNotificationPort;
+import me.golemcore.hive.fleet.application.service.GolemFleetApplicationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -64,16 +65,7 @@ class PolicyGroupServiceTest {
         storagePort.init();
 
         AuditService auditService = new AuditService(storagePort, objectMapper);
-        GolemPresenceService golemPresenceService = mock(GolemPresenceService.class);
-        when(golemPresenceService.calculateMissedHeartbeats(any(Golem.class), any(Instant.class))).thenReturn(0);
-        when(golemPresenceService.resolveState(any(Golem.class), any(Instant.class)))
-                .thenReturn(GolemState.PENDING_ENROLLMENT);
-
-        GolemRegistryService golemRegistryService = new GolemRegistryService(
-                storagePort,
-                objectMapper,
-                properties,
-                golemPresenceService,
+        GolemRegistryService golemRegistryService = createGolemRegistryService(storagePort, objectMapper, properties,
                 auditService);
 
         PolicyGroupService service = new PolicyGroupService(storagePort, objectMapper, auditService,
@@ -137,16 +129,7 @@ class PolicyGroupServiceTest {
         storagePort.init();
 
         AuditService auditService = new AuditService(storagePort, objectMapper);
-        GolemPresenceService golemPresenceService = mock(GolemPresenceService.class);
-        when(golemPresenceService.calculateMissedHeartbeats(any(Golem.class), any(Instant.class))).thenReturn(0);
-        when(golemPresenceService.resolveState(any(Golem.class), any(Instant.class)))
-                .thenReturn(GolemState.PENDING_ENROLLMENT);
-
-        GolemRegistryService golemRegistryService = new GolemRegistryService(
-                storagePort,
-                objectMapper,
-                properties,
-                golemPresenceService,
+        GolemRegistryService golemRegistryService = createGolemRegistryService(storagePort, objectMapper, properties,
                 auditService);
 
         PolicyGroupService service = new PolicyGroupService(storagePort, objectMapper, auditService,
@@ -177,16 +160,7 @@ class PolicyGroupServiceTest {
         storagePort.init();
 
         AuditService auditService = new AuditService(storagePort, objectMapper);
-        GolemPresenceService golemPresenceService = mock(GolemPresenceService.class);
-        when(golemPresenceService.calculateMissedHeartbeats(any(Golem.class), any(Instant.class))).thenReturn(0);
-        when(golemPresenceService.resolveState(any(Golem.class), any(Instant.class)))
-                .thenReturn(GolemState.PENDING_ENROLLMENT);
-
-        GolemRegistryService golemRegistryService = new GolemRegistryService(
-                storagePort,
-                objectMapper,
-                properties,
-                golemPresenceService,
+        GolemRegistryService golemRegistryService = createGolemRegistryService(storagePort, objectMapper, properties,
                 auditService);
 
         PolicyGroupService service = new PolicyGroupService(storagePort, objectMapper, auditService,
@@ -284,5 +258,38 @@ class PolicyGroupServiceTest {
                         .models(models)
                         .build())
                 .build();
+    }
+
+    private GolemRegistryService createGolemRegistryService(
+            LocalJsonStorageAdapter storagePort,
+            ObjectMapper objectMapper,
+            HiveProperties properties,
+            AuditService auditService) {
+        FleetSettings fleetSettings = new FleetSettings(
+                properties.getFleet().getControlChannelUrl(),
+                properties.getFleet().getHeartbeatIntervalSeconds(),
+                properties.getFleet().getDegradedAfterMisses(),
+                properties.getFleet().getOfflineAfterMisses(),
+                properties.getFleet().getEnrollmentTokenTtlMinutes(),
+                properties.getSecurity().getJwt().getGolemAccessExpirationMinutes(),
+                properties.getSecurity().getJwt().getGolemRefreshExpirationDays());
+        FleetNotificationPort notificationPort = new FleetNotificationPort() {
+            @Override
+            public boolean isGolemOfflineEnabled() {
+                return false;
+            }
+
+            @Override
+            public void create(me.golemcore.hive.domain.model.NotificationEvent notificationEvent) {
+            }
+        };
+        GolemFleetApplicationService golemFleetApplicationService = new GolemFleetApplicationService(
+                new JsonGolemRepository(storagePort, objectMapper),
+                new JsonHeartbeatRepository(storagePort, objectMapper),
+                new JsonGolemRoleRepository(storagePort, objectMapper),
+                new AuditServiceFleetAuditAdapter(auditService),
+                notificationPort,
+                fleetSettings);
+        return new GolemRegistryService(golemFleetApplicationService);
     }
 }

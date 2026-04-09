@@ -18,65 +18,23 @@
 
 package me.golemcore.hive.domain.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemCapabilitySnapshot;
 import me.golemcore.hive.domain.model.GolemPolicyBinding;
 import me.golemcore.hive.domain.model.GolemRole;
 import me.golemcore.hive.domain.model.HeartbeatPing;
-import me.golemcore.hive.fleet.adapter.out.persistence.JsonGolemRepository;
-import me.golemcore.hive.fleet.adapter.out.persistence.JsonGolemRoleRepository;
-import me.golemcore.hive.fleet.adapter.out.persistence.JsonHeartbeatRepository;
-import me.golemcore.hive.fleet.adapter.out.support.AuditServiceFleetAuditAdapter;
 import me.golemcore.hive.fleet.application.ActorContext;
-import me.golemcore.hive.fleet.application.FleetSettings;
-import me.golemcore.hive.fleet.application.port.out.FleetNotificationPort;
 import me.golemcore.hive.fleet.application.service.GolemFleetApplicationService;
-import me.golemcore.hive.port.outbound.StoragePort;
 
 public class GolemRegistryService {
-
-    private static final FleetNotificationPort NOOP_NOTIFICATION_PORT = new FleetNotificationPort() {
-        @Override
-        public boolean isGolemOfflineEnabled() {
-            return false;
-        }
-
-        @Override
-        public void create(me.golemcore.hive.domain.model.NotificationEvent notificationEvent) {
-        }
-    };
 
     private final GolemFleetApplicationService delegate;
 
     public GolemRegistryService(GolemFleetApplicationService delegate) {
         this.delegate = delegate;
-    }
-
-    public GolemRegistryService(
-            StoragePort storagePort,
-            ObjectMapper objectMapper,
-            HiveProperties properties,
-            GolemPresenceService golemPresenceService,
-            AuditService auditService) {
-        this.delegate = new GolemFleetApplicationService(
-                new JsonGolemRepository(storagePort, objectMapper),
-                new JsonHeartbeatRepository(storagePort, objectMapper),
-                new JsonGolemRoleRepository(storagePort, objectMapper),
-                new AuditServiceFleetAuditAdapter(auditService),
-                NOOP_NOTIFICATION_PORT,
-                new FleetSettings(
-                        properties.getFleet().getControlChannelUrl(),
-                        properties.getFleet().getHeartbeatIntervalSeconds(),
-                        properties.getFleet().getDegradedAfterMisses(),
-                        properties.getFleet().getOfflineAfterMisses(),
-                        properties.getFleet().getEnrollmentTokenTtlMinutes(),
-                        properties.getSecurity().getJwt().getGolemAccessExpirationMinutes(),
-                        properties.getSecurity().getJwt().getGolemRefreshExpirationDays()));
     }
 
     public Golem registerGolem(String displayName,

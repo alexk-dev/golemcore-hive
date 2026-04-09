@@ -19,12 +19,17 @@
 package me.golemcore.hive.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
 class HexagonalArchitectureFreezeTest {
@@ -64,5 +69,17 @@ class HexagonalArchitectureFreezeTest {
                 .because("inbound adapters should go through use cases, not directly to outbound infrastructure ports")
                 .as("inbound adapters reaching outbound infrastructure");
         FreezingArchRule.freeze(rule).check(IMPORTED_CLASSES);
+    }
+
+    @Test
+    void freezeStoreMustBeReadOnlyInCommittedTestResources() throws IOException {
+        Properties properties = new Properties();
+        try (InputStream inputStream = getClass().getResourceAsStream("/archunit.properties")) {
+            assertNotNull(inputStream, "archunit.properties must be present on the test classpath");
+            properties.load(inputStream);
+        }
+
+        assertEquals("false", properties.getProperty("freeze.store.default.allowStoreCreation"));
+        assertEquals("false", properties.getProperty("freeze.store.default.allowStoreUpdate"));
     }
 }

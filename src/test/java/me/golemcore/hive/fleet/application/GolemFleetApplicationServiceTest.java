@@ -122,4 +122,41 @@ class GolemFleetApplicationServiceTest {
         verify(auditPort).record(argThat(event -> "golem.roles_assigned".equals(event.getEventType())));
         assertTrue(updated.getUpdatedAt() != null);
     }
+
+    @Test
+    void shouldMarkGolemOfflineAndNotifyWhenHeartbeatsAreMissed() {
+        GolemRepository golemRepository = mock(GolemRepository.class);
+        HeartbeatRepository heartbeatRepository = mock(HeartbeatRepository.class);
+        GolemRoleRepository golemRoleRepository = mock(GolemRoleRepository.class);
+        FleetAuditPort auditPort = mock(FleetAuditPort.class);
+        FleetNotificationPort notificationPort = mock(FleetNotificationPort.class);
+        FleetSettings settings = new FleetSettings("wss://hive.example.test/control", 30, 2, 4, 60, 15, 30);
+        Golem golem = Golem.builder()
+                .id("golem_1")
+                .displayName("Builder")
+                .state(GolemState.ONLINE)
+                .heartbeatIntervalSeconds(30)
+                .lastHeartbeatAt(Instant.now().minusSeconds(150))
+                .missedHeartbeatCount(0)
+                .build();
+        when(golemRepository.list()).thenReturn(List.of(golem));
+        when(notificationPort.isGolemOfflineEnabled()).thenReturn(true);
+
+        GolemFleetApplicationService service = new GolemFleetApplicationService(
+                golemRepository,
+                heartbeatRepository,
+                golemRoleRepository,
+                auditPort,
+                notificationPort,
+                settings);
+
+        service.evaluatePresence();
+
+        verify(golemRepository).save(argThat(saved -> saved.getState() == GolemState.OFFLINE
+                && saved.getMissedHeartbeatCount() >= settings.offlineAfterMisses()));
+        verify(notificationPort).create(argThat(event -> "GOLEM_OFFLINE".equals(event.getType())
+                && "golem_1".equals(event.getGolemId())));
+        verify(auditPort).record(argThat(event -> "golem.state_changed".equals(event.getEventType())
+                && "golem_1".equals(event.getGolemId())));
+    }
 }

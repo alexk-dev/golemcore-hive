@@ -2,7 +2,7 @@
 target/
 build/
 .gradle/
-out/
+/out/
 *.class
 
 # Node / React

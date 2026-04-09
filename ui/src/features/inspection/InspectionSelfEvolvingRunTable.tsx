@@ -27,7 +27,7 @@ export function InspectionSelfEvolvingRunTable({
               className={
                 run.id === selectedRunId
                   ? 'border border-primary/40 bg-primary/5 p-3 text-left'
-                  : 'border border-border/70 bg-white/70 p-3 text-left transition hover:bg-white'
+                  : 'border border-border/70 bg-muted/70 p-3 text-left transition hover:bg-muted'
               }
             >
               <div className="flex items-center justify-between gap-3">

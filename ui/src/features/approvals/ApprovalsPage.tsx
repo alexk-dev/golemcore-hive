@@ -54,7 +54,7 @@ export function ApprovalsPage() {
             onClick={() => setStatus(option)}
             className={[
               'px-3 py-1 text-xs font-semibold transition',
-              status === option ? 'bg-foreground text-white' : 'border border-border bg-white/80 text-foreground',
+              status === option ? 'bg-primary text-primary-foreground' : 'border border-border bg-panel/80 text-foreground',
             ].join(' ')}
           >
             {option}
@@ -64,7 +64,7 @@ export function ApprovalsPage() {
 
       {approvals.length ? (
         <div className="border border-border/70">
-          <div className="flex items-center gap-3 border-b border-border/50 bg-white/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+          <div className="flex items-center gap-3 border-b border-border/50 bg-muted/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
             <span className="w-36 shrink-0">Type</span>
             <span className="w-20 shrink-0">Status</span>
             <span className="min-w-0 flex-1">Subject</span>
@@ -85,7 +85,7 @@ export function ApprovalsPage() {
                 return (
                   <div
                     key={approval.id}
-                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-white/80"
+                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-panel/80"
                     style={{ height: ROW_HEIGHT, top: virtualRow.start }}
                   >
                     <span className="w-36 shrink-0 text-xs font-medium text-foreground">{approval.subjectType}</span>
@@ -111,7 +111,7 @@ export function ApprovalsPage() {
                               setSelectedApproval(approval);
                               setDialogMode('approve');
                             }}
-                            className="bg-accent px-2 py-0.5 text-xs font-semibold text-white"
+                            className="bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground"
                           >
                             Approve
                           </button>
@@ -121,7 +121,7 @@ export function ApprovalsPage() {
                               setSelectedApproval(approval);
                               setDialogMode('reject');
                             }}
-                            className="bg-primary px-2 py-0.5 text-xs font-semibold text-white"
+                            className="bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground"
                           >
                             Reject
                           </button>

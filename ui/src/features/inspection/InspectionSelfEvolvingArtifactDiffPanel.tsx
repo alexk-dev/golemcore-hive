@@ -70,15 +70,15 @@ function SemanticDiffContent({
 
   return (
     <div className="grid gap-3">
-      <article className="border border-border/70 bg-white/80 p-3">
+      <article className="border border-border/70 bg-panel/80 p-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Summary</p>
         <p className="mt-2 text-sm text-foreground">{activeDiff.summary || 'No summary available.'}</p>
       </article>
-      <article className="border border-border/70 bg-white/80 p-3">
+      <article className="border border-border/70 bg-panel/80 p-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Semantic sections</p>
         <SemanticSections sections={semanticSections} />
       </article>
-      <article className="border border-border/70 bg-white/80 p-3">
+      <article className="border border-border/70 bg-panel/80 p-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Raw diff</p>
         <pre className="mt-2 overflow-auto whitespace-pre-wrap break-words bg-slate-950/95 p-3 text-xs text-slate-100">
           {rawPatch || 'No raw diff available.'}
@@ -98,7 +98,7 @@ function SemanticSections({ sections }: { sections: string[] }) {
       {sections.map((section) => (
         <span
           key={section}
-          className="inline-flex items-center border border-border bg-white px-2 py-0.5 text-[11px] text-foreground"
+          className="inline-flex items-center border border-border bg-panel px-2 py-0.5 text-[11px] text-foreground"
         >
           {section}
         </span>

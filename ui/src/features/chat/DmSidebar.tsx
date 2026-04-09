@@ -35,7 +35,7 @@ export function DmSidebar() {
   });
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border/70 bg-white/60">
+    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border/70 bg-muted/60">
       <div className="flex items-center justify-between px-3 py-3">
         <h2 className="text-sm font-bold tracking-tight text-foreground">Chats</h2>
         <button
@@ -55,7 +55,7 @@ export function DmSidebar() {
             onChange={(e) => setPickerQuery(e.target.value)}
             placeholder="Search golems…"
             autoFocus
-            className="w-full border border-border bg-white px-2.5 py-1.5 text-xs outline-none focus:border-primary"
+            className="w-full border border-border bg-panel px-2.5 py-1.5 text-xs outline-none focus:border-primary"
           />
           <div className="mt-1 max-h-40 overflow-y-auto">
             {filteredGolems.length ? (
@@ -63,7 +63,7 @@ export function DmSidebar() {
                 <button
                   key={golem.id}
                   type="button"
-                  className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-white"
+                  className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-muted"
                   onClick={() => {
                     setPickerOpen(false);
                     setPickerQuery('');
@@ -91,7 +91,7 @@ export function DmSidebar() {
             className={({ isActive }) =>
               [
                 'flex items-center gap-2 border-b border-border/30 px-3 py-2.5 text-xs transition',
-                isActive ? 'bg-foreground text-white' : 'text-foreground hover:bg-white',
+                isActive ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
               ].join(' ')
             }
           >
@@ -101,7 +101,7 @@ export function DmSidebar() {
                 thread.golemState === 'ONLINE'
                   ? 'bg-emerald-500'
                   : thread.golemState === 'DEGRADED'
-                    ? 'bg-amber-500'
+                    ? 'bg-amber-950/400'
                     : 'bg-slate-400',
               ].join(' ')}
             />

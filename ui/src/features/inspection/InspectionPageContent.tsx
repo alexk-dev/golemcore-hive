@@ -37,7 +37,7 @@ function NoticePanel({ children }: { children: string }) {
 
 function ErrorPanel({ children }: { children: string }) {
   return (
-    <section className="border border-rose-200 bg-rose-100 p-4 text-sm text-rose-900">
+    <section className="border border-rose-200 bg-rose-900/40 p-4 text-sm text-rose-300">
       {children}
     </section>
   );

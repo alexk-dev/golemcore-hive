@@ -32,7 +32,7 @@ export function BudgetsPage() {
         <select
           value={scopeType}
           onChange={(event) => setScopeType(event.target.value)}
-          className="border border-border bg-white/90 px-3 py-1.5 text-sm text-foreground outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-3 py-1.5 text-sm text-foreground outline-none transition focus:border-primary"
         >
           <option value="">All scopes</option>
           <option value="SYSTEM">System</option>
@@ -45,13 +45,13 @@ export function BudgetsPage() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Filter by label or scope id"
-          className="border border-border bg-white/90 px-3 py-1.5 text-sm text-foreground outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-3 py-1.5 text-sm text-foreground outline-none transition focus:border-primary"
         />
       </div>
 
       {snapshots.length ? (
         <div className="border border-border/70">
-          <div className="flex items-center gap-3 border-b border-border/50 bg-white/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+          <div className="flex items-center gap-3 border-b border-border/50 bg-muted/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
             <span className="w-20 shrink-0">Scope</span>
             <span className="min-w-0 flex-1">Label</span>
             <span className="w-20 shrink-0 text-right">Commands</span>
@@ -68,7 +68,7 @@ export function BudgetsPage() {
                 return (
                   <div
                     key={snapshot.id}
-                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-white/80"
+                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-panel/80"
                     style={{ height: ROW_HEIGHT, top: virtualRow.start }}
                   >
                     <span className="w-20 shrink-0 text-xs text-muted-foreground">{snapshot.scopeType}</span>

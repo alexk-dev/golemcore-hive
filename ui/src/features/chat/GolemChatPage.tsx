@@ -180,7 +180,7 @@ function DmChatPane({ golemId }: { golemId: string }) {
         <h2 className="text-sm font-bold tracking-tight text-foreground">{thread.golemDisplayName}</h2>
         <GolemStatusBadge state={thread.golemState} />
         <span className="text-[10px] text-muted-foreground">{liveState}</span>
-        {actionError ? <span className="ml-auto text-xs text-rose-900">{actionError}</span> : null}
+        {actionError ? <span className="ml-auto text-xs text-rose-300">{actionError}</span> : null}
       </header>
 
       <DmMessageList
@@ -281,7 +281,7 @@ function DmMessageList({
                 'border p-3',
                 message.participantType === 'OPERATOR'
                   ? 'border-primary/30 bg-primary/5'
-                  : 'border-border bg-white/70',
+                  : 'border-border bg-muted/70',
               ].join(' ')}
             >
               <div className="flex items-center justify-between gap-2">
@@ -346,7 +346,7 @@ function DmComposer({
                 ? 'Waiting for active run to complete…'
                 : 'Send a command to this golem…'
           }
-          className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary disabled:opacity-60"
+          className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary disabled:opacity-60"
         />
         <div className="flex items-center justify-between gap-3">
           {hasActiveRun ? (
@@ -357,7 +357,7 @@ function DmComposer({
           <button
             type="submit"
             disabled={isDisabled || !body.trim()}
-            className="bg-foreground px-4 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
           >
             {isPending ? 'Sending…' : 'Send'}
           </button>

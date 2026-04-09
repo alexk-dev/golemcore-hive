@@ -50,7 +50,7 @@ export function PolicyGroupsSidebar({
             <input
               value={createForm.slug}
               onChange={(event) => onCreateFieldChange('slug', event.target.value)}
-              className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
               placeholder="default-routing"
             />
           </label>
@@ -59,7 +59,7 @@ export function PolicyGroupsSidebar({
             <input
               value={createForm.name}
               onChange={(event) => onCreateFieldChange('name', event.target.value)}
-              className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
               placeholder="Default Routing"
             />
           </label>
@@ -69,14 +69,14 @@ export function PolicyGroupsSidebar({
               value={createForm.description}
               onChange={(event) => onCreateFieldChange('description', event.target.value)}
               rows={2}
-              className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
               placeholder="Primary policy for engineering golems"
             />
           </label>
           <button
             type="submit"
             disabled={isCreating || !createForm.slug.trim() || !createForm.name.trim()}
-            className="bg-foreground px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            className="bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
           >
             {isCreating ? 'Creating…' : 'Create policy group'}
           </button>
@@ -119,11 +119,11 @@ function PolicyGroupListItem({
   selected: boolean;
 }) {
   const containerClassName = selected
-    ? 'border-foreground bg-foreground text-white'
-    : 'border-border/70 bg-white/80 hover:bg-white';
-  const labelClassName = selected ? 'text-xs text-white/70' : 'text-xs text-muted-foreground';
-  const badgeClassName = selected ? 'border-white/20 text-white/80' : 'border-border/70 text-muted-foreground';
-  const metricsClassName = selected ? 'mt-3 grid gap-1 text-xs text-white/80' : 'mt-3 grid gap-1 text-xs text-muted-foreground';
+    ? 'border-foreground bg-primary text-primary-foreground'
+    : 'border-border/70 bg-panel/80 hover:bg-muted';
+  const labelClassName = selected ? 'text-xs text-foreground/70' : 'text-xs text-muted-foreground';
+  const badgeClassName = selected ? 'border-foreground/20 text-foreground/80' : 'border-border/70 text-muted-foreground';
+  const metricsClassName = selected ? 'mt-3 grid gap-1 text-xs text-foreground/80' : 'mt-3 grid gap-1 text-xs text-muted-foreground';
 
   return (
     <Link to={`/policies/${policy.id}`} className={['border px-3 py-3 text-left transition', containerClassName].join(' ')}>
@@ -226,7 +226,7 @@ export function PolicyDraftSection({
           onClick={() => {
             void onSaveDraft();
           }}
-          className="bg-foreground px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
+          className="bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
         >
           {isSaving ? 'Saving…' : 'Save draft'}
         </button>
@@ -241,11 +241,11 @@ export function PolicyDraftSection({
           value={draftEditorValue}
           onChange={(event) => onDraftEditorChange(event.target.value)}
           rows={26}
-          className="min-h-[520px] border border-border bg-white px-3 py-3 font-mono text-xs leading-6 text-foreground outline-none transition focus:border-primary"
+          className="min-h-[520px] border border-border bg-panel px-3 py-3 font-mono text-xs leading-6 text-foreground outline-none transition focus:border-primary"
         />
       </label>
       {draftEditorError ? (
-        <p className="mt-3 border border-rose-300 bg-rose-100 px-3 py-2 text-sm text-rose-900">{draftEditorError}</p>
+        <p className="mt-3 border border-rose-700 bg-rose-900/40 px-3 py-2 text-sm text-rose-300">{draftEditorError}</p>
       ) : null}
     </section>
   );
@@ -253,7 +253,7 @@ export function PolicyDraftSection({
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <article className="border border-border/70 bg-white/80 p-4">
+    <article className="border border-border/70 bg-panel/80 p-4">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
       <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{value}</p>
     </article>
@@ -267,13 +267,13 @@ function SecretStatusPanel({ spec }: { spec: PolicyGroupSpecResponse | null }) {
     <div className="mt-4 grid gap-2 md:grid-cols-2">
       {providerEntries.length ? (
         providerEntries.map(([providerKey, provider]) => (
-          <div key={providerKey} className="border border-border/70 bg-white/80 px-3 py-2 text-xs text-muted-foreground">
+          <div key={providerKey} className="border border-border/70 bg-panel/80 px-3 py-2 text-xs text-muted-foreground">
             <p className="font-semibold text-foreground">{providerKey}</p>
             <p className="mt-1">Secret {provider.apiKeyPresent ? 'present' : 'missing'} · {provider.apiType || 'unknown type'}</p>
           </div>
         ))
       ) : (
-        <div className="border border-border/70 bg-white/80 px-3 py-2 text-xs text-muted-foreground">
+        <div className="border border-border/70 bg-panel/80 px-3 py-2 text-xs text-muted-foreground">
           No providers configured in the current draft.
         </div>
       )}

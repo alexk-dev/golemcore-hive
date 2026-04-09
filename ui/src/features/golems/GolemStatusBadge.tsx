@@ -1,9 +1,9 @@
 const dotColor: Record<string, string> = {
   ONLINE: 'bg-emerald-500',
-  DEGRADED: 'bg-amber-500',
+  DEGRADED: 'bg-amber-950/400',
   OFFLINE: 'bg-slate-400',
   PAUSED: 'bg-sky-500',
-  REVOKED: 'bg-rose-500',
+  REVOKED: 'bg-rose-950/400',
   PENDING_ENROLLMENT: 'bg-orange-400',
 };
 

@@ -45,7 +45,7 @@ export function HomePage() {
               <Link
                 key={board.id}
                 to={`/boards/${board.id}`}
-                className="flex items-center justify-between gap-3 border border-border/70 bg-white/70 p-3 transition hover:bg-white"
+                className="flex items-center justify-between gap-3 border border-border/70 bg-muted/70 p-3 transition hover:bg-muted"
               >
                 <div>
                   <p className="text-sm font-semibold text-foreground">{board.name}</p>
@@ -67,7 +67,7 @@ export function HomePage() {
             {recentAudit.length ? recentAudit.slice(0, 6).map((event) => (
               <div
                 key={event.id}
-                className="border border-border/70 bg-white/70 p-3"
+                className="border border-border/70 bg-muted/70 p-3"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="pill">{event.eventType}</span>

@@ -32,18 +32,18 @@ export function InspectionActionDialog({
 
   const confirmClasses =
     tone === 'danger'
-      ? 'bg-rose-600 text-white'
-      : 'bg-foreground text-white';
+      ? 'bg-rose-600 text-rose-50'
+      : 'bg-primary text-primary-foreground';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm">
       <div className="panel w-full max-w-md p-5">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-bold text-foreground">{title}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="border border-border bg-white/70 px-2 py-1 text-xs font-semibold text-foreground"
+            className="border border-border bg-muted/70 px-2 py-1 text-xs font-semibold text-foreground"
           >
             Close
           </button>
@@ -55,7 +55,7 @@ export function InspectionActionDialog({
           <button
             type="button"
             onClick={onClose}
-            className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
+            className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground"
           >
             Cancel
           </button>

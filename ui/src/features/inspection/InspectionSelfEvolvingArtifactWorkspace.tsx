@@ -89,8 +89,8 @@ export function InspectionSelfEvolvingArtifactWorkspace({
               onClick={() => onSelectCompareMode('transition')}
               className={
                 compareMode === 'transition'
-                  ? 'bg-foreground px-3 py-1.5 text-xs font-semibold text-white'
-                  : 'border border-border bg-white/80 px-3 py-1.5 text-xs font-semibold text-foreground'
+                  ? 'bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground'
+                  : 'border border-border bg-panel/80 px-3 py-1.5 text-xs font-semibold text-foreground'
               }
             >
               Transition compare
@@ -100,8 +100,8 @@ export function InspectionSelfEvolvingArtifactWorkspace({
               onClick={() => onSelectCompareMode('revision')}
               className={
                 compareMode === 'revision'
-                  ? 'bg-foreground px-3 py-1.5 text-xs font-semibold text-white'
-                  : 'border border-border bg-white/80 px-3 py-1.5 text-xs font-semibold text-foreground'
+                  ? 'bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground'
+                  : 'border border-border bg-panel/80 px-3 py-1.5 text-xs font-semibold text-foreground'
               }
             >
               Revision compare
@@ -113,7 +113,7 @@ export function InspectionSelfEvolvingArtifactWorkspace({
               <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
                 Transition pair
                 <select
-                  className="border border-border bg-white px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+                  className="border border-border bg-panel px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
                   onChange={(event) => {
                     const value = event.target.value;
                     const option = transitionOptions.find((candidate) => `${candidate.fromId}::${candidate.toId}` === value);
@@ -134,7 +134,7 @@ export function InspectionSelfEvolvingArtifactWorkspace({
               <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
                 Revision pair
                 <select
-                  className="border border-border bg-white px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+                  className="border border-border bg-panel px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
                   onChange={(event) => {
                     const value = event.target.value;
                     const option = revisionOptions.find((candidate) => `${candidate.fromId}::${candidate.toId}` === value);

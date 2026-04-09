@@ -32,7 +32,7 @@ export function GolemDetailsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm">
       <div className="panel w-full max-w-2xl p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -46,7 +46,7 @@ export function GolemDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              className="border border-border bg-white/70 px-3 py-1.5 text-sm font-semibold text-foreground"
+              className="border border-border bg-muted/70 px-3 py-1.5 text-sm font-semibold text-foreground"
             >
               Close
             </button>
@@ -104,7 +104,7 @@ function GolemPolicySection({ golem, policies }: { golem: GolemDetails; policies
   const summary = buildGolemPolicySummary(golem, policies);
 
   return (
-    <div className="mt-3 border border-border/60 bg-white/70 p-3">
+    <div className="mt-3 border border-border/60 bg-muted/70 p-3">
       <GolemPolicyHeader
         policyGroupId={summary.policyGroupId}
         policyLabel={summary.policyLabel}
@@ -259,7 +259,7 @@ function GolemLifecycleActions({
       {state === 'ONLINE' ? (
         <Link
           to={`/fleet/inspection/${golemId}`}
-          className="border border-border bg-white/80 px-3 py-1 text-xs font-semibold text-foreground transition hover:bg-white"
+          className="border border-border bg-panel/80 px-3 py-1 text-xs font-semibold text-foreground transition hover:bg-muted"
         >
           Inspect
         </Link>
@@ -278,7 +278,7 @@ function GolemLifecycleActions({
           type="button"
           onClick={() => void onPause()}
           disabled={isBusy || state === 'REVOKED'}
-          className="bg-foreground px-3 py-1 text-xs font-semibold text-white disabled:opacity-60"
+          className="bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground disabled:opacity-60"
         >
           Pause
         </button>
@@ -287,12 +287,12 @@ function GolemLifecycleActions({
         type="button"
         onClick={() => void onRevoke()}
         disabled={isBusy || state === 'REVOKED'}
-        className="border border-rose-300 bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-900 disabled:opacity-60"
+        className="border border-rose-700 bg-rose-900/40 px-3 py-1 text-xs font-semibold text-rose-300 disabled:opacity-60"
       >
         Revoke
       </button>
       {pauseReason ? <span className="text-xs text-sky-900">Paused: {pauseReason}</span> : null}
-      {revokeReason ? <span className="text-xs text-rose-900">Revoked: {revokeReason}</span> : null}
+      {revokeReason ? <span className="text-xs text-rose-300">Revoked: {revokeReason}</span> : null}
     </div>
   );
 }

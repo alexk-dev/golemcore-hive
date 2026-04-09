@@ -20,6 +20,7 @@ package me.golemcore.hive.fleet.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.eq;
@@ -28,6 +29,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -72,6 +75,56 @@ class GolemEnrollmentApplicationServiceTest {
         assertEquals("admin", created.token().getCreatedByOperatorUsername());
         verify(enrollmentTokenRepository).save(argThat(token -> "shared-lab".equals(token.getNote())
                 && token.getExpiresAt().isAfter(token.getCreatedAt())));
+    }
+
+    @Test
+    void shouldCreateEnrollmentTokenWithUnlimitedExpiration() {
+        EnrollmentTokenRepository enrollmentTokenRepository = mock(EnrollmentTokenRepository.class);
+        GolemAuthSessionRepository golemAuthSessionRepository = mock(GolemAuthSessionRepository.class);
+        GolemTokenPort golemTokenPort = mock(GolemTokenPort.class);
+        GolemFleetUseCase golemFleetUseCase = mock(GolemFleetUseCase.class);
+        FleetSettings settings = new FleetSettings("wss://hive.example.test/control", 30, 2, 4, 60, 15, 30);
+
+        GolemEnrollmentApplicationService service = new GolemEnrollmentApplicationService(
+                enrollmentTokenRepository,
+                golemAuthSessionRepository,
+                golemTokenPort,
+                golemFleetUseCase,
+                settings);
+
+        CreatedEnrollmentToken created = service.createEnrollmentToken(
+                new ActorContext("op_1", "admin"),
+                "shared-lab",
+                EnrollmentTokenExpirationPreset.UNLIMITED);
+
+        assertNull(created.token().getExpiresAt());
+        verify(enrollmentTokenRepository).save(argThat(token -> token.getExpiresAt() == null));
+    }
+
+    @Test
+    void shouldCreateEnrollmentTokenUsingCalendarMonthPreset() {
+        EnrollmentTokenRepository enrollmentTokenRepository = mock(EnrollmentTokenRepository.class);
+        GolemAuthSessionRepository golemAuthSessionRepository = mock(GolemAuthSessionRepository.class);
+        GolemTokenPort golemTokenPort = mock(GolemTokenPort.class);
+        GolemFleetUseCase golemFleetUseCase = mock(GolemFleetUseCase.class);
+        FleetSettings settings = new FleetSettings("wss://hive.example.test/control", 30, 2, 4, 60, 15, 30);
+
+        GolemEnrollmentApplicationService service = new GolemEnrollmentApplicationService(
+                enrollmentTokenRepository,
+                golemAuthSessionRepository,
+                golemTokenPort,
+                golemFleetUseCase,
+                settings);
+
+        CreatedEnrollmentToken created = service.createEnrollmentToken(
+                new ActorContext("op_1", "admin"),
+                "shared-lab",
+                EnrollmentTokenExpirationPreset.ONE_MONTH);
+
+        Instant expectedExpiration = ZonedDateTime.ofInstant(created.token().getCreatedAt(), ZoneOffset.UTC)
+                .plusMonths(1)
+                .toInstant();
+        assertEquals(expectedExpiration, created.token().getExpiresAt());
     }
 
     @Test

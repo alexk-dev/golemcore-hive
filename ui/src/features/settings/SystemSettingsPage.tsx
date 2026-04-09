@@ -6,6 +6,7 @@ import {
   listEnrollmentTokens,
   revokeEnrollmentToken,
   type EnrollmentToken,
+  type EnrollmentTokenExpirationPreset,
 } from '../../lib/api/golemsApi';
 import { EnrollmentTokenDialog } from '../golems/EnrollmentTokenDialog';
 import { formatTimestamp } from '../../lib/format';
@@ -32,8 +33,8 @@ export function SystemSettingsPage() {
   });
 
   const enrollmentMutation = useMutation({
-    mutationFn: async (input: { note: string; expiresInMinutes: number | null }) =>
-      createEnrollmentToken(input.note, input.expiresInMinutes),
+    mutationFn: async (input: { note: string; expirationPreset: EnrollmentTokenExpirationPreset }) =>
+      createEnrollmentToken(input.note, input.expirationPreset),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['enrollment-tokens'] });
     },
@@ -165,7 +166,7 @@ function EnrollmentTokensSection({
               <div>
                 <p className="text-sm text-foreground">{token.note || token.preview}</p>
                 <p className="text-xs text-muted-foreground">
-                  By {token.createdByUsername || 'operator'} · expires {formatTimestamp(token.expiresAt)}
+                  By {token.createdByUsername || 'operator'} · expires {formatEnrollmentTokenExpiration(token.expiresAt)}
                   {' · '}{token.registrationCount} registrations
                   {token.revoked ? ' · Revoked' : ''}
                 </p>
@@ -188,6 +189,13 @@ function EnrollmentTokensSection({
       </div>
     </section>
   );
+}
+
+function formatEnrollmentTokenExpiration(value: string | null) {
+  if (!value) {
+    return 'Unlimited';
+  }
+  return formatTimestamp(value);
 }
 
 function SettingCard({ label, value }: { label: string; value: string }) {

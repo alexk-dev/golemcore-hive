@@ -31,6 +31,7 @@ import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.EnrollmentToken;
 import me.golemcore.hive.fleet.application.ActorContext;
 import me.golemcore.hive.fleet.application.CreatedEnrollmentToken;
+import me.golemcore.hive.fleet.application.EnrollmentTokenExpirationPreset;
 import me.golemcore.hive.fleet.application.port.in.GolemEnrollmentUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -63,7 +64,7 @@ public class EnrollmentController {
             CreatedEnrollmentToken created = golemEnrollmentUseCase.createEnrollmentToken(
                     actor,
                     requestBody != null ? requestBody.note() : null,
-                    requestBody != null ? requestBody.expiresInMinutes() : null);
+                    resolveExpirationPreset(requestBody));
             EnrollmentToken token = created.token();
             return ResponseEntity.status(HttpStatus.CREATED).body(new EnrollmentTokenCreatedResponse(
                     token.getId(),
@@ -114,6 +115,31 @@ public class EnrollmentController {
                 token.getLastRegisteredGolemId(),
                 token.getRevokeReason(),
                 token.isRevoked());
+    }
+
+    private EnrollmentTokenExpirationPreset resolveExpirationPreset(EnrollmentTokenCreateRequest requestBody) {
+        if (requestBody == null) {
+            return null;
+        }
+        try {
+            EnrollmentTokenExpirationPreset explicitPreset = parseExpirationPreset(requestBody.expirationPreset());
+            if (explicitPreset != null) {
+                return explicitPreset;
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported enrollment token expiration preset");
+        }
+        if (requestBody.expiresInMinutes() != null) {
+            return EnrollmentTokenExpirationPreset.ONE_HOUR;
+        }
+        return null;
+    }
+
+    private EnrollmentTokenExpirationPreset parseExpirationPreset(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return EnrollmentTokenExpirationPreset.valueOf(value.trim().toUpperCase());
     }
 
     private String resolveJoinBaseUrl(ServerHttpRequest request) {

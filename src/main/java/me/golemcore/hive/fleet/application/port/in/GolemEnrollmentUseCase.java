@@ -24,12 +24,16 @@ import me.golemcore.hive.domain.model.EnrollmentToken;
 import me.golemcore.hive.domain.model.GolemCapabilitySnapshot;
 import me.golemcore.hive.fleet.application.ActorContext;
 import me.golemcore.hive.fleet.application.CreatedEnrollmentToken;
+import me.golemcore.hive.fleet.application.EnrollmentTokenExpirationPreset;
 import me.golemcore.hive.fleet.application.MachineTokenPair;
 import me.golemcore.hive.fleet.application.RegistrationResult;
 
 public interface GolemEnrollmentUseCase {
 
-    CreatedEnrollmentToken createEnrollmentToken(ActorContext actor, String note, Integer expiresInMinutes);
+    CreatedEnrollmentToken createEnrollmentToken(
+            ActorContext actor,
+            String note,
+            EnrollmentTokenExpirationPreset expirationPreset);
 
     List<EnrollmentToken> listEnrollmentTokens();
 

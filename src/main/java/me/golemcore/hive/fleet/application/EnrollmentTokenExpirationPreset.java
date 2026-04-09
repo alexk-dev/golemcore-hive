@@ -16,6 +16,8 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.adapter.inbound.web.dto.golems;
+package me.golemcore.hive.fleet.application;
 
-public record EnrollmentTokenCreateRequest(String note,String expirationPreset,Integer expiresInMinutes){}
+public enum EnrollmentTokenExpirationPreset {
+    ONE_HOUR, EIGHT_HOURS, ONE_DAY, SEVEN_DAYS, ONE_MONTH, ONE_YEAR, UNLIMITED
+}

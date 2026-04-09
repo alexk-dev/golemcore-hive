@@ -88,7 +88,7 @@ export interface EnrollmentToken {
   note: string | null;
   createdByUsername: string | null;
   createdAt: string;
-  expiresAt: string;
+  expiresAt: string | null;
   lastUsedAt: string | null;
   registrationCount: number;
   revokedAt: string | null;
@@ -104,8 +104,17 @@ export interface EnrollmentTokenCreated {
   preview: string;
   note: string | null;
   createdAt: string;
-  expiresAt: string;
+  expiresAt: string | null;
 }
+
+export type EnrollmentTokenExpirationPreset =
+  | 'ONE_HOUR'
+  | 'EIGHT_HOURS'
+  | 'ONE_DAY'
+  | 'SEVEN_DAYS'
+  | 'ONE_MONTH'
+  | 'ONE_YEAR'
+  | 'UNLIMITED';
 
 export interface GolemRole {
   slug: string;
@@ -156,12 +165,12 @@ export function listEnrollmentTokens() {
   return apiRequest<EnrollmentToken[]>('/api/v1/enrollment-tokens');
 }
 
-export function createEnrollmentToken(note: string, expiresInMinutes?: number | null) {
+export function createEnrollmentToken(note: string, expirationPreset: EnrollmentTokenExpirationPreset) {
   return apiRequest<EnrollmentTokenCreated>('/api/v1/enrollment-tokens', {
     method: 'POST',
     body: JSON.stringify({
       note,
-      expiresInMinutes: expiresInMinutes || undefined,
+      expirationPreset,
     }),
   });
 }

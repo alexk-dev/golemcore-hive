@@ -23,6 +23,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HexFormat;
@@ -38,6 +40,7 @@ import me.golemcore.hive.domain.model.GolemScope;
 import me.golemcore.hive.domain.model.GolemState;
 import me.golemcore.hive.fleet.application.ActorContext;
 import me.golemcore.hive.fleet.application.CreatedEnrollmentToken;
+import me.golemcore.hive.fleet.application.EnrollmentTokenExpirationPreset;
 import me.golemcore.hive.fleet.application.FleetSettings;
 import me.golemcore.hive.fleet.application.GolemRefreshTokenClaims;
 import me.golemcore.hive.fleet.application.MachineTokenPair;
@@ -60,13 +63,13 @@ public class GolemEnrollmentApplicationService implements GolemEnrollmentUseCase
     private final FleetSettings settings;
 
     @Override
-    public CreatedEnrollmentToken createEnrollmentToken(ActorContext actor, String note, Integer expiresInMinutes) {
+    public CreatedEnrollmentToken createEnrollmentToken(
+            ActorContext actor,
+            String note,
+            EnrollmentTokenExpirationPreset expirationPreset) {
         Instant now = Instant.now();
         String tokenId = "et_" + UUID.randomUUID().toString().replace("-", "");
         String secret = generateSecret();
-        int ttlMinutes = expiresInMinutes != null && expiresInMinutes > 0
-                ? expiresInMinutes
-                : settings.enrollmentTokenTtlMinutes();
         EnrollmentToken enrollmentToken = EnrollmentToken.builder()
                 .id(tokenId)
                 .secretHash(hashToken(secret))
@@ -75,7 +78,7 @@ public class GolemEnrollmentApplicationService implements GolemEnrollmentUseCase
                 .createdByOperatorId(actor.subjectId())
                 .createdByOperatorUsername(actor.name())
                 .createdAt(now)
-                .expiresAt(now.plusSeconds(ttlMinutes * 60L))
+                .expiresAt(resolveExpiration(now, expirationPreset))
                 .build();
         enrollmentTokenRepository.save(enrollmentToken);
         return new CreatedEnrollmentToken(enrollmentToken, tokenId + "." + secret);
@@ -155,13 +158,28 @@ public class GolemEnrollmentApplicationService implements GolemEnrollmentUseCase
         if (enrollmentToken.isRevoked()) {
             throw new IllegalArgumentException("Enrollment token has been revoked");
         }
-        if (enrollmentToken.getExpiresAt().isBefore(Instant.now())) {
+        if (enrollmentToken.getExpiresAt() != null && enrollmentToken.getExpiresAt().isBefore(Instant.now())) {
             throw new IllegalArgumentException("Enrollment token has expired");
         }
         if (!hashToken(parts[1]).equals(enrollmentToken.getSecretHash())) {
             throw new IllegalArgumentException("Enrollment token is invalid");
         }
         return enrollmentToken;
+    }
+
+    private Instant resolveExpiration(Instant createdAt, EnrollmentTokenExpirationPreset expirationPreset) {
+        if (expirationPreset == null) {
+            return createdAt.plusSeconds(settings.enrollmentTokenTtlMinutes() * 60L);
+        }
+        return switch (expirationPreset) {
+        case ONE_HOUR -> createdAt.plusSeconds(60L * 60L);
+        case EIGHT_HOURS -> createdAt.plusSeconds(8L * 60L * 60L);
+        case ONE_DAY -> createdAt.plusSeconds(24L * 60L * 60L);
+        case SEVEN_DAYS -> createdAt.plusSeconds(7L * 24L * 60L * 60L);
+        case ONE_MONTH -> ZonedDateTime.ofInstant(createdAt, ZoneOffset.UTC).plusMonths(1).toInstant();
+        case ONE_YEAR -> ZonedDateTime.ofInstant(createdAt, ZoneOffset.UTC).plusYears(1).toInstant();
+        case UNLIMITED -> null;
+        };
     }
 
     private MachineTokenPair issueMachineTokens(Golem golem, List<String> scopes, GolemAuthSession existingSession) {

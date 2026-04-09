@@ -33,13 +33,13 @@ export function FlowColumnsEditor({
             <input
               value={column.id}
               onChange={(event) => onUpdateColumn(index, { id: event.target.value })}
-              className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               placeholder="column_id"
             />
             <input
               value={column.name}
               onChange={(event) => onUpdateColumn(index, { name: event.target.value })}
-              className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               placeholder="Column name"
             />
             <input
@@ -47,7 +47,7 @@ export function FlowColumnsEditor({
               onChange={(event) =>
                 onUpdateColumn(index, { wipLimit: event.target.value ? Number.parseInt(event.target.value, 10) : null })
               }
-              className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               placeholder="WIP"
             />
             <label className="flex items-center gap-2 text-sm text-foreground">
@@ -70,7 +70,7 @@ export function FlowColumnsEditor({
             value={column.description ?? ''}
             onChange={(event) => onUpdateColumn(index, { description: event.target.value })}
             rows={2}
-            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             placeholder="Description"
           />
         </div>
@@ -80,7 +80,7 @@ export function FlowColumnsEditor({
         <select
           value={defaultColumnId}
           onChange={(event) => onDefaultColumnChange(event.target.value)}
-          className="border border-border bg-panel px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         >
           {columns.map((column) => (
             <option key={column.id} value={column.id}>
@@ -128,7 +128,7 @@ export function FlowTransitionsEditor({
           <select
             value={transition.fromColumnId}
             onChange={(event) => onUpdateTransition(index, { fromColumnId: event.target.value })}
-            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
           >
             {columns.map((column) => (
               <option key={column.id} value={column.id}>
@@ -139,7 +139,7 @@ export function FlowTransitionsEditor({
           <select
             value={transition.toColumnId}
             onChange={(event) => onUpdateTransition(index, { toColumnId: event.target.value })}
-            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
           >
             {columns.map((column) => (
               <option key={column.id} value={column.id}>
@@ -193,12 +193,12 @@ export function FlowSignalMappingsEditor({
           <input
             value={mapping.signalType}
             onChange={(event) => onUpdateMapping(index, { signalType: event.target.value })}
-            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
           />
           <select
             value={mapping.decision}
             onChange={(event) => onUpdateMapping(index, { decision: event.target.value })}
-            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
           >
             <option value="AUTO_APPLY">AUTO_APPLY</option>
             <option value="SUGGEST_ONLY">SUGGEST_ONLY</option>
@@ -207,7 +207,7 @@ export function FlowSignalMappingsEditor({
           <select
             value={mapping.targetColumnId ?? ''}
             onChange={(event) => onUpdateMapping(index, { targetColumnId: event.target.value || null })}
-            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
           >
             <option value="">No target</option>
             {columns.map((column) => (
@@ -270,7 +270,7 @@ export function FlowPreviewPanel({
             <select
               value={remap[columnId] || ''}
               onChange={(event) => onRemapChange(columnId, event.target.value)}
-              className="border border-amber-700 bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-amber-700 bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             >
               <option value="">Select target</option>
               {columns.map((column) => (

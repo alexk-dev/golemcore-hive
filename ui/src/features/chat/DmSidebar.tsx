@@ -55,7 +55,7 @@ export function DmSidebar() {
             onChange={(e) => setPickerQuery(e.target.value)}
             placeholder="Search golems…"
             autoFocus
-            className="w-full border border-border bg-panel px-2.5 py-1.5 text-xs outline-none focus:border-primary"
+            className="w-full border border-border bg-panel px-2.5 py-1.5 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/50"
           />
           <div className="mt-1 max-h-40 overflow-y-auto">
             {filteredGolems.length ? (

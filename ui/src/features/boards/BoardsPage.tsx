@@ -86,7 +86,7 @@ export function BoardsPage() {
               </article>
             ))
           ) : (
-            <article className="panel p-6 text-sm text-muted-foreground">
+            <article className="panel py-10 text-center text-sm text-muted-foreground">
               No boards yet. Create one to get started.
             </article>
           )}
@@ -99,7 +99,7 @@ export function BoardsPage() {
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               placeholder="Engineering backlog"
             />
           </label>
@@ -109,7 +109,7 @@ export function BoardsPage() {
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}
-              className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             />
           </label>
           <div className="grid gap-4 md:grid-cols-2">
@@ -118,7 +118,7 @@ export function BoardsPage() {
               <select
                 value={templateKey}
                 onChange={(event) => setTemplateKey(event.target.value)}
-                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               >
                 {templateOptions.map((option) => (
                   <option key={option.key} value={option.key}>
@@ -132,7 +132,7 @@ export function BoardsPage() {
               <select
                 value={defaultAssignmentPolicy}
                 onChange={(event) => setDefaultAssignmentPolicy(event.target.value)}
-                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               >
                 <option value="MANUAL">MANUAL</option>
                 <option value="SUGGESTED">SUGGESTED</option>

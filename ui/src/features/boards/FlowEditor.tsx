@@ -110,7 +110,7 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
           <input
             value={flow.name}
             onChange={(event) => setFlow((current) => ({ ...current, name: event.target.value }))}
-            className="border border-border bg-panel px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-panel px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             placeholder="Engineering"
           />
         </label>

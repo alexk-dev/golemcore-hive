@@ -56,7 +56,7 @@ function SidebarContent({ logout, user, onNavigate }: {
                     [
                       'px-3 py-1.5 text-sm transition',
                       isActive
-                        ? 'bg-primary text-primary-foreground font-semibold'
+                        ? 'bg-primary text-primary-foreground font-bold'
                         : 'text-foreground hover:bg-muted',
                     ].join(' ')
                   }

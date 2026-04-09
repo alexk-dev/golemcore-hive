@@ -81,7 +81,7 @@ export function CardEditorPanel({
         <input
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
-          className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         />
       </label>
       <label className="grid gap-1.5">
@@ -90,7 +90,7 @@ export function CardEditorPanel({
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value)}
           rows={3}
-          className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         />
       </label>
       <label className="grid gap-1.5">
@@ -99,14 +99,14 @@ export function CardEditorPanel({
           value={prompt}
           onChange={(event) => onPromptChange(event.target.value)}
           rows={4}
-          className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         />
       </label>
       <div className="flex items-center justify-between gap-3">
         <select
           value={assignmentPolicy}
           onChange={(event) => onAssignmentPolicyChange(event.target.value)}
-          className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         >
           <option value="MANUAL">MANUAL</option>
           <option value="SUGGESTED">SUGGESTED</option>

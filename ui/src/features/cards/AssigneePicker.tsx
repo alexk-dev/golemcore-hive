@@ -71,7 +71,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Filter golems"
-          className="ml-auto min-w-[180px] border border-border bg-panel px-3 py-1.5 text-sm outline-none focus:border-primary"
+          className="ml-auto min-w-[180px] border border-border bg-panel px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/50"
         />
       </div>
 

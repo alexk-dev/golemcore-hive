@@ -222,7 +222,16 @@ export function KanbanBoardPage() {
   }, [selectedCardId]);
 
   if (!data.boardQuery.data) {
-    return <div className="panel p-6 md:p-8 text-sm text-muted-foreground">Loading board…</div>;
+    return (
+      <div className="grid gap-4">
+        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+        <div className="grid grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-48 animate-pulse rounded border border-border/50 bg-muted/50" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const cards = data.cardsQuery.data ?? [];

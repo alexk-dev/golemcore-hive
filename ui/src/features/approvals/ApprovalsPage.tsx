@@ -85,7 +85,7 @@ export function ApprovalsPage() {
                 return (
                   <div
                     key={approval.id}
-                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-panel/80"
+                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-muted/60"
                     style={{ height: ROW_HEIGHT, top: virtualRow.start }}
                   >
                     <span className="w-36 shrink-0 text-xs font-medium text-foreground">{approval.subjectType}</span>

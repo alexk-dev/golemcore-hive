@@ -33,7 +33,7 @@ export function AuditPage() {
               value={field.value}
               onChange={(event) => field.setValue(event.target.value)}
               placeholder={field.placeholder}
-              className="border border-border bg-panel/90 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             />
           </label>
         ))}

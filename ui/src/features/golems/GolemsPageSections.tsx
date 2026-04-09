@@ -40,12 +40,12 @@ export function GolemFiltersPanel({
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
         placeholder="Search by name, host, or id"
-        className="border border-border bg-panel/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary"
+        className="border border-border bg-panel/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
       />
       <select
         value={stateFilter}
         onChange={(event) => onStateFilterChange(event.target.value)}
-        className="border border-border bg-panel/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary"
+        className="border border-border bg-panel/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
       >
         {fleetStates.map((state) => (
           <option key={state || 'all'} value={state}>
@@ -56,7 +56,7 @@ export function GolemFiltersPanel({
       <select
         value={roleFilter}
         onChange={(event) => onRoleFilterChange(event.target.value)}
-        className="border border-border bg-panel/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary"
+        className="border border-border bg-panel/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
       >
         <option value="">All roles</option>
         {roles.map((role) => (
@@ -217,7 +217,7 @@ export function GolemActionDialog({
               value={reason}
               onChange={(event) => onReasonChange(event.target.value)}
               rows={2}
-              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               placeholder="Optional reason"
             />
           </label>

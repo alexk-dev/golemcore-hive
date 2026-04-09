@@ -46,7 +46,7 @@ export function GolemDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              className="border border-border bg-muted/70 px-3 py-1.5 text-sm font-semibold text-foreground"
+              className="border border-border bg-muted/70 px-3 py-1.5 text-sm font-semibold text-foreground transition hover:bg-muted"
             >
               Close
             </button>

@@ -26,7 +26,7 @@ function SortableCard({ card, allGolems, onOpenCard }: SortableCardProps) {
     : card.controlState?.runStatus === 'BLOCKED'
       ? 'bg-amber-900/40 text-amber-300'
       : card.controlState?.runStatus === 'RUNNING'
-        ? 'bg-primary/10 text-foreground'
+        ? 'bg-cyan-900/40 text-cyan-300'
         : 'bg-muted text-muted-foreground';
 
   return (
@@ -80,7 +80,7 @@ export function KanbanColumn({ column, cards, allGolems, onOpenCard }: KanbanCol
         'flex min-h-[200px] flex-col border p-2 transition',
         hasCards ? 'md:min-w-[240px]' : 'md:min-w-[200px]',
         isPrimaryLane ? 'border-border bg-panel/90' : 'border-border/70 bg-muted/55',
-        isLaneActive ? 'border-primary/40 bg-primary/5' : '',
+        isLaneActive ? 'border-primary/60 bg-primary/10' : '',
       ].join(' ')}
     >
       <div className="flex items-center justify-between gap-2 px-1">
@@ -96,7 +96,7 @@ export function KanbanColumn({ column, cards, allGolems, onOpenCard }: KanbanCol
         ref={laneDrop.setNodeRef}
         className={[
           'mt-1 flex flex-1 flex-col gap-1 border border-dashed p-0.5 transition',
-          isLaneActive ? 'border-primary/35 bg-primary/5' : 'border-transparent',
+          isLaneActive ? 'border-primary/50 bg-primary/10' : 'border-transparent',
         ].join(' ')}
       >
         <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>

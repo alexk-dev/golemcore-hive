@@ -336,7 +336,7 @@ export function InspectionSessionHeader({
               min={1}
               value={keepLast}
               onChange={(event) => onKeepLastChange(Number(event.target.value))}
-              className="border border-border bg-panel px-3 py-1.5 text-sm font-medium text-foreground outline-none transition focus:border-primary"
+              className="border border-border bg-panel px-3 py-1.5 text-sm font-medium text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             />
           </label>
           <button

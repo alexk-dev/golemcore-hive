@@ -45,18 +45,23 @@
     background: rgba(234, 120, 40, 0.25);
     color: hsl(210 20% 95%);
   }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground) / 0.6);
+  }
 }
 
 @layer components {
   .panel {
-    @apply border border-border/80 bg-panel;
+    @apply border border-border/50 bg-panel;
   }
 
   .soft-card {
-    @apply border border-border/50 bg-muted/50;
+    @apply border border-border/40 bg-muted/50;
   }
 
   .pill {
-    @apply inline-flex items-center border border-border/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground;
+    @apply inline-flex items-center border border-border/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
   }
 }

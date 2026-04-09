@@ -137,7 +137,7 @@ export function BoardEditorPage() {
               <input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               />
             </label>
             <label className="grid gap-1.5">
@@ -145,7 +145,7 @@ export function BoardEditorPage() {
               <select
                 value={defaultAssignmentPolicy}
                 onChange={(event) => setDefaultAssignmentPolicy(event.target.value)}
-                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               >
                 <option value="MANUAL">MANUAL</option>
                 <option value="SUGGESTED">SUGGESTED</option>
@@ -159,7 +159,7 @@ export function BoardEditorPage() {
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}
-              className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             />
           </label>
           <button

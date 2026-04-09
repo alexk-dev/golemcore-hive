@@ -58,7 +58,7 @@ export function BoardTeamEditor({ board, golems, roles, resolvedTeam, isPending,
               value={golemQuery}
               onChange={(event) => setGolemQuery(event.target.value)}
               placeholder="Filter"
-              className="min-w-[180px] border border-border bg-panel px-3 py-1.5 text-sm outline-none focus:border-primary"
+              className="min-w-[180px] border border-border bg-panel px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/50"
             />
           </div>
           {visibleGolems.map((golem) => {

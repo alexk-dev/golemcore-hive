@@ -34,7 +34,7 @@ export function PolicyReleaseRail({
           <input
             value={publishSummary}
             onChange={(event) => onPublishSummaryChange(event.target.value)}
-            className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             placeholder="Explain what changed in this release"
           />
         </label>
@@ -146,7 +146,7 @@ export function PolicyBindingsSection({
               aria-label="Attach golem"
               value={selectedAttachGolemId}
               onChange={(event) => onSelectedAttachGolemIdChange(event.target.value)}
-              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             >
               <option value="">Choose a golem</option>
               {allGolems.map((golem) => (

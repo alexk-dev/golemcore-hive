@@ -90,7 +90,7 @@ export function GolemChatPage() {
   const { golemId } = useParams();
 
   return (
-    <div className="flex gap-0 -m-4" style={{ height: 'calc(100vh - 0px)' }}>
+    <div className="flex gap-0 -m-3 sm:-m-4" style={{ height: 'calc(100vh - 0px)' }}>
       <DmSidebar />
       {golemId ? (
         <DmChatPane golemId={golemId} />

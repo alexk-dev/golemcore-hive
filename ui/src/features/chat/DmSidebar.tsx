@@ -35,7 +35,7 @@ export function DmSidebar() {
   });
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border/70 bg-muted/60">
+    <aside className="flex h-full w-44 shrink-0 flex-col border-r border-border/70 bg-muted/60 sm:w-60">
       <div className="flex items-center justify-between px-3 py-3">
         <h2 className="text-sm font-bold tracking-tight text-foreground">Chats</h2>
         <button

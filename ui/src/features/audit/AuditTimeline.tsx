@@ -33,11 +33,11 @@ export function AuditTimeline({ events }: AuditTimelineProps) {
   return (
     <div className="border border-border/70">
       <div className="flex items-center gap-3 border-b border-border/50 bg-muted/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-        <span className="w-40 shrink-0">Time</span>
+        <span className="hidden w-40 shrink-0 md:inline">Time</span>
         <span className="w-40 shrink-0">Type</span>
-        <span className="w-16 shrink-0">Severity</span>
+        <span className="hidden w-16 shrink-0 sm:inline">Severity</span>
         <span className="min-w-0 flex-1">Summary</span>
-        <span className="w-48 shrink-0 text-right">Actor / Target</span>
+        <span className="hidden w-48 shrink-0 text-right lg:inline">Actor / Target</span>
       </div>
       <div ref={parentRef} className="max-h-[70vh] overflow-auto">
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
@@ -52,13 +52,13 @@ export function AuditTimeline({ events }: AuditTimelineProps) {
                 className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-muted/60"
                 style={{ height: ROW_HEIGHT, top: virtualRow.start }}
               >
-                <span className="w-40 shrink-0 text-xs text-muted-foreground">
+                <span className="hidden w-40 shrink-0 text-xs text-muted-foreground md:inline">
                   {new Date(event.createdAt).toLocaleString()}
                 </span>
                 <span className="w-40 shrink-0 text-xs font-medium text-foreground">{event.eventType}</span>
-                <span className="w-16 shrink-0 text-xs text-muted-foreground">{event.severity}</span>
+                <span className="hidden w-16 shrink-0 text-xs text-muted-foreground sm:inline">{event.severity}</span>
                 <span className="min-w-0 flex-1 truncate text-sm text-foreground">{event.summary || '—'}</span>
-                <span className="w-48 shrink-0 truncate text-right text-xs text-muted-foreground">
+                <span className="hidden w-48 shrink-0 truncate text-right text-xs text-muted-foreground lg:inline">
                   {actorLabel} → {event.targetType} {event.targetId || '—'}
                 </span>
               </div>

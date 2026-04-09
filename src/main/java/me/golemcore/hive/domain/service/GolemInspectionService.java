@@ -26,6 +26,7 @@ import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.InspectionErrorCode;
 import me.golemcore.hive.domain.model.InspectionRequestBody;
 import me.golemcore.hive.domain.model.InspectionRpcResponse;
+import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.port.outbound.GolemControlDispatchPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class GolemInspectionService {
 
-    private final GolemRegistryService golemRegistryService;
+    private final GolemDirectoryUseCase golemDirectoryUseCase;
     private final GolemControlDispatchPort golemControlDispatchPort;
     private final GolemInspectionRpcService golemInspectionRpcService;
     private final AuditService auditService;
@@ -44,7 +45,7 @@ public class GolemInspectionService {
             AuthenticatedActor actor,
             String golemId,
             InspectionRequestBody requestBody) {
-        if (golemRegistryService.findGolem(golemId).isEmpty()) {
+        if (golemDirectoryUseCase.findGolem(golemId).isEmpty()) {
             return Mono.error(new InspectionException(
                     HttpStatus.NOT_FOUND,
                     InspectionErrorCode.NOT_FOUND,

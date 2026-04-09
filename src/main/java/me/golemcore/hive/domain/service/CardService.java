@@ -35,6 +35,7 @@ import me.golemcore.hive.domain.model.CardAssignmentPolicy;
 import me.golemcore.hive.domain.model.CardTransitionEvent;
 import me.golemcore.hive.domain.model.CardTransitionOrigin;
 import me.golemcore.hive.domain.model.ThreadRecord;
+import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.port.outbound.StoragePort;
 import org.springframework.stereotype.Service;
 
@@ -49,7 +50,7 @@ public class CardService {
     private final ObjectMapper objectMapper;
     private final BoardService boardService;
     private final AssignmentService assignmentService;
-    private final GolemRegistryService golemRegistryService;
+    private final GolemDirectoryUseCase golemDirectoryUseCase;
     private final AuditService auditService;
 
     public List<Card> listCards(String boardId, boolean includeArchived) {
@@ -123,7 +124,7 @@ public class CardService {
 
         if (effectiveAssigneeId != null && !effectiveAssigneeId.isBlank()) {
             String requestedAssigneeId = effectiveAssigneeId;
-            golemRegistryService.findGolem(requestedAssigneeId)
+            golemDirectoryUseCase.findGolem(requestedAssigneeId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + requestedAssigneeId));
         } else if (autoAssign && effectivePolicy == CardAssignmentPolicy.AUTOMATIC) {
             AssignmentSuggestion suggestion = assignmentService.suggestDefaultAssignee(board);
@@ -300,7 +301,7 @@ public class CardService {
     public Card assignCard(String cardId, String assigneeGolemId) {
         Card card = getCard(cardId);
         if (assigneeGolemId != null && !assigneeGolemId.isBlank()) {
-            golemRegistryService.findGolem(assigneeGolemId)
+            golemDirectoryUseCase.findGolem(assigneeGolemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + assigneeGolemId));
         }
         card.setAssigneeGolemId(assigneeGolemId != null && !assigneeGolemId.isBlank() ? assigneeGolemId : null);

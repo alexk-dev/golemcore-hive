@@ -32,8 +32,8 @@ import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.ThreadMessage;
 import me.golemcore.hive.domain.model.ThreadRecord;
 import me.golemcore.hive.domain.service.CardService;
-import me.golemcore.hive.domain.service.GolemRegistryService;
 import me.golemcore.hive.domain.service.ThreadService;
+import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,7 +51,7 @@ public class ThreadsController {
 
     private final ThreadService threadService;
     private final CardService cardService;
-    private final GolemRegistryService golemRegistryService;
+    private final GolemDirectoryUseCase golemDirectoryUseCase;
 
     @GetMapping("/cards/{cardId}/thread")
     public Mono<ResponseEntity<CardThreadResponse>> getCardThread(Principal principal, @PathVariable String cardId) {
@@ -60,7 +60,7 @@ public class ThreadsController {
             Card card = cardService.getCard(cardId);
             ThreadRecord thread = threadService.getThreadByCardId(cardId);
             Golem targetGolem = card.getAssigneeGolemId() != null
-                    ? golemRegistryService.findGolem(card.getAssigneeGolemId()).orElse(null)
+                    ? golemDirectoryUseCase.findGolem(card.getAssigneeGolemId()).orElse(null)
                     : null;
             return ResponseEntity.ok(toCardThreadResponse(card, thread, targetGolem));
         }).subscribeOn(Schedulers.boundedElastic());

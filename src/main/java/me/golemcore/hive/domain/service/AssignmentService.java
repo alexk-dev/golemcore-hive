@@ -31,13 +31,14 @@ import me.golemcore.hive.domain.model.BoardTeamFilterType;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemRoleBinding;
 import me.golemcore.hive.domain.model.GolemState;
+import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class AssignmentService {
 
-    private final GolemRegistryService golemRegistryService;
+    private final GolemDirectoryUseCase golemDirectoryUseCase;
 
     public List<AssignmentSuggestion> getTeamCandidates(Board board) {
         if (board.getTeam() == null) {
@@ -54,7 +55,7 @@ public class AssignmentService {
                 : Set.of();
 
         List<AssignmentSuggestion> suggestions = new ArrayList<>();
-        for (Golem golem : golemRegistryService.listGolems(null, null, null)) {
+        for (Golem golem : golemDirectoryUseCase.listGolems(null, null, null)) {
             List<String> reasons = new ArrayList<>();
             int score = stateScore(golem.getState());
             if (explicitIds.contains(golem.getId())) {
@@ -90,7 +91,7 @@ public class AssignmentService {
         Set<String> teamIds = getTeamCandidates(board).stream().map(AssignmentSuggestion::getGolemId)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         List<AssignmentSuggestion> suggestions = new ArrayList<>();
-        for (Golem golem : golemRegistryService.listGolems(null, null, null)) {
+        for (Golem golem : golemDirectoryUseCase.listGolems(null, null, null)) {
             List<String> reasons = new ArrayList<>();
             if (teamIds.contains(golem.getId())) {
                 reasons.add("Visible in Team");

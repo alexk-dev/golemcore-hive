@@ -1,0 +1,4 @@
+Class <me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter> implements interface <me.golemcore.hive.port.outbound.GolemControlDispatchPort> in (InMemoryGolemControlChannelAdapter.java:0)
+Constructor <me.golemcore.hive.adapter.inbound.web.controller.SystemController.<init>(me.golemcore.hive.config.HiveProperties, me.golemcore.hive.port.outbound.StoragePort, me.golemcore.hive.domain.service.NotificationService)> has parameter of type <me.golemcore.hive.port.outbound.StoragePort> in (SystemController.java:0)
+Field <me.golemcore.hive.adapter.inbound.web.controller.SystemController.storagePort> has type <me.golemcore.hive.port.outbound.StoragePort> in (SystemController.java:0)
+Method <me.golemcore.hive.adapter.inbound.web.controller.SystemController.health()> calls method <me.golemcore.hive.port.outbound.StoragePort.ensureDirectory(java.lang.String)> in (SystemController.java:50)

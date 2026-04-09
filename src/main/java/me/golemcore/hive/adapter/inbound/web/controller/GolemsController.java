@@ -33,20 +33,20 @@ import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemSummaryResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemTokenRotateRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.HeartbeatRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.RegisterGolemRequest;
-import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemCapabilitySnapshot;
 import me.golemcore.hive.domain.model.GolemPolicyBinding;
 import me.golemcore.hive.domain.model.GolemScope;
 import me.golemcore.hive.domain.model.HeartbeatPing;
+import me.golemcore.hive.fleet.application.MachineTokenPair;
+import me.golemcore.hive.fleet.application.RegistrationResult;
+import me.golemcore.hive.fleet.application.port.in.GolemEnrollmentUseCase;
+import me.golemcore.hive.fleet.application.port.in.GolemFleetUseCase;
 import me.golemcore.hive.domain.model.PolicySyncStatus;
-import me.golemcore.hive.domain.service.EnrollmentService;
-import me.golemcore.hive.domain.service.GolemRegistryService;
 import me.golemcore.hive.domain.service.PolicyGroupService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -63,15 +63,15 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class GolemsController {
 
-    private final EnrollmentService enrollmentService;
-    private final GolemRegistryService golemRegistryService;
+    private final GolemEnrollmentUseCase golemEnrollmentUseCase;
+    private final GolemFleetUseCase golemFleetUseCase;
     private final PolicyGroupService policyGroupService;
     private final HiveProperties properties;
 
     @PostMapping("/register")
     public Mono<ResponseEntity<GolemAuthResponse>> registerGolem(@Valid @RequestBody RegisterGolemRequest request) {
         return Mono.fromCallable(() -> {
-            EnrollmentService.RegistrationResult result = enrollmentService.registerGolem(
+            RegistrationResult result = golemEnrollmentUseCase.registerGolem(
                     request.enrollmentToken(),
                     request.displayName(),
                     request.hostLabel(),
@@ -80,7 +80,7 @@ public class GolemsController {
                     request.supportedChannels(),
                     toCapabilitySnapshot(request.capabilities()));
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(toAuthResponse(result.getGolem(), result.getTokens()));
+                    .body(toAuthResponse(result.golem(), result.tokens()));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -89,9 +89,9 @@ public class GolemsController {
             @PathVariable String golemId,
             @Valid @RequestBody GolemTokenRotateRequest request) {
         return Mono.fromCallable(() -> {
-            EnrollmentService.MachineTokenPair tokens = enrollmentService.rotateMachineTokens(golemId,
+            MachineTokenPair tokens = golemEnrollmentUseCase.rotateMachineTokens(golemId,
                     request.refreshToken());
-            Golem golem = golemRegistryService.findGolem(golemId).orElse(null);
+            Golem golem = golemFleetUseCase.findGolem(golemId).orElse(null);
             if (tokens == null || golem == null) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
             }
@@ -106,8 +106,8 @@ public class GolemsController {
             @RequestParam(required = false) String state,
             @RequestParam(required = false) String role) {
         return Mono.fromCallable(() -> {
-            requireOperatorActor(principal);
-            List<GolemSummaryResponse> response = golemRegistryService.listGolems(query, state, role).stream()
+            ControllerActorSupport.requireOperatorActor(principal);
+            List<GolemSummaryResponse> response = golemFleetUseCase.listGolems(query, state, role).stream()
                     .map(this::toSummaryResponse)
                     .toList();
             return ResponseEntity.ok(response);
@@ -117,8 +117,8 @@ public class GolemsController {
     @GetMapping("/{golemId}")
     public Mono<ResponseEntity<GolemDetailsResponse>> getGolem(Principal principal, @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
-            requireOperatorActor(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            ControllerActorSupport.requireOperatorActor(principal);
+            Golem golem = golemFleetUseCase.findGolem(golemId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown golem"));
             return ResponseEntity.ok(toDetailsResponse(golem));
         }).subscribeOn(Schedulers.boundedElastic());
@@ -130,9 +130,9 @@ public class GolemsController {
             @PathVariable String golemId,
             @RequestBody(required = false) HeartbeatRequest request) {
         return Mono.fromCallable(() -> {
-            requireGolemScope(principal, golemId, GolemScope.HEARTBEAT.value());
+            ControllerActorSupport.requireGolemScope(principal, golemId, GolemScope.HEARTBEAT.value());
             if (request != null && hasPolicySyncState(request)) {
-                requireGolemScope(principal, golemId, GolemScope.POLICY_WRITE.value());
+                ControllerActorSupport.requireGolemScope(principal, golemId, GolemScope.POLICY_WRITE.value());
             }
             HeartbeatPing heartbeatPing = HeartbeatPing.builder()
                     .golemId(golemId)
@@ -158,7 +158,7 @@ public class GolemsController {
                     .syncStatus(request != null ? request.syncStatus() : null)
                     .lastPolicyErrorDigest(request != null ? request.lastPolicyErrorDigest() : null)
                     .build();
-            Golem golem = golemRegistryService.updateHeartbeat(golemId, heartbeatPing);
+            Golem golem = golemFleetUseCase.updateHeartbeat(golemId, heartbeatPing);
             if (request != null) {
                 policyGroupService.recordHeartbeatSyncState(
                         golemId,
@@ -179,8 +179,8 @@ public class GolemsController {
             @PathVariable String golemId,
             @RequestBody(required = false) ActionReasonRequest request) {
         return Mono.fromCallable(() -> {
-            requirePrivilegedOperator(principal);
-            Golem golem = golemRegistryService.pauseGolem(golemId, request != null ? request.reason() : null);
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Golem golem = golemFleetUseCase.pauseGolem(golemId, request != null ? request.reason() : null);
             return ResponseEntity.ok(toDetailsResponse(golem));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -188,8 +188,8 @@ public class GolemsController {
     @PostMapping("/{golemId}:resume")
     public Mono<ResponseEntity<GolemDetailsResponse>> resumeGolem(Principal principal, @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
-            requirePrivilegedOperator(principal);
-            Golem golem = golemRegistryService.resumeGolem(golemId);
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Golem golem = golemFleetUseCase.resumeGolem(golemId);
             return ResponseEntity.ok(toDetailsResponse(golem));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -200,24 +200,24 @@ public class GolemsController {
             @PathVariable String golemId,
             @RequestBody(required = false) ActionReasonRequest request) {
         return Mono.fromCallable(() -> {
-            requirePrivilegedOperator(principal);
-            Golem golem = golemRegistryService.revokeGolem(golemId, request != null ? request.reason() : null);
+            ControllerActorSupport.requirePrivilegedOperator(principal);
+            Golem golem = golemFleetUseCase.revokeGolem(golemId, request != null ? request.reason() : null);
             return ResponseEntity.ok(toDetailsResponse(golem));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    private GolemAuthResponse toAuthResponse(Golem golem, EnrollmentService.MachineTokenPair tokens) {
+    private GolemAuthResponse toAuthResponse(Golem golem, MachineTokenPair tokens) {
         return new GolemAuthResponse(
                 golem.getId(),
-                tokens.getAccessToken(),
-                tokens.getRefreshToken(),
-                tokens.getAccessTokenExpiresAt(),
-                tokens.getRefreshTokenExpiresAt(),
+                tokens.accessToken(),
+                tokens.refreshToken(),
+                tokens.accessTokenExpiresAt(),
+                tokens.refreshTokenExpiresAt(),
                 properties.getSecurity().getJwt().getIssuer(),
                 properties.getSecurity().getJwt().getGolemAudience(),
                 golem.getControlChannelUrl(),
                 golem.getHeartbeatIntervalSeconds(),
-                tokens.getScopes());
+                tokens.scopes());
     }
 
     private GolemSummaryResponse toSummaryResponse(Golem golem) {
@@ -350,41 +350,4 @@ public class GolemsController {
         }
     }
 
-    private AuthenticatedActor requireOperatorActor(Principal principal) {
-        AuthenticatedActor actor = extractActor(principal);
-        if (actor == null || !actor.isOperator()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Operator token required");
-        }
-        return actor;
-    }
-
-    private AuthenticatedActor requirePrivilegedOperator(Principal principal) {
-        AuthenticatedActor actor = requireOperatorActor(principal);
-        if (!actor.hasAnyRole(List.of("ADMIN", "OPERATOR"))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin or operator role required");
-        }
-        return actor;
-    }
-
-    private AuthenticatedActor requireGolemScope(Principal principal, String golemId, String scope) {
-        AuthenticatedActor actor = extractActor(principal);
-        if (actor == null || !actor.isGolem()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Golem token required");
-        }
-        if (!golemId.equals(actor.getSubjectId()) || !actor.hasScope(scope)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Scope denied");
-        }
-        return actor;
-    }
-
-    private AuthenticatedActor extractActor(Principal principal) {
-        if (principal instanceof AuthenticatedActor actor) {
-            return actor;
-        }
-        if (principal instanceof Authentication authentication
-                && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
-            return actor;
-        }
-        return null;
-    }
 }

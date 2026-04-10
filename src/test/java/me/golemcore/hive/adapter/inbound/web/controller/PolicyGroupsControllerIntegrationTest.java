@@ -138,6 +138,71 @@ class PolicyGroupsControllerIntegrationTest {
                                 "maxInputTokens":200000
                               }
                             }
+                          },
+                          "tools":{
+                            "filesystemEnabled":true,
+                            "shellEnabled":true,
+                            "skillManagementEnabled":true,
+                            "skillTransitionEnabled":true,
+                            "tierEnabled":true,
+                            "goalManagementEnabled":true,
+                            "shellEnvironmentVariables":[
+                              {"name":"GITHUB_TOKEN","value":"secret-shell-token"}
+                            ]
+                          },
+                          "memory":{
+                            "version":2,
+                            "enabled":true,
+                            "softPromptBudgetTokens":1800,
+                            "maxPromptBudgetTokens":6000,
+                            "workingTopK":6,
+                            "episodicTopK":8,
+                            "semanticTopK":8,
+                            "proceduralTopK":4,
+                            "promotionEnabled":true,
+                            "promotionMinConfidence":0.75,
+                            "decayEnabled":true,
+                            "decayDays":90,
+                            "retrievalLookbackDays":30,
+                            "codeAwareExtractionEnabled":true,
+                            "disclosure":{
+                              "mode":"summary",
+                              "promptStyle":"balanced",
+                              "toolExpansionEnabled":true,
+                              "disclosureHintsEnabled":true,
+                              "detailMinScore":0.8
+                            },
+                            "reranking":{"enabled":true,"profile":"balanced"},
+                            "diagnostics":{"verbosity":"basic"}
+                          },
+                          "mcp":{
+                            "enabled":true,
+                            "defaultStartupTimeout":30,
+                            "defaultIdleTimeout":5,
+                            "catalog":[
+                              {
+                                "name":"github",
+                                "description":"GitHub tools",
+                                "command":"npx -y @modelcontextprotocol/server-github",
+                                "env":{"GITHUB_TOKEN":"secret-mcp-token"},
+                                "startupTimeoutSeconds":45,
+                                "idleTimeoutMinutes":10,
+                                "enabled":true
+                              }
+                            ]
+                          },
+                          "autonomy":{
+                            "enabled":true,
+                            "tickIntervalSeconds":1,
+                            "taskTimeLimitMinutes":10,
+                            "autoStart":true,
+                            "maxGoals":3,
+                            "modelTier":"balanced",
+                            "reflectionEnabled":true,
+                            "reflectionFailureThreshold":2,
+                            "reflectionModelTier":"reasoning",
+                            "reflectionTierPriority":true,
+                            "notifyMilestones":true
                           }
                         }
                         """)
@@ -218,11 +283,81 @@ class PolicyGroupsControllerIntegrationTest {
                                 "maxInputTokens":200000
                               }
                             }
+                          },
+                          "tools":{
+                            "filesystemEnabled":true,
+                            "shellEnabled":true,
+                            "skillManagementEnabled":true,
+                            "skillTransitionEnabled":true,
+                            "tierEnabled":true,
+                            "goalManagementEnabled":true,
+                            "shellEnvironmentVariables":[
+                              {"name":"GITHUB_TOKEN","value":"secret-shell-token"}
+                            ]
+                          },
+                          "memory":{
+                            "version":2,
+                            "enabled":true,
+                            "softPromptBudgetTokens":1800,
+                            "maxPromptBudgetTokens":6000,
+                            "workingTopK":6,
+                            "episodicTopK":8,
+                            "semanticTopK":8,
+                            "proceduralTopK":4,
+                            "promotionEnabled":true,
+                            "promotionMinConfidence":0.75,
+                            "decayEnabled":true,
+                            "decayDays":90,
+                            "retrievalLookbackDays":30,
+                            "codeAwareExtractionEnabled":true,
+                            "disclosure":{
+                              "mode":"summary",
+                              "promptStyle":"balanced",
+                              "toolExpansionEnabled":true,
+                              "disclosureHintsEnabled":true,
+                              "detailMinScore":0.8
+                            },
+                            "reranking":{"enabled":true,"profile":"balanced"},
+                            "diagnostics":{"verbosity":"basic"}
+                          },
+                          "mcp":{
+                            "enabled":true,
+                            "defaultStartupTimeout":30,
+                            "defaultIdleTimeout":5,
+                            "catalog":[
+                              {
+                                "name":"github",
+                                "description":"GitHub tools",
+                                "command":"npx -y @modelcontextprotocol/server-github",
+                                "env":{"GITHUB_TOKEN":"secret-mcp-token"},
+                                "startupTimeoutSeconds":45,
+                                "idleTimeoutMinutes":10,
+                                "enabled":true
+                              }
+                            ]
+                          },
+                          "autonomy":{
+                            "enabled":true,
+                            "tickIntervalSeconds":1,
+                            "taskTimeLimitMinutes":10,
+                            "autoStart":true,
+                            "maxGoals":3,
+                            "modelTier":"balanced",
+                            "reflectionEnabled":true,
+                            "reflectionFailureThreshold":2,
+                            "reflectionModelTier":"reasoning",
+                            "reflectionTierPriority":true,
+                            "notifyMilestones":true
                           }
                         }
                         """)
                 .exchange()
-                .expectStatus().isOk();
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.draftSpec.tools.shellEnvironmentVariables[0].valuePresent").isEqualTo(true)
+                .jsonPath("$.draftSpec.mcp.catalog[0].envPresent.GITHUB_TOKEN").isEqualTo(true)
+                .jsonPath("$.draftSpec.memory.disclosure.mode").isEqualTo("summary")
+                .jsonPath("$.draftSpec.autonomy.enabled").isEqualTo(true);
 
         webTestClient.post()
                 .uri("/api/v1/policy-groups/{groupId}/publish", policyGroupId)
@@ -300,37 +435,7 @@ class PolicyGroupsControllerIntegrationTest {
                 .uri("/api/v1/policy-groups/{groupId}/draft", policyGroupId)
                 .header(HttpHeaders.AUTHORIZATION, operatorToken)
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
-                .bodyValue("""
-                        {
-                          "schemaVersion":1,
-                          "llmProviders":{
-                            "openai":{
-                              "apiKey":"secret-openai",
-                              "baseUrl":"https://api.example.com/openai",
-                              "requestTimeoutSeconds":30,
-                              "apiType":"openai"
-                            }
-                          },
-                          "modelRouter":{
-                            "temperature":0.7,
-                            "dynamicTierEnabled":true,
-                            "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
-                            "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
-                          },
-                          "modelCatalog":{
-                            "defaultModel":"openai/gpt-5.1",
-                            "models":{
-                              "openai/gpt-5.1":{
-                                "provider":"openai",
-                                "displayName":"openai/gpt-5.1",
-                                "supportsVision":true,
-                                "supportsTemperature":true,
-                                "maxInputTokens":200000
-                              }
-                            }
-                          }
-                        }
-                        """)
+                .bodyValue(runtimePolicyDraftJson())
                 .exchange()
                 .expectStatus().isOk();
 
@@ -371,7 +476,11 @@ class PolicyGroupsControllerIntegrationTest {
                 .jsonPath("$.policyGroupId").isEqualTo(policyGroupId)
                 .jsonPath("$.targetVersion").isEqualTo(1)
                 .jsonPath("$.checksum").isEqualTo(checksum)
-                .jsonPath("$.llmProviders.openai.apiKey").isEqualTo("secret-openai");
+                .jsonPath("$.llmProviders.openai.apiKey").isEqualTo("secret-openai")
+                .jsonPath("$.tools.shellEnvironmentVariables[0].value").isEqualTo("secret-shell-token")
+                .jsonPath("$.memory.disclosure.mode").isEqualTo("summary")
+                .jsonPath("$.mcp.catalog[0].env.GITHUB_TOKEN").isEqualTo("secret-mcp-token")
+                .jsonPath("$.autonomy.enabled").isEqualTo(true);
 
         webTestClient.post()
                 .uri("/api/v1/golems/{golemId}/policy-apply-result", golem.golemId())
@@ -808,6 +917,105 @@ class PolicyGroupsControllerIntegrationTest {
                 .expectStatus().isCreated();
 
         return policyGroupId;
+    }
+
+    private String runtimePolicyDraftJson() {
+        return """
+                {
+                  "schemaVersion":1,
+                  "llmProviders":{
+                    "openai":{
+                      "apiKey":"secret-openai",
+                      "baseUrl":"https://api.example.com/openai",
+                      "requestTimeoutSeconds":30,
+                      "apiType":"openai"
+                    }
+                  },
+                  "modelRouter":{
+                    "temperature":0.7,
+                    "dynamicTierEnabled":true,
+                    "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
+                    "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
+                  },
+                  "modelCatalog":{
+                    "defaultModel":"openai/gpt-5.1",
+                    "models":{
+                      "openai/gpt-5.1":{
+                        "provider":"openai",
+                        "displayName":"openai/gpt-5.1",
+                        "supportsVision":true,
+                        "supportsTemperature":true,
+                        "maxInputTokens":200000
+                      }
+                    }
+                  },
+                  "tools":{
+                    "filesystemEnabled":true,
+                    "shellEnabled":true,
+                    "skillManagementEnabled":true,
+                    "skillTransitionEnabled":true,
+                    "tierEnabled":true,
+                    "goalManagementEnabled":true,
+                    "shellEnvironmentVariables":[
+                      {"name":"GITHUB_TOKEN","value":"secret-shell-token"}
+                    ]
+                  },
+                  "memory":{
+                    "version":2,
+                    "enabled":true,
+                    "softPromptBudgetTokens":1800,
+                    "maxPromptBudgetTokens":6000,
+                    "workingTopK":6,
+                    "episodicTopK":8,
+                    "semanticTopK":8,
+                    "proceduralTopK":4,
+                    "promotionEnabled":true,
+                    "promotionMinConfidence":0.75,
+                    "decayEnabled":true,
+                    "decayDays":90,
+                    "retrievalLookbackDays":30,
+                    "codeAwareExtractionEnabled":true,
+                    "disclosure":{
+                      "mode":"summary",
+                      "promptStyle":"balanced",
+                      "toolExpansionEnabled":true,
+                      "disclosureHintsEnabled":true,
+                      "detailMinScore":0.8
+                    },
+                    "reranking":{"enabled":true,"profile":"balanced"},
+                    "diagnostics":{"verbosity":"basic"}
+                  },
+                  "mcp":{
+                    "enabled":true,
+                    "defaultStartupTimeout":30,
+                    "defaultIdleTimeout":5,
+                    "catalog":[
+                      {
+                        "name":"github",
+                        "description":"GitHub tools",
+                        "command":"npx -y @modelcontextprotocol/server-github",
+                        "env":{"GITHUB_TOKEN":"secret-mcp-token"},
+                        "startupTimeoutSeconds":45,
+                        "idleTimeoutMinutes":10,
+                        "enabled":true
+                      }
+                    ]
+                  },
+                  "autonomy":{
+                    "enabled":true,
+                    "tickIntervalSeconds":1,
+                    "taskTimeLimitMinutes":10,
+                    "autoStart":true,
+                    "maxGoals":3,
+                    "modelTier":"balanced",
+                    "reflectionEnabled":true,
+                    "reflectionFailureThreshold":2,
+                    "reflectionModelTier":"reasoning",
+                    "reflectionTierPriority":true,
+                    "notifyMilestones":true
+                  }
+                }
+                """;
     }
 
     private void bindPolicyGroup(String operatorToken, String golemId, String policyGroupId) {

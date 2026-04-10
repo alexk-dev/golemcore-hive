@@ -18,10 +18,12 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.policies;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
-public record UpdatePolicyGroupDraftRequest(Integer schemaVersion,Map<String,PolicyProviderConfigRequest>llmProviders,PolicyModelRouterRequest modelRouter,PolicyModelCatalogRequest modelCatalog){
+public record UpdatePolicyGroupDraftRequest(Integer schemaVersion,Map<String,PolicyProviderConfigRequest>llmProviders,PolicyModelRouterRequest modelRouter,PolicyModelCatalogRequest modelCatalog,PolicyToolsConfigRequest tools,PolicyMemoryConfigRequest memory,PolicyMcpConfigRequest mcp,PolicyAutonomyConfigRequest autonomy){
 
 public UpdatePolicyGroupDraftRequest{llmProviders=llmProviders!=null?llmProviders:new LinkedHashMap<>();}
 
@@ -37,4 +39,26 @@ public record PolicyModelCatalogRequest(String defaultModel,Map<String,PolicyMod
 
 public PolicyModelCatalogRequest{models=models!=null?models:new LinkedHashMap<>();}}
 
-public record PolicyModelConfigRequest(String provider,String displayName,Boolean supportsVision,Boolean supportsTemperature,Integer maxInputTokens){}}
+public record PolicyModelConfigRequest(String provider,String displayName,Boolean supportsVision,Boolean supportsTemperature,Integer maxInputTokens){}
+
+public record PolicyToolsConfigRequest(Boolean filesystemEnabled,Boolean shellEnabled,Boolean skillManagementEnabled,Boolean skillTransitionEnabled,Boolean tierEnabled,Boolean goalManagementEnabled,List<PolicyEnvironmentVariableRequest>shellEnvironmentVariables){
+
+public PolicyToolsConfigRequest{shellEnvironmentVariables=shellEnvironmentVariables!=null?shellEnvironmentVariables:new ArrayList<>();}}
+
+public record PolicyEnvironmentVariableRequest(String name,String value){}
+
+public record PolicyMemoryConfigRequest(Integer version,Boolean enabled,Integer softPromptBudgetTokens,Integer maxPromptBudgetTokens,Integer workingTopK,Integer episodicTopK,Integer semanticTopK,Integer proceduralTopK,Boolean promotionEnabled,Double promotionMinConfidence,Boolean decayEnabled,Integer decayDays,Integer retrievalLookbackDays,Boolean codeAwareExtractionEnabled,PolicyMemoryDisclosureRequest disclosure,PolicyMemoryRerankingRequest reranking,PolicyMemoryDiagnosticsRequest diagnostics){}
+
+public record PolicyMemoryDisclosureRequest(String mode,String promptStyle,Boolean toolExpansionEnabled,Boolean disclosureHintsEnabled,Double detailMinScore){}
+
+public record PolicyMemoryRerankingRequest(Boolean enabled,String profile){}
+
+public record PolicyMemoryDiagnosticsRequest(String verbosity){}
+
+public record PolicyMcpConfigRequest(Boolean enabled,Integer defaultStartupTimeout,Integer defaultIdleTimeout,List<PolicyMcpCatalogEntryRequest>catalog){
+
+public PolicyMcpConfigRequest{catalog=catalog!=null?catalog:new ArrayList<>();}}
+
+public record PolicyMcpCatalogEntryRequest(String name,String description,String command,Map<String,String>env,Integer startupTimeoutSeconds,Integer idleTimeoutMinutes,Boolean enabled){}
+
+public record PolicyAutonomyConfigRequest(Boolean enabled,Integer tickIntervalSeconds,Integer taskTimeLimitMinutes,Boolean autoStart,Integer maxGoals,String modelTier,Boolean reflectionEnabled,Integer reflectionFailureThreshold,String reflectionModelTier,Boolean reflectionTierPriority,Boolean notifyMilestones){}}

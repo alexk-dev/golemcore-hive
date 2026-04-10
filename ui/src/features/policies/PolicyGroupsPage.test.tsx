@@ -39,6 +39,79 @@ const unbindGolemPolicyGroupMock = vi.mocked(unbindGolemPolicyGroup);
 const rollbackPolicyGroupMock = vi.mocked(rollbackPolicyGroup);
 const listGolemsMock = vi.mocked(listGolems);
 
+function runtimeSpecResponse() {
+  return {
+    tools: {
+      filesystemEnabled: true,
+      shellEnabled: true,
+      skillManagementEnabled: true,
+      skillTransitionEnabled: true,
+      tierEnabled: true,
+      goalManagementEnabled: true,
+      shellEnvironmentVariables: [{ name: 'GITHUB_TOKEN', valuePresent: true }],
+    },
+    memory: {
+      version: 2,
+      enabled: true,
+      softPromptBudgetTokens: 1800,
+      maxPromptBudgetTokens: 6000,
+      workingTopK: 6,
+      episodicTopK: 8,
+      semanticTopK: 8,
+      proceduralTopK: 4,
+      promotionEnabled: true,
+      promotionMinConfidence: 0.75,
+      decayEnabled: true,
+      decayDays: 90,
+      retrievalLookbackDays: 30,
+      codeAwareExtractionEnabled: true,
+      disclosure: {
+        mode: 'summary',
+        promptStyle: 'balanced',
+        toolExpansionEnabled: true,
+        disclosureHintsEnabled: true,
+        detailMinScore: 0.8,
+      },
+      reranking: {
+        enabled: true,
+        profile: 'balanced',
+      },
+      diagnostics: {
+        verbosity: 'basic',
+      },
+    },
+    mcp: {
+      enabled: true,
+      defaultStartupTimeout: 30,
+      defaultIdleTimeout: 5,
+      catalog: [
+        {
+          name: 'github',
+          description: 'GitHub tools',
+          command: 'npx -y @modelcontextprotocol/server-github',
+          envPresent: { GITHUB_TOKEN: true },
+          startupTimeoutSeconds: 45,
+          idleTimeoutMinutes: 10,
+          enabled: true,
+        },
+      ],
+    },
+    autonomy: {
+      enabled: true,
+      tickIntervalSeconds: 1,
+      taskTimeLimitMinutes: 10,
+      autoStart: true,
+      maxGoals: 3,
+      modelTier: 'balanced',
+      reflectionEnabled: true,
+      reflectionFailureThreshold: 2,
+      reflectionModelTier: 'reasoning',
+      reflectionTierPriority: true,
+      notifyMilestones: true,
+    },
+  };
+}
+
 describe('PolicyGroupsPage', () => {
   beforeEach(() => {
     listPolicyGroupsMock.mockResolvedValue([
@@ -86,6 +159,7 @@ describe('PolicyGroupsPage', () => {
               },
             },
           },
+          ...runtimeSpecResponse(),
           checksum: 'draft-checksum',
         },
         createdAt: '2026-04-08T10:00:00Z',
@@ -140,6 +214,7 @@ describe('PolicyGroupsPage', () => {
             },
           },
         },
+        ...runtimeSpecResponse(),
         checksum: 'draft-checksum',
       },
       createdAt: '2026-04-08T10:00:00Z',
@@ -189,6 +264,7 @@ describe('PolicyGroupsPage', () => {
               },
             },
           },
+          ...runtimeSpecResponse(),
           checksum: 'version-two-checksum',
         },
         checksum: 'version-two-checksum',
@@ -212,6 +288,7 @@ describe('PolicyGroupsPage', () => {
             defaultModel: 'openai/gpt-4.1',
             models: {},
           },
+          ...runtimeSpecResponse(),
           checksum: 'version-one-checksum',
         },
         checksum: 'version-one-checksum',
@@ -322,6 +399,35 @@ describe('PolicyGroupsPage', () => {
                 },
               },
             },
+            tools: {
+              filesystemEnabled: true,
+              shellEnabled: false,
+              skillManagementEnabled: true,
+              skillTransitionEnabled: true,
+              tierEnabled: true,
+              goalManagementEnabled: true,
+              shellEnvironmentVariables: [{ name: 'GITHUB_TOKEN', value: '' }],
+            },
+            memory: {
+              enabled: true,
+              disclosure: {
+                mode: 'summary',
+              },
+            },
+            mcp: {
+              enabled: true,
+              catalog: [
+                {
+                  name: 'github',
+                  env: {
+                    GITHUB_TOKEN: '',
+                  },
+                },
+              ],
+            },
+            autonomy: {
+              enabled: true,
+            },
           },
           null,
           2,
@@ -338,6 +444,24 @@ describe('PolicyGroupsPage', () => {
             openai: expect.objectContaining({
               requestTimeoutSeconds: 45,
             }),
+          }),
+          tools: expect.objectContaining({
+            shellEnabled: false,
+            shellEnvironmentVariables: [expect.objectContaining({ name: 'GITHUB_TOKEN', value: '' })],
+          }),
+          memory: expect.objectContaining({
+            disclosure: expect.objectContaining({ mode: 'summary' }),
+          }),
+          mcp: expect.objectContaining({
+            catalog: [
+              expect.objectContaining({
+                name: 'github',
+                env: expect.objectContaining({ GITHUB_TOKEN: '' }),
+              }),
+            ],
+          }),
+          autonomy: expect.objectContaining({
+            enabled: true,
           }),
         }),
       );

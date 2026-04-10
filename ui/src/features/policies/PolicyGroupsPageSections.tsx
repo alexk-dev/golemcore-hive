@@ -217,7 +217,7 @@ export function PolicyDraftSection({
         <div>
           <h3 className="text-base font-bold tracking-tight text-foreground">Draft spec</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Raw policy package editor. Existing provider secrets stay preserved unless you explicitly set a new `apiKey`.
+            Raw runtime policy editor. Existing provider, tool, and MCP secrets stay preserved unless you set new values.
           </p>
         </div>
         <button
@@ -262,21 +262,52 @@ function MetricCard({ label, value }: { label: string; value: string }) {
 
 function SecretStatusPanel({ spec }: { spec: PolicyGroupSpecResponse | null }) {
   const providerEntries = Object.entries(spec?.llmProviders ?? {});
+  const runtimeSecretEntries = collectRuntimeSecretEntries(spec);
 
   return (
     <div className="mt-4 grid gap-2 md:grid-cols-2">
-      {providerEntries.length ? (
-        providerEntries.map(([providerKey, provider]) => (
-          <div key={providerKey} className="border border-border/70 bg-panel/80 px-3 py-2 text-xs text-muted-foreground">
-            <p className="font-semibold text-foreground">{providerKey}</p>
-            <p className="mt-1">Secret {provider.apiKeyPresent ? 'present' : 'missing'} · {provider.apiType || 'unknown type'}</p>
-          </div>
-        ))
-      ) : (
-        <div className="border border-border/70 bg-panel/80 px-3 py-2 text-xs text-muted-foreground">
-          No providers configured in the current draft.
+      {providerEntries.map(([providerKey, provider]) => (
+        <div key={providerKey} className="border border-border/70 bg-panel/80 px-3 py-2 text-xs text-muted-foreground">
+          <p className="font-semibold text-foreground">{providerKey}</p>
+          <p className="mt-1">Secret {provider.apiKeyPresent ? 'present' : 'missing'} · {provider.apiType || 'unknown type'}</p>
         </div>
-      )}
+      ))}
+      {runtimeSecretEntries.map((entry) => (
+        <div key={entry.key} className="border border-border/70 bg-panel/80 px-3 py-2 text-xs text-muted-foreground">
+          <p className="font-semibold text-foreground">{entry.label}</p>
+          <p className="mt-1">Secret {entry.present ? 'present' : 'missing'} · {entry.scope}</p>
+        </div>
+      ))}
+      {!providerEntries.length && !runtimeSecretEntries.length ? (
+        <div className="border border-border/70 bg-panel/80 px-3 py-2 text-xs text-muted-foreground">
+          No runtime secrets configured in the current draft.
+        </div>
+      ) : null}
     </div>
   );
+}
+
+interface RuntimeSecretEntry {
+  key: string;
+  label: string;
+  present: boolean;
+  scope: string;
+}
+
+function collectRuntimeSecretEntries(spec: PolicyGroupSpecResponse | null): RuntimeSecretEntry[] {
+  const shellEntries = (spec?.tools?.shellEnvironmentVariables ?? []).map((variable, index) => ({
+    key: `tools.shell.${variable.name ?? index}`,
+    label: variable.name ? `tools.shell.${variable.name}` : `tools.shell[${index}]`,
+    present: variable.valuePresent,
+    scope: 'shell env',
+  }));
+  const mcpEntries = (spec?.mcp?.catalog ?? []).flatMap((server, serverIndex) => (
+    Object.entries(server.envPresent ?? {}).map(([envKey, present]) => ({
+      key: `mcp.${server.name ?? serverIndex}.${envKey}`,
+      label: `mcp.${server.name ?? serverIndex}.${envKey}`,
+      present,
+      scope: 'MCP env',
+    }))
+  ));
+  return [...shellEntries, ...mcpEntries];
 }

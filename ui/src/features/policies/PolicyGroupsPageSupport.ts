@@ -1,5 +1,17 @@
 import type { GolemSummary } from '../../lib/api/golemsApi';
-import type { PolicyDraftSpec, PolicyGroupSpecResponse } from '../../lib/api/policiesApi';
+import type {
+  PolicyAutonomyConfigResponse,
+  PolicyDraftAutonomyConfig,
+  PolicyDraftMcpCatalogEntry,
+  PolicyDraftMcpConfig,
+  PolicyDraftMemoryConfig,
+  PolicyDraftSpec,
+  PolicyDraftToolsConfig,
+  PolicyGroupSpecResponse,
+  PolicyMcpConfigResponse,
+  PolicyMemoryConfigResponse,
+  PolicyToolsConfigResponse,
+} from '../../lib/api/policiesApi';
 
 export const EMPTY_DRAFT_SPEC: PolicyDraftSpec = {
   schemaVersion: 1,
@@ -13,6 +25,64 @@ export const EMPTY_DRAFT_SPEC: PolicyDraftSpec = {
   modelCatalog: {
     defaultModel: null,
     models: {},
+  },
+  tools: {
+    filesystemEnabled: true,
+    shellEnabled: true,
+    skillManagementEnabled: true,
+    skillTransitionEnabled: true,
+    tierEnabled: true,
+    goalManagementEnabled: true,
+    shellEnvironmentVariables: [],
+  },
+  memory: {
+    version: 2,
+    enabled: true,
+    softPromptBudgetTokens: 1800,
+    maxPromptBudgetTokens: 6000,
+    workingTopK: 6,
+    episodicTopK: 8,
+    semanticTopK: 8,
+    proceduralTopK: 4,
+    promotionEnabled: true,
+    promotionMinConfidence: 0.75,
+    decayEnabled: true,
+    decayDays: 90,
+    retrievalLookbackDays: 30,
+    codeAwareExtractionEnabled: true,
+    disclosure: {
+      mode: 'summary',
+      promptStyle: 'balanced',
+      toolExpansionEnabled: true,
+      disclosureHintsEnabled: true,
+      detailMinScore: 0.8,
+    },
+    reranking: {
+      enabled: true,
+      profile: 'balanced',
+    },
+    diagnostics: {
+      verbosity: 'basic',
+    },
+  },
+  mcp: {
+    enabled: true,
+    defaultStartupTimeout: 30,
+    defaultIdleTimeout: 5,
+    catalog: [],
+  },
+  autonomy: {
+    enabled: false,
+    tickIntervalSeconds: 1,
+    taskTimeLimitMinutes: 10,
+    autoStart: true,
+    maxGoals: 3,
+    modelTier: 'balanced',
+    reflectionEnabled: true,
+    reflectionFailureThreshold: 2,
+    reflectionModelTier: null,
+    reflectionTierPriority: null,
+    notifyMilestones: true,
   },
 };
 
@@ -110,6 +180,115 @@ export function toEditableDraft(spec: PolicyGroupSpecResponse | null | undefined
           ),
         }
       : EMPTY_DRAFT_SPEC.modelCatalog,
+    tools: toEditableTools(spec.tools),
+    memory: toEditableMemory(spec.memory),
+    mcp: toEditableMcp(spec.mcp),
+    autonomy: toEditableAutonomy(spec.autonomy),
+  };
+}
+
+function toEditableTools(tools: PolicyToolsConfigResponse | null | undefined): PolicyDraftToolsConfig | null {
+  if (!tools) {
+    return EMPTY_DRAFT_SPEC.tools;
+  }
+  return {
+    filesystemEnabled: tools.filesystemEnabled,
+    shellEnabled: tools.shellEnabled,
+    skillManagementEnabled: tools.skillManagementEnabled,
+    skillTransitionEnabled: tools.skillTransitionEnabled,
+    tierEnabled: tools.tierEnabled,
+    goalManagementEnabled: tools.goalManagementEnabled,
+    shellEnvironmentVariables: (tools.shellEnvironmentVariables ?? []).map((variable) => ({
+      name: variable.name,
+      value: variable.valuePresent ? '' : null,
+    })),
+  };
+}
+
+function toEditableMemory(memory: PolicyMemoryConfigResponse | null | undefined): PolicyDraftMemoryConfig | null {
+  if (!memory) {
+    return EMPTY_DRAFT_SPEC.memory;
+  }
+  return {
+    version: memory.version,
+    enabled: memory.enabled,
+    softPromptBudgetTokens: memory.softPromptBudgetTokens,
+    maxPromptBudgetTokens: memory.maxPromptBudgetTokens,
+    workingTopK: memory.workingTopK,
+    episodicTopK: memory.episodicTopK,
+    semanticTopK: memory.semanticTopK,
+    proceduralTopK: memory.proceduralTopK,
+    promotionEnabled: memory.promotionEnabled,
+    promotionMinConfidence: memory.promotionMinConfidence,
+    decayEnabled: memory.decayEnabled,
+    decayDays: memory.decayDays,
+    retrievalLookbackDays: memory.retrievalLookbackDays,
+    codeAwareExtractionEnabled: memory.codeAwareExtractionEnabled,
+    disclosure: memory.disclosure
+      ? {
+          mode: memory.disclosure.mode,
+          promptStyle: memory.disclosure.promptStyle,
+          toolExpansionEnabled: memory.disclosure.toolExpansionEnabled,
+          disclosureHintsEnabled: memory.disclosure.disclosureHintsEnabled,
+          detailMinScore: memory.disclosure.detailMinScore,
+        }
+      : null,
+    reranking: memory.reranking
+      ? {
+          enabled: memory.reranking.enabled,
+          profile: memory.reranking.profile,
+        }
+      : null,
+    diagnostics: memory.diagnostics
+      ? {
+          verbosity: memory.diagnostics.verbosity,
+        }
+      : null,
+  };
+}
+
+function toEditableMcp(mcp: PolicyMcpConfigResponse | null | undefined): PolicyDraftMcpConfig | null {
+  if (!mcp) {
+    return EMPTY_DRAFT_SPEC.mcp;
+  }
+  return {
+    enabled: mcp.enabled,
+    defaultStartupTimeout: mcp.defaultStartupTimeout,
+    defaultIdleTimeout: mcp.defaultIdleTimeout,
+    catalog: (mcp.catalog ?? []).map(toEditableMcpCatalogEntry),
+  };
+}
+
+function toEditableMcpCatalogEntry(entry: PolicyMcpConfigResponse['catalog'][number]): PolicyDraftMcpCatalogEntry {
+  return {
+    name: entry.name,
+    description: entry.description,
+    command: entry.command,
+    env: Object.fromEntries(Object.keys(entry.envPresent ?? {}).map((envKey) => [envKey, ''])),
+    startupTimeoutSeconds: entry.startupTimeoutSeconds,
+    idleTimeoutMinutes: entry.idleTimeoutMinutes,
+    enabled: entry.enabled,
+  };
+}
+
+function toEditableAutonomy(
+  autonomy: PolicyAutonomyConfigResponse | null | undefined,
+): PolicyDraftAutonomyConfig | null {
+  if (!autonomy) {
+    return EMPTY_DRAFT_SPEC.autonomy;
+  }
+  return {
+    enabled: autonomy.enabled,
+    tickIntervalSeconds: autonomy.tickIntervalSeconds,
+    taskTimeLimitMinutes: autonomy.taskTimeLimitMinutes,
+    autoStart: autonomy.autoStart,
+    maxGoals: autonomy.maxGoals,
+    modelTier: autonomy.modelTier,
+    reflectionEnabled: autonomy.reflectionEnabled,
+    reflectionFailureThreshold: autonomy.reflectionFailureThreshold,
+    reflectionModelTier: autonomy.reflectionModelTier,
+    reflectionTierPriority: autonomy.reflectionTierPriority,
+    notifyMilestones: autonomy.notifyMilestones,
   };
 }
 

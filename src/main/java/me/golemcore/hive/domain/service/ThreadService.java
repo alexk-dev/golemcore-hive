@@ -56,7 +56,7 @@ public class ThreadService {
             return Optional.empty();
         }
         try {
-            return Optional.of(objectMapper.readValue(content, ThreadRecord.class));
+            return Optional.of(normalizeThread(objectMapper.readValue(content, ThreadRecord.class)));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to deserialize thread " + threadId, exception);
         }
@@ -102,7 +102,7 @@ public class ThreadService {
                 continue;
             }
             try {
-                threads.add(objectMapper.readValue(content, ThreadRecord.class));
+                threads.add(normalizeThread(objectMapper.readValue(content, ThreadRecord.class)));
             } catch (JsonProcessingException exception) {
                 throw new IllegalStateException("Failed to deserialize thread " + path, exception);
             }
@@ -190,6 +190,10 @@ public class ThreadService {
 
     public void syncThreadWithCard(Card card) {
         ThreadRecord thread = getOrCreateThreadForCard(card);
+        thread.setServiceId(card.getServiceId());
+        thread.setBoardId(card.getBoardId());
+        thread.setTeamId(card.getTeamId());
+        thread.setObjectiveId(card.getObjectiveId());
         thread.setTitle(card.getTitle());
         thread.setAssignedGolemId(card.getAssigneeGolemId());
         thread.setUpdatedAt(card.getUpdatedAt() != null ? card.getUpdatedAt() : Instant.now());
@@ -209,6 +213,22 @@ public class ThreadService {
         if (existing.isPresent()) {
             ThreadRecord thread = existing.get();
             boolean changed = false;
+            if (!java.util.Objects.equals(thread.getServiceId(), card.getServiceId())) {
+                thread.setServiceId(card.getServiceId());
+                changed = true;
+            }
+            if (!java.util.Objects.equals(thread.getBoardId(), card.getBoardId())) {
+                thread.setBoardId(card.getBoardId());
+                changed = true;
+            }
+            if (!java.util.Objects.equals(thread.getTeamId(), card.getTeamId())) {
+                thread.setTeamId(card.getTeamId());
+                changed = true;
+            }
+            if (!java.util.Objects.equals(thread.getObjectiveId(), card.getObjectiveId())) {
+                thread.setObjectiveId(card.getObjectiveId());
+                changed = true;
+            }
             if (!java.util.Objects.equals(thread.getTitle(), card.getTitle())) {
                 thread.setTitle(card.getTitle());
                 changed = true;
@@ -227,7 +247,10 @@ public class ThreadService {
         Instant now = card.getCreatedAt() != null ? card.getCreatedAt() : Instant.now();
         ThreadRecord thread = ThreadRecord.builder()
                 .id(card.getThreadId())
+                .serviceId(card.getServiceId())
                 .boardId(card.getBoardId())
+                .teamId(card.getTeamId())
+                .objectiveId(card.getObjectiveId())
                 .cardId(card.getId())
                 .title(card.getTitle())
                 .assignedGolemId(card.getAssigneeGolemId())
@@ -252,7 +275,11 @@ public class ThreadService {
 
     private void saveThread(ThreadRecord thread) {
         try {
-            storagePort.putTextAtomic(THREADS_DIR, thread.getId() + ".json", objectMapper.writeValueAsString(thread));
+            ThreadRecord normalizedThread = normalizeThread(thread);
+            storagePort.putTextAtomic(
+                    THREADS_DIR,
+                    normalizedThread.getId() + ".json",
+                    objectMapper.writeValueAsString(normalizedThread));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize thread " + thread.getId(), exception);
         }
@@ -265,5 +292,21 @@ public class ThreadService {
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize thread message " + message.getId(), exception);
         }
+    }
+
+    private ThreadRecord normalizeThread(ThreadRecord thread) {
+        String effectiveServiceId = firstNonBlank(thread.getServiceId(), thread.getBoardId());
+        thread.setServiceId(effectiveServiceId);
+        thread.setBoardId(firstNonBlank(thread.getBoardId(), effectiveServiceId));
+        return thread;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 }

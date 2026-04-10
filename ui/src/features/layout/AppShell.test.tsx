@@ -17,19 +17,22 @@ vi.mock('../../app/providers/useAuth', () => ({
 
 describe('AppShell', () => {
   it('renders grouped navigation sections', () => {
-    renderShell('/boards');
+    renderShell('/services');
 
     expect(screen.getByText('Hive')).toBeInTheDocument();
     expect(screen.getByText('Operate')).toBeInTheDocument();
     expect(screen.getByText('Fleet')).toBeInTheDocument();
     expect(screen.getByText('Observe')).toBeInTheDocument();
-    expect(screen.getByText('Boards')).toBeInTheDocument();
+    expect(screen.getByText('Organization')).toBeInTheDocument();
+    expect(screen.getByText('Objectives')).toBeInTheDocument();
+    expect(screen.getByText('Services')).toBeInTheDocument();
+    expect(screen.getByText('Teams')).toBeInTheDocument();
     expect(screen.getByText('Golems')).toBeInTheDocument();
     expect(screen.getByText('Roles')).toBeInTheDocument();
   });
 
   it('renders child route content', () => {
-    renderShell('/boards/board_1');
+    renderShell('/services/service_1');
 
     expect(screen.getByText('Board page')).toBeInTheDocument();
     expect(screen.getByText('Hive')).toBeInTheDocument();
@@ -41,8 +44,11 @@ function renderShell(initialEntry: string) {
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route element={<AppShell />}>
-          <Route path="/boards" element={<div>Boards page</div>} />
-          <Route path="/boards/:boardId" element={<div>Board page</div>} />
+          <Route path="/" element={<div>Organization page</div>} />
+          <Route path="/objectives" element={<div>Objectives page</div>} />
+          <Route path="/services" element={<div>Services page</div>} />
+          <Route path="/teams" element={<div>Teams page</div>} />
+          <Route path="/services/:serviceId" element={<div>Board page</div>} />
         </Route>
       </Routes>
     </MemoryRouter>,

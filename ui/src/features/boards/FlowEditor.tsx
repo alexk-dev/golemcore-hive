@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { previewBoardFlow, type BoardDetail, type BoardFlow } from '../../lib/api/boardsApi';
+import type { BoardDetail, BoardFlow } from '../../lib/api/boardsApi';
+import { previewServiceFlow } from '../../lib/api/servicesApi';
 import { FlowColumnsEditor, FlowPreviewPanel, FlowSignalMappingsEditor, FlowTransitionsEditor } from './FlowEditorSections';
 
 interface FlowEditorProps {
@@ -33,7 +34,7 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
 
   async function handlePreview() {
     try {
-      const nextPreview = await previewBoardFlow(board.id, flow);
+      const nextPreview = await previewServiceFlow(board.id, flow);
       setPreview(nextPreview);
       setPreviewError(null);
     } catch (error) {

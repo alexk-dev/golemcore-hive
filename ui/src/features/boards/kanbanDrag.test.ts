@@ -53,7 +53,10 @@ function createCard(overrides: Partial<ReturnType<typeof createCardBase>> = {}) 
 function createCardBase() {
   return {
     id: 'card_base',
+    serviceId: 'board_1',
     boardId: 'board_1',
+    teamId: null,
+    objectiveId: null,
     threadId: 'thread_1',
     title: 'Card title',
     columnId: 'ready',

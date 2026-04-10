@@ -238,6 +238,108 @@ class BoardControllerIntegrationTest {
                 .expectStatus().isBadRequest();
     }
 
+    @Test
+    void shouldListAllCardsWithoutServiceFilter() throws Exception {
+        String operatorToken = loginAsAdmin();
+        String firstBoardId = createBoard(operatorToken);
+        String secondBoardId = createBoard(operatorToken);
+
+        String firstCardId = createCard(
+                operatorToken,
+                firstBoardId,
+                """
+                        {
+                          "boardId":"%s",
+                          "title":"First service card",
+                          "description":"Visible in unfiltered list",
+                          "prompt":"Process the first service card.",
+                          "columnId":"inbox",
+                          "assignmentPolicy":"MANUAL",
+                          "autoAssign":false
+                        }
+                        """.formatted(firstBoardId));
+        String secondCardId = createCard(
+                operatorToken,
+                secondBoardId,
+                """
+                        {
+                          "boardId":"%s",
+                          "title":"Second service card",
+                          "description":"Also visible in unfiltered list",
+                          "prompt":"Process the second service card.",
+                          "columnId":"inbox",
+                          "assignmentPolicy":"MANUAL",
+                          "autoAssign":false
+                        }
+                        """.formatted(secondBoardId));
+
+        EntityExchangeResult<String> cardsResult = webTestClient.get()
+                .uri("/api/v1/cards")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .returnResult();
+
+        JsonNode cardsPayload = objectMapper.readTree(cardsResult.getResponseBody());
+        Set<String> visibleCardIds = new HashSet<>();
+        for (JsonNode cardNode : cardsPayload) {
+            visibleCardIds.add(cardNode.get("id").asText());
+        }
+
+        Assertions.assertTrue(visibleCardIds.contains(firstCardId));
+        Assertions.assertTrue(visibleCardIds.contains(secondCardId));
+    }
+
+    @Test
+    void shouldExposeBoardBackedServicesApiAliases() throws Exception {
+        String operatorToken = loginAsAdmin();
+        String boardId = createBoard(operatorToken);
+
+        webTestClient.get()
+                .uri("/api/v1/services")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].id").isEqualTo(boardId)
+                .jsonPath("$[0].name").isEqualTo("Platform Flow");
+
+        webTestClient.get()
+                .uri("/api/v1/services/{serviceId}", boardId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(boardId)
+                .jsonPath("$.name").isEqualTo("Platform Flow")
+                .jsonPath("$.templateKey").isEqualTo("engineering");
+
+        webTestClient.patch()
+                .uri("/api/v1/services/{serviceId}", boardId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "name":"Platform Service",
+                          "description":"Service alias compatibility update"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.name").isEqualTo("Platform Service")
+                .jsonPath("$.description").isEqualTo("Service alias compatibility update");
+
+        webTestClient.get()
+                .uri("/api/v1/services/{serviceId}/team", boardId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.boardId").isEqualTo(boardId);
+    }
+
     private String createBoard(String operatorToken) throws Exception {
         EntityExchangeResult<String> createBoardResult = webTestClient.post()
                 .uri("/api/v1/boards")

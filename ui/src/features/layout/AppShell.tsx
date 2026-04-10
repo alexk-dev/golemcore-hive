@@ -5,7 +5,10 @@ const navGroups = [
   {
     label: 'Operate',
     items: [
-      { to: '/boards', label: 'Boards' },
+      { to: '/', label: 'Organization', end: true },
+      { to: '/objectives', label: 'Objectives' },
+      { to: '/services', label: 'Services' },
+      { to: '/teams', label: 'Teams' },
       { to: '/approvals', label: 'Approvals' },
     ],
   },

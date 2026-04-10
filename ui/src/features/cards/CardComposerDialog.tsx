@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { BoardDetail } from '../../lib/api/boardsApi';
 import type { CardAssigneeOptions } from '../../lib/api/cardsApi';
 import type { GolemSummary } from '../../lib/api/golemsApi';
+import type { ObjectiveDetail } from '../../lib/api/objectivesApi';
+import type { TeamDetail } from '../../lib/api/teamsApi';
 import { AssignmentPolicyBadge } from './AssignmentPolicyBadge';
 import { AssigneePicker } from './AssigneePicker';
 
@@ -9,6 +11,8 @@ interface CardComposerDialogProps {
   open: boolean;
   board: BoardDetail | null;
   allGolems: GolemSummary[];
+  teams: TeamDetail[];
+  objectives: ObjectiveDetail[];
   assigneeOptions: CardAssigneeOptions | null;
   isPending: boolean;
   onClose: () => void;
@@ -17,6 +21,8 @@ interface CardComposerDialogProps {
     prompt: string;
     description: string;
     columnId: string;
+    teamId: string;
+    objectiveId: string;
     assigneeGolemId: string | null;
     assignmentPolicy: string;
     autoAssign: boolean;
@@ -27,6 +33,8 @@ export function CardComposerDialog({
   open,
   board,
   allGolems,
+  teams,
+  objectives,
   assigneeOptions,
   isPending,
   onClose,
@@ -36,6 +44,8 @@ export function CardComposerDialog({
   const [prompt, setPrompt] = useState('');
   const [description, setDescription] = useState('');
   const [columnId, setColumnId] = useState('');
+  const [teamId, setTeamId] = useState('');
+  const [objectiveId, setObjectiveId] = useState('');
   const [assigneeGolemId, setAssigneeGolemId] = useState<string | null>(null);
   const [assignmentPolicy, setAssignmentPolicy] = useState('MANUAL');
   const [autoAssign, setAutoAssign] = useState(false);
@@ -48,6 +58,8 @@ export function CardComposerDialog({
     setPrompt('');
     setDescription('');
     setColumnId(board.flow.defaultColumnId);
+    setTeamId('');
+    setObjectiveId('');
     setAssigneeGolemId(null);
     setAssignmentPolicy(board.defaultAssignmentPolicy);
     setAutoAssign(false);
@@ -57,6 +69,10 @@ export function CardComposerDialog({
     return null;
   }
 
+  const serviceTeams = teams.filter((candidate) => candidate.ownedServiceIds.includes(board.id));
+  const visibleTeams = serviceTeams.length ? serviceTeams : teams;
+  const serviceObjectives = objectives.filter((candidate) => candidate.serviceIds.includes(board.id));
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await onSubmit({
@@ -64,6 +80,8 @@ export function CardComposerDialog({
       prompt,
       description,
       columnId,
+      teamId,
+      objectiveId,
       assigneeGolemId,
       assignmentPolicy,
       autoAssign,
@@ -140,6 +158,48 @@ export function CardComposerDialog({
                   <option value="MANUAL">MANUAL</option>
                   <option value="SUGGESTED">SUGGESTED</option>
                   <option value="AUTOMATIC">AUTOMATIC</option>
+                </select>
+              </label>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="grid gap-1.5">
+                <span className="text-sm font-semibold text-foreground">Team</span>
+                <select
+                  value={teamId}
+                  onChange={(event) => setTeamId(event.target.value)}
+                  className="border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                >
+                  <option value="">No team</option>
+                  {visibleTeams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1.5">
+                <span className="text-sm font-semibold text-foreground">Objective</span>
+                <select
+                  value={objectiveId}
+                  onChange={(event) => {
+                    const nextObjectiveId = event.target.value;
+                    setObjectiveId(nextObjectiveId);
+                    if (!nextObjectiveId || teamId) {
+                      return;
+                    }
+                    const nextObjective = serviceObjectives.find((candidate) => candidate.id === nextObjectiveId);
+                    if (nextObjective?.ownerTeamId) {
+                      setTeamId(nextObjective.ownerTeamId);
+                    }
+                  }}
+                  className="border border-border bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+                >
+                  <option value="">No objective</option>
+                  {serviceObjectives.map((objective) => (
+                    <option key={objective.id} value={objective.id}>
+                      {objective.name}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>

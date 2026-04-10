@@ -1,8 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getBoard, getBoardTeam, updateBoard, updateBoardFlow, updateBoardTeam, type BoardFlow } from '../../lib/api/boardsApi';
 import { listGolemRoles, listGolems } from '../../lib/api/golemsApi';
+import {
+  getService,
+  getServiceRouting,
+  updateService,
+  updateServiceFlow,
+  updateServiceRouting,
+  type ServiceFlow,
+} from '../../lib/api/servicesApi';
 import { BoardTeamEditor } from './BoardTeamEditor';
 import { FlowEditor } from './FlowEditor';
 
@@ -10,18 +17,18 @@ type SettingsTab = 'metadata' | 'team' | 'flow';
 
 const tabs: { key: SettingsTab; label: string }[] = [
   { key: 'metadata', label: 'Metadata' },
-  { key: 'team', label: 'Team' },
-  { key: 'flow', label: 'Flow' },
+  { key: 'team', label: 'Routing' },
+  { key: 'flow', label: 'Workflow' },
 ];
 
 export function BoardEditorPage() {
-  const { boardId = '' } = useParams();
+  const { serviceId = '' } = useParams();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<SettingsTab>('metadata');
 
   const boardQuery = useQuery({
-    queryKey: ['board', boardId],
-    queryFn: () => getBoard(boardId),
+    queryKey: ['board', serviceId],
+    queryFn: () => getService(serviceId),
   });
   const golemsQuery = useQuery({
     queryKey: ['golems', 'board-editor'],
@@ -32,9 +39,9 @@ export function BoardEditorPage() {
     queryFn: listGolemRoles,
   });
   const teamQuery = useQuery({
-    queryKey: ['board-team', boardId],
-    queryFn: () => getBoardTeam(boardId),
-    enabled: Boolean(boardId),
+    queryKey: ['board-team', serviceId],
+    queryFn: () => getServiceRouting(serviceId),
+    enabled: Boolean(serviceId),
   });
 
   const [name, setName] = useState('');
@@ -43,38 +50,50 @@ export function BoardEditorPage() {
 
   const updateBoardMutation = useMutation({
     mutationFn: async () =>
-      updateBoard(boardId, {
+      updateService(serviceId, {
         name,
         description,
         defaultAssignmentPolicy,
       }),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['board', boardId] }),
+        queryClient.invalidateQueries({ queryKey: ['board', serviceId] }),
         queryClient.invalidateQueries({ queryKey: ['boards'] }),
+        queryClient.invalidateQueries({ queryKey: ['services'] }),
       ]);
     },
   });
 
   const updateTeamMutation = useMutation({
-    mutationFn: ({ boardId, team }: { boardId: string; team: { explicitGolemIds: string[]; filters: { type: string; value: string }[] } }) =>
-      updateBoardTeam(boardId, team),
+    mutationFn: ({
+      serviceId,
+      team,
+    }: {
+      serviceId: string;
+      team: { explicitGolemIds: string[]; filters: { type: string; value: string }[] };
+    }) => updateServiceRouting(serviceId, team),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['board', boardId] }),
-        queryClient.invalidateQueries({ queryKey: ['board-team', boardId] }),
+        queryClient.invalidateQueries({ queryKey: ['board', serviceId] }),
+        queryClient.invalidateQueries({ queryKey: ['board-team', serviceId] }),
       ]);
     },
   });
 
   const updateFlowMutation = useMutation({
-    mutationFn: ({ boardId, input }: { boardId: string; input: { flow: BoardFlow; columnRemap?: Record<string, string> } }) =>
-      updateBoardFlow(boardId, input),
+    mutationFn: ({
+      serviceId,
+      input,
+    }: {
+      serviceId: string;
+      input: { flow: ServiceFlow; columnRemap?: Record<string, string> };
+    }) => updateServiceFlow(serviceId, input),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['board', boardId] }),
+        queryClient.invalidateQueries({ queryKey: ['board', serviceId] }),
         queryClient.invalidateQueries({ queryKey: ['boards'] }),
-        queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
+        queryClient.invalidateQueries({ queryKey: ['services'] }),
+        queryClient.invalidateQueries({ queryKey: ['cards', serviceId] }),
       ]);
     },
   });
@@ -89,7 +108,7 @@ export function BoardEditorPage() {
   }, [boardQuery.data]);
 
   if (!boardQuery.data) {
-    return <div className="panel p-6 text-sm text-muted-foreground">Loading board settings…</div>;
+    return <div className="panel p-6 text-sm text-muted-foreground">Loading service settings…</div>;
   }
 
   async function handleMetadataSubmit(event: FormEvent<HTMLFormElement>) {
@@ -102,11 +121,11 @@ export function BoardEditorPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold tracking-tight text-foreground">{boardQuery.data.name} settings</h2>
         <div className="flex flex-wrap gap-2">
-          <Link to="/boards" className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
-            All boards
+          <Link to="/services" className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
+            All services
           </Link>
-          <Link to={`/boards/${boardId}`} className="bg-foreground px-4 py-2 text-sm font-semibold text-white">
-            Open kanban
+          <Link to={`/services/${serviceId}`} className="bg-foreground px-4 py-2 text-sm font-semibold text-white">
+            Open queue
           </Link>
         </div>
       </div>
@@ -180,7 +199,7 @@ export function BoardEditorPage() {
           resolvedTeam={teamQuery.data ?? null}
           isPending={updateTeamMutation.isPending}
           onSave={async (input) => {
-            await updateTeamMutation.mutateAsync({ boardId, team: input });
+            await updateTeamMutation.mutateAsync({ serviceId, team: input });
           }}
         />
       ) : null}
@@ -190,7 +209,7 @@ export function BoardEditorPage() {
           board={boardQuery.data}
           isPending={updateFlowMutation.isPending}
           onSave={async (input) => {
-            await updateFlowMutation.mutateAsync({ boardId, input });
+            await updateFlowMutation.mutateAsync({ serviceId, input });
           }}
         />
       ) : null}

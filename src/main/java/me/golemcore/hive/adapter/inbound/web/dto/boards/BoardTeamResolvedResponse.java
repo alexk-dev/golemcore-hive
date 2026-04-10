@@ -20,4 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import java.util.List;
 
-public record BoardTeamResolvedResponse(String boardId,List<AssignmentSuggestionResponse>candidates){}
+public record BoardTeamResolvedResponse(String serviceId,String boardId,List<AssignmentSuggestionResponse>candidates){}

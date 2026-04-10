@@ -2,10 +2,12 @@ import { closestCorners, DndContext, PointerSensor, useSensor, useSensors } from
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getBoard, getBoardTeam } from '../../lib/api/boardsApi';
 import { archiveCard, assignCard, createCard, getCard, getCardAssignees, listCards, moveCard, updateCard } from '../../lib/api/cardsApi';
 import { cancelThreadRun, createThreadCommand, type CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import { listGolems } from '../../lib/api/golemsApi';
+import { listObjectives } from '../../lib/api/objectivesApi';
+import { getService, getServiceRouting } from '../../lib/api/servicesApi';
+import { listTeams } from '../../lib/api/teamsApi';
 import { readErrorMessage } from '../../lib/format';
 import { CardComposerDialog } from '../cards/CardComposerDialog';
 import { CardDetailsDrawer } from '../cards/CardDetailsDrawer';
@@ -17,13 +19,13 @@ import { useKanbanAutoScroll } from './useKanbanAutoScroll';
 const KANBAN_BACKGROUND_REFRESH_MS = 10_000;
 
 function useKanbanBoardData({
-  boardId,
+  serviceId,
   selectedCardId,
   onComposerClosed,
   onCardClosed,
   onControlError,
 }: {
-  boardId: string;
+  serviceId: string;
   selectedCardId: string | null;
   onComposerClosed: () => void;
   onCardClosed: () => void;
@@ -32,16 +34,16 @@ function useKanbanBoardData({
   const queryClient = useQueryClient();
 
   const boardQuery = useQuery({
-    queryKey: ['board', boardId],
-    queryFn: () => getBoard(boardId),
-    enabled: Boolean(boardId),
+    queryKey: ['board', serviceId],
+    queryFn: () => getService(serviceId),
+    enabled: Boolean(serviceId),
     refetchInterval: KANBAN_BACKGROUND_REFRESH_MS,
     refetchIntervalInBackground: true,
   });
   const cardsQuery = useQuery({
-    queryKey: ['cards', boardId],
-    queryFn: () => listCards(boardId),
-    enabled: Boolean(boardId),
+    queryKey: ['cards', serviceId],
+    queryFn: () => listCards(serviceId),
+    enabled: Boolean(serviceId),
     refetchInterval: KANBAN_BACKGROUND_REFRESH_MS,
     refetchIntervalInBackground: true,
   });
@@ -50,9 +52,17 @@ function useKanbanBoardData({
     queryFn: () => listGolems(),
   });
   const teamQuery = useQuery({
-    queryKey: ['board-team', boardId],
-    queryFn: () => getBoardTeam(boardId),
-    enabled: Boolean(boardId),
+    queryKey: ['board-team', serviceId],
+    queryFn: () => getServiceRouting(serviceId),
+    enabled: Boolean(serviceId),
+  });
+  const teamsQuery = useQuery({
+    queryKey: ['teams'],
+    queryFn: () => listTeams(),
+  });
+  const objectivesQuery = useQuery({
+    queryKey: ['objectives'],
+    queryFn: () => listObjectives(),
   });
   const cardDetailsQuery = useQuery({
     queryKey: ['card', selectedCardId],
@@ -71,8 +81,9 @@ function useKanbanBoardData({
 
   const invalidateBoardQueries = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
-      queryClient.invalidateQueries({ queryKey: ['board', boardId] }),
+      queryClient.invalidateQueries({ queryKey: ['cards', serviceId] }),
+      queryClient.invalidateQueries({ queryKey: ['board', serviceId] }),
+      queryClient.invalidateQueries({ queryKey: ['services'] }),
     ]);
   };
   const invalidateSelectedCardQueries = async () => {
@@ -106,11 +117,24 @@ function useKanbanBoardData({
     },
   });
   const updateCardMutation = useMutation({
-    mutationFn: ({ cardId, input }: { cardId: string; input: { title?: string; description?: string; prompt?: string; assignmentPolicy?: string } }) =>
+    mutationFn: ({
+      cardId,
+      input,
+    }: {
+      cardId: string;
+      input: {
+        title?: string;
+        description?: string;
+        prompt?: string;
+        teamId?: string;
+        objectiveId?: string;
+        assignmentPolicy?: string;
+      };
+    }) =>
       updateCard(cardId, input),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
+        queryClient.invalidateQueries({ queryKey: ['cards', serviceId] }),
         queryClient.invalidateQueries({ queryKey: ['card', selectedCardId] }),
       ]);
     },
@@ -119,7 +143,7 @@ function useKanbanBoardData({
     mutationFn: ({ cardId, assigneeGolemId }: { cardId: string; assigneeGolemId: string | null }) => assignCard(cardId, assigneeGolemId),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
+        queryClient.invalidateQueries({ queryKey: ['cards', serviceId] }),
         invalidateSelectedCardQueries(),
       ]);
     },
@@ -138,7 +162,7 @@ function useKanbanBoardData({
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
+        queryClient.invalidateQueries({ queryKey: ['cards', serviceId] }),
         queryClient.invalidateQueries({ queryKey: ['card', selectedCardId] }),
         invalidateThreadQueries(),
       ]);
@@ -154,7 +178,7 @@ function useKanbanBoardData({
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['cards', boardId] }),
+        queryClient.invalidateQueries({ queryKey: ['cards', serviceId] }),
         queryClient.invalidateQueries({ queryKey: ['card', selectedCardId] }),
         invalidateThreadQueries(),
       ]);
@@ -170,6 +194,7 @@ function useKanbanBoardData({
     }
     return {
       cardId: 'draft',
+      serviceId: boardQuery.data.id,
       boardId: boardQuery.data.id,
       teamCandidates: teamQuery.data?.candidates ?? [],
       allCandidates:
@@ -189,6 +214,8 @@ function useKanbanBoardData({
     boardQuery,
     cardsQuery,
     golemsQuery,
+    teamsQuery,
+    objectivesQuery,
     cardDetailsQuery,
     assigneeOptionsQuery,
     composerAssigneeOptions,
@@ -203,14 +230,14 @@ function useKanbanBoardData({
 }
 
 export function KanbanBoardPage() {
-  const { boardId = '' } = useParams();
+  const { serviceId = '' } = useParams();
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [controlError, setControlError] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const autoScroll = useKanbanAutoScroll();
   const data = useKanbanBoardData({
-    boardId,
+    serviceId,
     selectedCardId,
     onComposerClosed: () => setIsComposerOpen(false),
     onCardClosed: () => setSelectedCardId(null),
@@ -222,7 +249,7 @@ export function KanbanBoardPage() {
   }, [selectedCardId]);
 
   if (!data.boardQuery.data) {
-    return <div className="panel p-6 md:p-8 text-sm text-muted-foreground">Loading board…</div>;
+    return <div className="panel p-6 md:p-8 text-sm text-muted-foreground">Loading service queue…</div>;
   }
 
   const cards = data.cardsQuery.data ?? [];
@@ -232,7 +259,7 @@ export function KanbanBoardPage() {
   return (
     <div className="grid gap-4">
       <KanbanBoardHeader
-        boardId={boardId}
+        serviceId={serviceId}
         boardName={data.boardQuery.data.name}
         templateKey={data.boardQuery.data.templateKey}
         columnCount={data.boardQuery.data.flow.columns.length}
@@ -276,16 +303,20 @@ export function KanbanBoardPage() {
         open={isComposerOpen}
         board={data.boardQuery.data}
         allGolems={data.golemsQuery.data ?? []}
+        teams={data.teamsQuery.data ?? []}
+        objectives={data.objectivesQuery.data ?? []}
         assigneeOptions={data.composerAssigneeOptions}
         isPending={data.createCardMutation.isPending}
         onClose={() => setIsComposerOpen(false)}
         onSubmit={async (input) => {
           await data.createCardMutation.mutateAsync({
-            boardId,
+            serviceId,
             title: input.title,
             prompt: input.prompt,
             description: input.description,
             columnId: input.columnId,
+            teamId: input.teamId,
+            objectiveId: input.objectiveId,
             assigneeGolemId: input.assigneeGolemId,
             assignmentPolicy: input.assignmentPolicy,
             autoAssign: input.autoAssign,
@@ -298,6 +329,8 @@ export function KanbanBoardPage() {
         card={data.cardDetailsQuery.data ?? null}
         assigneeOptions={data.assigneeOptionsQuery.data ?? null}
         allGolems={data.golemsQuery.data ?? []}
+        teams={data.teamsQuery.data ?? []}
+        objectives={data.objectivesQuery.data ?? []}
         isPending={
           data.updateCardMutation.isPending || data.assignCardMutation.isPending || data.archiveCardMutation.isPending
         }
@@ -339,4 +372,3 @@ export function KanbanBoardPage() {
     </div>
   );
 }
-

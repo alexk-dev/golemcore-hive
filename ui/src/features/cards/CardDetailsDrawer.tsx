@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import type { CardAssigneeOptions, CardDetail } from '../../lib/api/cardsApi';
 import type { CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import type { GolemSummary } from '../../lib/api/golemsApi';
+import type { ObjectiveDetail } from '../../lib/api/objectivesApi';
+import type { TeamDetail } from '../../lib/api/teamsApi';
 import {
   AssigneeRoutingPanel,
   CardDispatchPanel,
@@ -16,9 +18,18 @@ interface CardDetailsDrawerProps {
   card: CardDetail | null;
   assigneeOptions: CardAssigneeOptions | null;
   allGolems: GolemSummary[];
+  teams: TeamDetail[];
+  objectives: ObjectiveDetail[];
   isPending: boolean;
   onClose: () => void;
-  onUpdate: (input: { title: string; description: string; prompt: string; assignmentPolicy: string }) => Promise<void>;
+  onUpdate: (input: {
+    title: string;
+    description: string;
+    prompt: string;
+    teamId: string;
+    objectiveId: string;
+    assignmentPolicy: string;
+  }) => Promise<void>;
   onAssign: (assigneeGolemId: string | null) => Promise<void>;
   onArchive: () => Promise<void>;
   onDispatchCommand: (input: CreateThreadCommandInput) => Promise<void>;
@@ -32,6 +43,8 @@ function useCardDetailsDrafts(card: CardDetail | null) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [prompt, setPrompt] = useState('');
+  const [teamId, setTeamId] = useState('');
+  const [objectiveId, setObjectiveId] = useState('');
   const [assignmentPolicy, setAssignmentPolicy] = useState('MANUAL');
   const [hydratedCardId, setHydratedCardId] = useState<string | null>(null);
 
@@ -42,6 +55,8 @@ function useCardDetailsDrafts(card: CardDetail | null) {
     setTitle(card.title ?? '');
     setDescription(card.description ?? '');
     setPrompt(card.prompt ?? '');
+    setTeamId(card.teamId ?? '');
+    setObjectiveId(card.objectiveId ?? '');
     setAssignmentPolicy(card.assignmentPolicy || 'MANUAL');
     setHydratedCardId(card.id);
   }, [card, hydratedCardId]);
@@ -50,10 +65,14 @@ function useCardDetailsDrafts(card: CardDetail | null) {
     title,
     description,
     prompt,
+    teamId,
+    objectiveId,
     assignmentPolicy,
     setTitle,
     setDescription,
     setPrompt,
+    setTeamId,
+    setObjectiveId,
     setAssignmentPolicy,
   };
 }
@@ -63,6 +82,8 @@ export function CardDetailsDrawer({
   card,
   assigneeOptions,
   allGolems,
+  teams,
+  objectives,
   isPending,
   onClose,
   onUpdate,
@@ -93,27 +114,32 @@ export function CardDetailsDrawer({
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_300px]">
           <div className="grid gap-4">
-            <CardDispatchPanel
-              card={card}
-              isDispatchPending={isDispatchPending}
-              onSubmit={onDispatchCommand}
-            />
+            <CardDispatchPanel card={card} isDispatchPending={isDispatchPending} onSubmit={onDispatchCommand} />
 
             <CardEditorPanel
+              serviceId={card.serviceId}
+              teams={teams}
+              objectives={objectives}
               title={drafts.title}
               description={drafts.description}
               prompt={drafts.prompt}
+              teamId={drafts.teamId}
+              objectiveId={drafts.objectiveId}
               assignmentPolicy={drafts.assignmentPolicy}
               isPending={isPending}
               onTitleChange={drafts.setTitle}
               onDescriptionChange={drafts.setDescription}
               onPromptChange={drafts.setPrompt}
+              onTeamChange={drafts.setTeamId}
+              onObjectiveChange={drafts.setObjectiveId}
               onAssignmentPolicyChange={drafts.setAssignmentPolicy}
               onSubmit={async () => {
                 await onUpdate({
                   title: drafts.title,
                   description: drafts.description,
                   prompt: drafts.prompt,
+                  teamId: drafts.teamId,
+                  objectiveId: drafts.objectiveId,
                   assignmentPolicy: drafts.assignmentPolicy,
                 });
               }}
@@ -121,11 +147,7 @@ export function CardDetailsDrawer({
           </div>
 
           <div className="grid gap-4">
-            <ExecutionControlPanel
-              controlState={card.controlState}
-              isCancelPending={isCancelPending}
-              onCancelRun={onCancelRun}
-            />
+            <ExecutionControlPanel controlState={card.controlState} isCancelPending={isCancelPending} onCancelRun={onCancelRun} />
             <AssigneeRoutingPanel
               assigneeOptions={assigneeOptions}
               allGolems={allGolems}

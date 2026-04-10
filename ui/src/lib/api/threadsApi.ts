@@ -10,7 +10,10 @@ export interface ThreadTargetGolem {
 export interface CardThread {
   threadId: string;
   cardId: string;
+  serviceId: string;
   boardId: string;
+  teamId: string | null;
+  objectiveId: string | null;
   title: string;
   cardColumnId: string;
   assignedGolemId: string | null;

@@ -20,4 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record CreateCardRequest(@NotBlank String boardId,@NotBlank String title,String description,@NotBlank String prompt,String columnId,String assigneeGolemId,String assignmentPolicy,boolean autoAssign){}
+public record CreateCardRequest(String serviceId,String boardId,@NotBlank String title,String description,@NotBlank String prompt,String columnId,String teamId,String objectiveId,String assigneeGolemId,String assignmentPolicy,boolean autoAssign){}

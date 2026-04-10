@@ -2,15 +2,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getBoard, getBoardTeam } from '../../lib/api/boardsApi';
 import { archiveCard, assignCard, createCard, getCard, getCardAssignees, listCards, moveCard, updateCard } from '../../lib/api/cardsApi';
 import { cancelThreadRun, createThreadCommand } from '../../lib/api/commandsApi';
 import { listGolems } from '../../lib/api/golemsApi';
+import { listObjectives } from '../../lib/api/objectivesApi';
+import { getService, getServiceRouting } from '../../lib/api/servicesApi';
+import { listTeams } from '../../lib/api/teamsApi';
 import { KanbanBoardPage } from './KanbanBoardPage';
 
-vi.mock('../../lib/api/boardsApi', () => ({
-  getBoard: vi.fn(),
-  getBoardTeam: vi.fn(),
+vi.mock('../../lib/api/servicesApi', () => ({
+  getService: vi.fn(),
+  getServiceRouting: vi.fn(),
 }));
 
 vi.mock('../../lib/api/cardsApi', () => ({
@@ -31,6 +33,14 @@ vi.mock('../../lib/api/commandsApi', () => ({
 
 vi.mock('../../lib/api/golemsApi', () => ({
   listGolems: vi.fn(),
+}));
+
+vi.mock('../../lib/api/teamsApi', () => ({
+  listTeams: vi.fn(),
+}));
+
+vi.mock('../../lib/api/objectivesApi', () => ({
+  listObjectives: vi.fn(),
 }));
 
 vi.mock('./KanbanColumn', () => ({
@@ -60,12 +70,14 @@ vi.mock('../cards/CardDetailsDrawer', () => ({
     ) : null,
 }));
 
-const getBoardMock = vi.mocked(getBoard);
-const getBoardTeamMock = vi.mocked(getBoardTeam);
+const getServiceMock = vi.mocked(getService);
+const getServiceRoutingMock = vi.mocked(getServiceRouting);
 const listCardsMock = vi.mocked(listCards);
 const getCardMock = vi.mocked(getCard);
 const getCardAssigneesMock = vi.mocked(getCardAssignees);
 const listGolemsMock = vi.mocked(listGolems);
+const listTeamsMock = vi.mocked(listTeams);
+const listObjectivesMock = vi.mocked(listObjectives);
 
 describe('KanbanBoardPage', () => {
   beforeEach(() => {
@@ -86,7 +98,7 @@ describe('KanbanBoardPage', () => {
 
   it('refreshes the board, cards, and open card drawer every 10 seconds', async () => {
     let boardVersion = 0;
-    getBoardMock.mockImplementation(async () => createBoardDetail(++boardVersion));
+    getServiceMock.mockImplementation(async () => createBoardDetail(++boardVersion));
 
     let cardsVersion = 0;
     listCardsMock.mockImplementation(async () => [createCardSummary(++cardsVersion)]);
@@ -96,15 +108,19 @@ describe('KanbanBoardPage', () => {
 
     getCardAssigneesMock.mockResolvedValue({
       cardId: 'card_1',
+      serviceId: 'board_1',
       boardId: 'board_1',
       teamCandidates: [],
       allCandidates: [],
     });
-    getBoardTeamMock.mockResolvedValue({
+    getServiceRoutingMock.mockResolvedValue({
+      serviceId: 'board_1',
       boardId: 'board_1',
       candidates: [],
     });
     listGolemsMock.mockResolvedValue([]);
+    listTeamsMock.mockResolvedValue([]);
+    listObjectivesMock.mockResolvedValue([]);
 
     renderPage();
 
@@ -118,7 +134,7 @@ describe('KanbanBoardPage', () => {
     await flushQueries();
 
     expect(screen.getByText('Detail v1')).toBeInTheDocument();
-    expect(getBoardMock).toHaveBeenCalledTimes(1);
+    expect(getServiceMock).toHaveBeenCalledTimes(1);
     expect(listCardsMock).toHaveBeenCalledTimes(1);
     expect(getCardMock).toHaveBeenCalledTimes(1);
     expect(getCardAssigneesMock).toHaveBeenCalledTimes(1);
@@ -133,7 +149,7 @@ describe('KanbanBoardPage', () => {
     expect(screen.getByRole('button', { name: 'Card v2' })).toBeInTheDocument();
     expect(screen.getByText('Detail v2')).toBeInTheDocument();
 
-    expect(getBoardMock).toHaveBeenCalledTimes(2);
+    expect(getServiceMock).toHaveBeenCalledTimes(2);
     expect(listCardsMock).toHaveBeenCalledTimes(2);
     expect(getCardMock).toHaveBeenCalledTimes(2);
     expect(getCardAssigneesMock).toHaveBeenCalledTimes(2);
@@ -151,9 +167,9 @@ function renderPage() {
 
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/boards/board_1']}>
+      <MemoryRouter initialEntries={['/services/board_1']}>
         <Routes>
-          <Route path="/boards/:boardId" element={<KanbanBoardPage />} />
+          <Route path="/services/:serviceId" element={<KanbanBoardPage />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -204,7 +220,10 @@ function createBoardDetail(version: number) {
 function createCardSummary(version: number) {
   return {
     id: 'card_1',
+    serviceId: 'board_1',
     boardId: 'board_1',
+    teamId: null,
+    objectiveId: null,
     threadId: 'thread_1',
     title: `Card v${version}`,
     columnId: 'ready',

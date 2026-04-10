@@ -27,7 +27,10 @@ export interface CardControlState {
 
 export interface CardSummary {
   id: string;
+  serviceId: string;
   boardId: string;
+  teamId: string | null;
+  objectiveId: string | null;
   threadId: string;
   title: string;
   columnId: string;
@@ -40,7 +43,10 @@ export interface CardSummary {
 
 export interface CardDetail {
   id: string;
+  serviceId: string;
   boardId: string;
+  teamId: string | null;
+  objectiveId: string | null;
   threadId: string;
   title: string;
   description: string | null;
@@ -60,13 +66,16 @@ export interface CardDetail {
 
 export interface CardAssigneeOptions {
   cardId: string;
+  serviceId: string;
   boardId: string;
   teamCandidates: AssignmentSuggestion[];
   allCandidates: AssignmentSuggestion[];
 }
 
-export function listCards(boardId: string, includeArchived = false) {
-  return apiRequest<CardSummary[]>(`/api/v1/cards?boardId=${encodeURIComponent(boardId)}&includeArchived=${includeArchived}`);
+export function listCards(serviceId: string, includeArchived = false) {
+  return apiRequest<CardSummary[]>(
+    `/api/v1/cards?serviceId=${encodeURIComponent(serviceId)}&includeArchived=${includeArchived}`,
+  );
 }
 
 export function getCard(cardId: string) {
@@ -74,11 +83,13 @@ export function getCard(cardId: string) {
 }
 
 export function createCard(input: {
-  boardId: string;
+  serviceId: string;
   title: string;
   prompt: string;
   description?: string;
   columnId?: string;
+  teamId?: string;
+  objectiveId?: string;
   assigneeGolemId?: string | null;
   assignmentPolicy?: string;
   autoAssign?: boolean;
@@ -89,7 +100,17 @@ export function createCard(input: {
   });
 }
 
-export function updateCard(cardId: string, input: { title?: string; description?: string; prompt?: string; assignmentPolicy?: string }) {
+export function updateCard(
+  cardId: string,
+  input: {
+    title?: string;
+    description?: string;
+    prompt?: string;
+    teamId?: string;
+    objectiveId?: string;
+    assignmentPolicy?: string;
+  },
+) {
   return apiRequest<CardDetail>(`/api/v1/cards/${cardId}`, {
     method: 'PATCH',
     body: JSON.stringify(input),

@@ -34,6 +34,8 @@ import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardAssignmentPolicy;
 import me.golemcore.hive.domain.model.CardTransitionEvent;
 import me.golemcore.hive.domain.model.CardTransitionOrigin;
+import me.golemcore.hive.domain.model.Objective;
+import me.golemcore.hive.domain.model.Team;
 import me.golemcore.hive.domain.model.ThreadRecord;
 import me.golemcore.hive.port.outbound.StoragePort;
 import org.springframework.stereotype.Service;
@@ -50,17 +52,20 @@ public class CardService {
     private final BoardService boardService;
     private final AssignmentService assignmentService;
     private final GolemRegistryService golemRegistryService;
+    private final TeamService teamService;
+    private final ObjectiveService objectiveService;
     private final AuditService auditService;
 
-    public List<Card> listCards(String boardId, boolean includeArchived) {
+    public List<Card> listCards(String serviceId, boolean includeArchived) {
         List<Card> cards = new ArrayList<>();
+        String targetServiceId = normalizeOptionalId(serviceId);
         for (String path : storagePort.listObjects(CARDS_DIR, "")) {
             Optional<Card> cardOptional = loadCardByPath(path);
             if (cardOptional.isEmpty()) {
                 continue;
             }
             Card card = cardOptional.get();
-            if (boardId != null && !boardId.equals(card.getBoardId())) {
+            if (targetServiceId != null && !targetServiceId.equals(card.getServiceId())) {
                 continue;
             }
             if (!includeArchived && card.isArchived()) {
@@ -68,7 +73,8 @@ public class CardService {
             }
             cards.add(card);
         }
-        cards.sort(Comparator.comparing(Card::getColumnId).thenComparing(Card::getPosition,
+        cards.sort(Comparator.comparing(Card::getColumnId).thenComparing(
+                Card::getPosition,
                 Comparator.nullsLast(Integer::compareTo)));
         return cards;
     }
@@ -79,7 +85,7 @@ public class CardService {
             return Optional.empty();
         }
         try {
-            return Optional.of(objectMapper.readValue(content, Card.class));
+            return Optional.of(normalizeCard(objectMapper.readValue(content, Card.class)));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to deserialize card " + cardId, exception);
         }
@@ -89,11 +95,13 @@ public class CardService {
         return findCard(cardId).orElseThrow(() -> new IllegalArgumentException("Unknown card: " + cardId));
     }
 
-    public Card createCard(String boardId,
+    public Card createCard(String serviceId,
             String title,
             String description,
             String prompt,
             String columnId,
+            String teamId,
+            String objectiveId,
             String assigneeGolemId,
             CardAssignmentPolicy assignmentPolicy,
             boolean autoAssign,
@@ -105,8 +113,15 @@ public class CardService {
         if (prompt == null || prompt.isBlank()) {
             throw new IllegalArgumentException("Card prompt is required");
         }
-        Board board = boardService.getBoard(boardId);
-        String targetColumnId = columnId != null && !columnId.isBlank() ? columnId
+
+        String effectiveServiceId = requireServiceId(serviceId);
+        String effectiveTeamId = normalizeOptionalId(teamId);
+        String effectiveObjectiveId = normalizeOptionalId(objectiveId);
+        validateCardScope(effectiveServiceId, effectiveTeamId, effectiveObjectiveId);
+
+        Board board = boardService.getBoard(effectiveServiceId);
+        String targetColumnId = columnId != null && !columnId.isBlank()
+                ? columnId
                 : board.getFlow().getDefaultColumnId();
         boolean columnExists = board.getFlow().getColumns().stream()
                 .anyMatch(column -> column.getId().equals(targetColumnId));
@@ -117,14 +132,16 @@ public class CardService {
         Instant now = Instant.now();
         String cardId = "card_" + UUID.randomUUID().toString().replace("-", "");
         String threadId = "thread_" + UUID.randomUUID().toString().replace("-", "");
-        CardAssignmentPolicy effectivePolicy = assignmentPolicy != null ? assignmentPolicy
+        CardAssignmentPolicy effectivePolicy = assignmentPolicy != null
+                ? assignmentPolicy
                 : board.getDefaultAssignmentPolicy();
-        String effectiveAssigneeId = assigneeGolemId;
+        String effectiveAssigneeId = normalizeOptionalId(assigneeGolemId);
 
-        if (effectiveAssigneeId != null && !effectiveAssigneeId.isBlank()) {
+        if (effectiveAssigneeId != null) {
             String requestedAssigneeId = effectiveAssigneeId;
             golemRegistryService.findGolem(requestedAssigneeId)
-                    .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + requestedAssigneeId));
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Unknown assignee golem: " + requestedAssigneeId));
         } else if (autoAssign && effectivePolicy == CardAssignmentPolicy.AUTOMATIC) {
             AssignmentSuggestion suggestion = assignmentService.suggestDefaultAssignee(board);
             if (suggestion != null) {
@@ -134,7 +151,10 @@ public class CardService {
 
         Card card = Card.builder()
                 .id(cardId)
-                .boardId(boardId)
+                .serviceId(effectiveServiceId)
+                .boardId(effectiveServiceId)
+                .teamId(effectiveTeamId)
+                .objectiveId(effectiveObjectiveId)
                 .threadId(threadId)
                 .title(title)
                 .description(description)
@@ -142,7 +162,7 @@ public class CardService {
                 .columnId(targetColumnId)
                 .assigneeGolemId(effectiveAssigneeId)
                 .assignmentPolicy(effectivePolicy)
-                .position(nextPosition(boardId, targetColumnId))
+                .position(nextPosition(effectiveServiceId, targetColumnId))
                 .createdAt(now)
                 .updatedAt(now)
                 .lastTransitionAt(now)
@@ -161,7 +181,10 @@ public class CardService {
         saveCard(card);
         saveThread(ThreadRecord.builder()
                 .id(threadId)
-                .boardId(boardId)
+                .serviceId(effectiveServiceId)
+                .boardId(effectiveServiceId)
+                .teamId(effectiveTeamId)
+                .objectiveId(effectiveObjectiveId)
                 .cardId(cardId)
                 .title(title)
                 .assignedGolemId(effectiveAssigneeId)
@@ -189,6 +212,8 @@ public class CardService {
             String title,
             String description,
             String prompt,
+            String teamId,
+            String objectiveId,
             CardAssignmentPolicy assignmentPolicy) {
         Card card = getCard(cardId);
         if (title != null && !title.isBlank()) {
@@ -202,6 +227,23 @@ public class CardService {
                 throw new IllegalArgumentException("Card prompt is required");
             }
             card.setPrompt(prompt);
+        }
+
+        String effectiveTeamId = card.getTeamId();
+        if (teamId != null) {
+            effectiveTeamId = normalizeOptionalId(teamId);
+        }
+        String effectiveObjectiveId = card.getObjectiveId();
+        if (objectiveId != null) {
+            effectiveObjectiveId = normalizeOptionalId(objectiveId);
+        }
+        validateCardScope(card.getServiceId(), effectiveTeamId, effectiveObjectiveId);
+
+        if (teamId != null) {
+            card.setTeamId(effectiveTeamId);
+        }
+        if (objectiveId != null) {
+            card.setObjectiveId(effectiveObjectiveId);
         }
         if (assignmentPolicy != null) {
             card.setAssignmentPolicy(assignmentPolicy);
@@ -232,7 +274,7 @@ public class CardService {
             String actorName,
             String summary) {
         Card card = getCard(cardId);
-        Board board = boardService.getBoard(card.getBoardId());
+        Board board = boardService.getBoard(card.getServiceId());
         boolean targetExists = board.getFlow().getColumns().stream()
                 .anyMatch(column -> column.getId().equals(targetColumnId));
         if (!targetExists) {
@@ -245,14 +287,15 @@ public class CardService {
             throw new IllegalArgumentException("Transition is not allowed by board flow");
         }
 
-        List<Card> boardCards = listCards(card.getBoardId(), false);
-        List<Card> targetColumnCards = boardCards.stream()
+        List<Card> serviceCards = listCards(card.getServiceId(), false);
+        List<Card> targetColumnCards = serviceCards.stream()
                 .filter(existing -> !existing.getId().equals(card.getId())
                         && targetColumnId.equals(existing.getColumnId()))
                 .sorted(Comparator.comparing(Card::getPosition, Comparator.nullsLast(Integer::compareTo)))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
-        int insertIndex = targetIndex != null ? Math.max(0, Math.min(targetIndex, targetColumnCards.size()))
+        int insertIndex = targetIndex != null
+                ? Math.max(0, Math.min(targetIndex, targetColumnCards.size()))
                 : targetColumnCards.size();
         card.getTransitionEvents().add(CardTransitionEvent.builder()
                 .fromColumnId(card.getColumnId())
@@ -273,7 +316,7 @@ public class CardService {
         String previousColumnId = card.getTransitionEvents().get(card.getTransitionEvents().size() - 1)
                 .getFromColumnId();
         if (previousColumnId != null && !previousColumnId.equals(targetColumnId)) {
-            List<Card> previousColumnCards = boardCards.stream()
+            List<Card> previousColumnCards = serviceCards.stream()
                     .filter(existing -> !existing.getId().equals(card.getId())
                             && previousColumnId.equals(existing.getColumnId()))
                     .sorted(Comparator.comparing(Card::getPosition, Comparator.nullsLast(Integer::compareTo)))
@@ -299,11 +342,13 @@ public class CardService {
 
     public Card assignCard(String cardId, String assigneeGolemId) {
         Card card = getCard(cardId);
-        if (assigneeGolemId != null && !assigneeGolemId.isBlank()) {
-            golemRegistryService.findGolem(assigneeGolemId)
-                    .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + assigneeGolemId));
+        String effectiveAssigneeId = normalizeOptionalId(assigneeGolemId);
+        if (effectiveAssigneeId != null) {
+            golemRegistryService.findGolem(effectiveAssigneeId)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Unknown assignee golem: " + effectiveAssigneeId));
         }
-        card.setAssigneeGolemId(assigneeGolemId != null && !assigneeGolemId.isBlank() ? assigneeGolemId : null);
+        card.setAssigneeGolemId(effectiveAssigneeId);
         card.setUpdatedAt(Instant.now());
         saveCard(card);
         syncThread(card);
@@ -343,13 +388,39 @@ public class CardService {
         return card;
     }
 
+    private void validateCardScope(String serviceId, String teamId, String objectiveId) {
+        String effectiveServiceId = requireServiceId(serviceId);
+        String effectiveTeamId = normalizeOptionalId(teamId);
+        String effectiveObjectiveId = normalizeOptionalId(objectiveId);
+
+        if (effectiveTeamId != null) {
+            Team team = teamService.getTeam(effectiveTeamId);
+            if (team.getOwnedServiceIds() == null || !team.getOwnedServiceIds().contains(effectiveServiceId)) {
+                throw new IllegalArgumentException("Team does not own service: " + effectiveServiceId);
+            }
+        }
+        if (effectiveObjectiveId == null) {
+            return;
+        }
+
+        Objective objective = objectiveService.getObjective(effectiveObjectiveId);
+        if (!objective.getServiceIds().isEmpty() && !objective.getServiceIds().contains(effectiveServiceId)) {
+            throw new IllegalArgumentException("Objective does not include service: " + effectiveServiceId);
+        }
+        if (effectiveTeamId != null
+                && !effectiveTeamId.equals(objective.getOwnerTeamId())
+                && !objective.getParticipatingTeamIds().contains(effectiveTeamId)) {
+            throw new IllegalArgumentException("Team is not linked to objective: " + effectiveTeamId);
+        }
+    }
+
     private Optional<Card> loadCardByPath(String path) {
         String content = storagePort.getText(CARDS_DIR, path);
         if (content == null) {
             return Optional.empty();
         }
         try {
-            return Optional.of(objectMapper.readValue(content, Card.class));
+            return Optional.of(normalizeCard(objectMapper.readValue(content, Card.class)));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to deserialize card " + path, exception);
         }
@@ -357,7 +428,11 @@ public class CardService {
 
     private void saveCard(Card card) {
         try {
-            storagePort.putTextAtomic(CARDS_DIR, card.getId() + ".json", objectMapper.writeValueAsString(card));
+            Card normalizedCard = normalizeCard(card);
+            storagePort.putTextAtomic(
+                    CARDS_DIR,
+                    normalizedCard.getId() + ".json",
+                    objectMapper.writeValueAsString(normalizedCard));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize card " + card.getId(), exception);
         }
@@ -365,7 +440,11 @@ public class CardService {
 
     private void saveThread(ThreadRecord thread) {
         try {
-            storagePort.putTextAtomic(THREADS_DIR, thread.getId() + ".json", objectMapper.writeValueAsString(thread));
+            ThreadRecord normalizedThread = normalizeThread(thread);
+            storagePort.putTextAtomic(
+                    THREADS_DIR,
+                    normalizedThread.getId() + ".json",
+                    objectMapper.writeValueAsString(normalizedThread));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize thread " + thread.getId(), exception);
         }
@@ -377,7 +456,11 @@ public class CardService {
             return;
         }
         try {
-            ThreadRecord thread = objectMapper.readValue(content, ThreadRecord.class);
+            ThreadRecord thread = normalizeThread(objectMapper.readValue(content, ThreadRecord.class));
+            thread.setServiceId(card.getServiceId());
+            thread.setBoardId(card.getBoardId());
+            thread.setTeamId(card.getTeamId());
+            thread.setObjectiveId(card.getObjectiveId());
             thread.setTitle(card.getTitle());
             thread.setAssignedGolemId(card.getAssigneeGolemId());
             thread.setUpdatedAt(card.getUpdatedAt());
@@ -387,14 +470,44 @@ public class CardService {
         }
     }
 
-    private Integer nextPosition(String boardId, String columnId) {
-        return listCards(boardId, false).stream()
+    private Integer nextPosition(String serviceId, String columnId) {
+        return listCards(serviceId, false).stream()
                 .filter(card -> columnId.equals(card.getColumnId()))
                 .map(Card::getPosition)
                 .filter(position -> position != null)
                 .max(Integer::compareTo)
                 .map(position -> position + 1)
                 .orElse(0);
+    }
+
+    private String requireServiceId(String serviceId) {
+        String normalizedServiceId = normalizeOptionalId(serviceId);
+        if (normalizedServiceId == null) {
+            throw new IllegalArgumentException("serviceId is required");
+        }
+        return normalizedServiceId;
+    }
+
+    private String normalizeOptionalId(String value) {
+        return value != null && !value.isBlank() ? value : null;
+    }
+
+    private Card normalizeCard(Card card) {
+        String effectiveServiceId = firstNonBlank(card.getServiceId(), card.getBoardId());
+        card.setServiceId(effectiveServiceId);
+        card.setBoardId(firstNonBlank(card.getBoardId(), effectiveServiceId));
+        if (card.getAssignmentPolicy() == null) {
+            Board board = effectiveServiceId != null ? boardService.findBoard(effectiveServiceId).orElse(null) : null;
+            card.setAssignmentPolicy(board != null ? board.getDefaultAssignmentPolicy() : CardAssignmentPolicy.MANUAL);
+        }
+        return card;
+    }
+
+    private ThreadRecord normalizeThread(ThreadRecord thread) {
+        String effectiveServiceId = firstNonBlank(thread.getServiceId(), thread.getBoardId());
+        thread.setServiceId(effectiveServiceId);
+        thread.setBoardId(firstNonBlank(thread.getBoardId(), effectiveServiceId));
+        return thread;
     }
 
     private String firstNonBlank(String... values) {

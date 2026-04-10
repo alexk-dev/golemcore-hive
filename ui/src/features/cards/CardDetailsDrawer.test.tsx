@@ -7,7 +7,10 @@ import { CardDetailsDrawer } from './CardDetailsDrawer';
 function createCard(overrides: Partial<CardDetail> = {}): CardDetail {
   return {
     id: 'card_123',
+    serviceId: 'board_123',
     boardId: 'board_123',
+    teamId: null,
+    objectiveId: null,
     threadId: 'thread_123',
     title: 'Check Sosua Weather',
     description: 'Get the weather report for Sosua today.',
@@ -30,6 +33,7 @@ function createCard(overrides: Partial<CardDetail> = {}): CardDetail {
 function createAssigneeOptions(): CardAssigneeOptions {
   return {
     cardId: 'card_123',
+    serviceId: 'board_123',
     boardId: 'board_123',
     teamCandidates: [],
     allCandidates: [],
@@ -45,6 +49,8 @@ describe('CardDetailsDrawer', () => {
           card={createCard()}
           assigneeOptions={createAssigneeOptions()}
           allGolems={[]}
+          teams={[]}
+          objectives={[]}
           isPending={false}
           onClose={vi.fn()}
           onUpdate={vi.fn(async () => undefined)}
@@ -72,6 +78,8 @@ describe('CardDetailsDrawer', () => {
           card={createCard({ prompt: null as unknown as string })}
           assigneeOptions={createAssigneeOptions()}
           allGolems={[]}
+          teams={[]}
+          objectives={[]}
           isPending={false}
           onClose={vi.fn()}
           onUpdate={vi.fn(async () => undefined)}

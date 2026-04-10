@@ -18,6 +18,7 @@
 
 package me.golemcore.hive.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,13 +31,17 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Card {
 
     @Builder.Default
     private int schemaVersion = 1;
 
     private String id;
+    private String serviceId;
     private String boardId;
+    private String teamId;
+    private String objectiveId;
     private String threadId;
     private String title;
     private String description;

@@ -95,7 +95,10 @@ public class ThreadsController {
         return new CardThreadResponse(
                 thread.getId(),
                 card.getId(),
+                card.getServiceId(),
                 card.getBoardId(),
+                card.getTeamId(),
+                card.getObjectiveId(),
                 thread.getTitle(),
                 card.getColumnId(),
                 card.getAssigneeGolemId(),

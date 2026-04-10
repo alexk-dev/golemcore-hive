@@ -59,7 +59,6 @@ import me.golemcore.hive.execution.application.port.out.ExecutionNotificationPor
 import me.golemcore.hive.execution.application.port.out.ExecutionOperationsPort;
 import me.golemcore.hive.execution.application.port.out.CardLifecycleSignalRepository;
 import me.golemcore.hive.execution.application.port.out.OperatorUpdatePublisherPort;
-import me.golemcore.hive.execution.application.port.out.CardLifecycleSignalRepository;
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.infrastructure.control.GolemControlDispatchPort;
 import me.golemcore.hive.infrastructure.storage.StoragePort;
@@ -690,7 +689,7 @@ public class StorageBackedExecutionOperationsAdapter implements ExecutionOperati
 
         LifecycleSignalType signalType = signal.getSignalType();
         switch (signalType) {
-        case WORK_STARTED, PROGRESS_REPORTED, REVIEW_REQUESTED -> {
+        case WORK_STARTED, PROGRESS_REPORTED, REVIEW_REQUESTED, REVIEW_STARTED -> {
             run.setStatus(RunStatus.RUNNING);
             if (run.getStartedAt() == null) {
                 run.setStartedAt(eventTime);
@@ -717,7 +716,7 @@ public class StorageBackedExecutionOperationsAdapter implements ExecutionOperati
                 command.setUpdatedAt(eventTime);
             }
         }
-        case WORK_COMPLETED -> {
+        case WORK_COMPLETED, REVIEW_APPROVED, CHANGES_REQUESTED -> {
             run.setStatus(RunStatus.COMPLETED);
             run.setCompletedAt(eventTime);
             if (command != null) {
@@ -741,6 +740,12 @@ public class StorageBackedExecutionOperationsAdapter implements ExecutionOperati
             if (command != null) {
                 command.setStatus(CommandStatus.CANCELLED);
                 command.setCompletedAt(eventTime);
+                command.setUpdatedAt(eventTime);
+            }
+        }
+        default -> {
+            run.setUpdatedAt(eventTime);
+            if (command != null) {
                 command.setUpdatedAt(eventTime);
             }
         }

@@ -78,7 +78,8 @@ final class PolicyMappingSupport {
                 toToolsPackageResponse(specSnapshot != null ? specSnapshot.getTools() : null),
                 toMemoryPackageResponse(specSnapshot != null ? specSnapshot.getMemory() : null),
                 toMcpPackageResponse(specSnapshot != null ? specSnapshot.getMcp() : null),
-                toAutonomyPackageResponse(specSnapshot != null ? specSnapshot.getAutonomy() : null));
+                toAutonomyPackageResponse(specSnapshot != null ? specSnapshot.getAutonomy() : null),
+                toSdlcPackageResponse(specSnapshot != null ? specSnapshot.getSdlc() : null));
     }
 
     static PolicyGroupSpec toPolicyGroupSpec(UpdatePolicyGroupDraftRequest request) {
@@ -106,6 +107,7 @@ final class PolicyMappingSupport {
                 .memory(toPolicyMemory(request.memory()))
                 .mcp(toPolicyMcp(request.mcp()))
                 .autonomy(toPolicyAutonomy(request.autonomy()))
+                .sdlc(toPolicySdlc(request.sdlc()))
                 .build();
     }
 
@@ -163,6 +165,7 @@ final class PolicyMappingSupport {
                 toMemoryResponse(spec.getMemory()),
                 toMcpResponse(spec.getMcp()),
                 toAutonomyResponse(spec.getAutonomy()),
+                toSdlcResponse(spec.getSdlc()),
                 spec.getChecksum());
     }
 
@@ -392,6 +395,38 @@ final class PolicyMappingSupport {
                 autonomy.getNotifyMilestones());
     }
 
+    private static PolicyGroupResponse.PolicySdlcConfigResponse toSdlcResponse(
+            PolicyGroupSpec.PolicySdlcConfig sdlc) {
+        if (sdlc == null) {
+            return null;
+        }
+        return new PolicyGroupResponse.PolicySdlcConfigResponse(
+                sdlc.getTaskCreationEnabled(),
+                sdlc.getAutoApplyDecompositionEnabled(),
+                sdlc.getMaxDecompositionFanOut(),
+                sdlc.getAssignmentEnabled(),
+                sdlc.getReviewerAssignmentEnabled(),
+                sdlc.getRequireReviewerSeparationOfDuties(),
+                sdlc.getApprovalRequiredAboveFanOut(),
+                sdlc.getAllowedCardKinds());
+    }
+
+    private static PolicyPackageResponse.PolicySdlcConfigResponse toSdlcPackageResponse(
+            PolicyGroupSpec.PolicySdlcConfig sdlc) {
+        if (sdlc == null) {
+            return null;
+        }
+        return new PolicyPackageResponse.PolicySdlcConfigResponse(
+                sdlc.getTaskCreationEnabled(),
+                sdlc.getAutoApplyDecompositionEnabled(),
+                sdlc.getMaxDecompositionFanOut(),
+                sdlc.getAssignmentEnabled(),
+                sdlc.getReviewerAssignmentEnabled(),
+                sdlc.getRequireReviewerSeparationOfDuties(),
+                sdlc.getApprovalRequiredAboveFanOut(),
+                sdlc.getAllowedCardKinds());
+    }
+
     private static PolicyGroupSpec.PolicyModelRouter toPolicyModelRouter(
             UpdatePolicyGroupDraftRequest.PolicyModelRouterRequest request) {
         if (request == null) {
@@ -525,6 +560,23 @@ final class PolicyMappingSupport {
                 .reflectionModelTier(request.reflectionModelTier())
                 .reflectionTierPriority(request.reflectionTierPriority())
                 .notifyMilestones(request.notifyMilestones())
+                .build();
+    }
+
+    private static PolicyGroupSpec.PolicySdlcConfig toPolicySdlc(
+            UpdatePolicyGroupDraftRequest.PolicySdlcConfigRequest request) {
+        if (request == null) {
+            return null;
+        }
+        return PolicyGroupSpec.PolicySdlcConfig.builder()
+                .taskCreationEnabled(request.taskCreationEnabled())
+                .autoApplyDecompositionEnabled(request.autoApplyDecompositionEnabled())
+                .maxDecompositionFanOut(request.maxDecompositionFanOut())
+                .assignmentEnabled(request.assignmentEnabled())
+                .reviewerAssignmentEnabled(request.reviewerAssignmentEnabled())
+                .requireReviewerSeparationOfDuties(request.requireReviewerSeparationOfDuties())
+                .approvalRequiredAboveFanOut(request.approvalRequiredAboveFanOut())
+                .allowedCardKinds(request.allowedCardKinds())
                 .build();
     }
 

@@ -36,6 +36,7 @@ import me.golemcore.hive.execution.application.port.in.LifecycleSignalResolution
 import me.golemcore.hive.execution.application.port.out.CardLifecycleSignalRepository;
 import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
+import me.golemcore.hive.workflow.application.port.in.ReviewWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ThreadWorkflowUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -68,14 +69,18 @@ public class ExecutionApplicationConfiguration {
     public LifecycleSignalResolutionApplicationService lifecycleSignalResolutionApplicationService(
             BoardWorkflowUseCase boardWorkflowUseCase,
             CardWorkflowUseCase cardWorkflowUseCase,
+            ReviewWorkflowUseCase reviewWorkflowUseCase,
             ThreadWorkflowUseCase threadWorkflowUseCase,
             GolemDirectoryUseCase golemDirectoryUseCase,
+            ExecutionOperationsUseCase executionOperationsUseCase,
             OperatorUpdatePublisherPort operatorUpdatePublisherPort) {
         return new LifecycleSignalResolutionApplicationService(
                 boardWorkflowUseCase,
                 cardWorkflowUseCase,
+                reviewWorkflowUseCase,
                 threadWorkflowUseCase,
                 golemDirectoryUseCase,
+                executionOperationsUseCase,
                 operatorUpdatePublisherPort);
     }
 

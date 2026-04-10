@@ -18,4 +18,6 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
-public record CardSummaryResponse(String id,String serviceId,String boardId,String teamId,String objectiveId,String threadId,String title,String columnId,String assigneeGolemId,String assignmentPolicy,Integer position,boolean archived,CardControlStateResponse controlState){}
+import java.util.List;
+
+public record CardSummaryResponse(String id,String serviceId,String boardId,String kind,String parentCardId,String epicCardId,List<String>dependsOnCardIds,String reviewOfCardId,List<String>reviewerGolemIds,String reviewerTeamId,int requiredReviewCount,String reviewStatus,String teamId,String objectiveId,String threadId,String title,String columnId,String assigneeGolemId,String assignmentPolicy,Integer position,boolean archived,CardControlStateResponse controlState){}

@@ -4,11 +4,14 @@ import type { CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import type { GolemSummary } from '../../lib/api/golemsApi';
 import type { ObjectiveDetail } from '../../lib/api/objectivesApi';
 import type { TeamDetail } from '../../lib/api/teamsApi';
+import { DecompositionPlanDialog } from '../decomposition/DecompositionPlanDialog';
 import {
   AssigneeRoutingPanel,
   CardDispatchPanel,
   CardEditorPanel,
   ExecutionControlPanel,
+  CardWorkGraphPanel,
+  ReviewRequestPanel,
   TransitionHistoryPanel,
 } from './CardDetailsDrawerSections';
 import { CardDetailsHeader } from './CardDetailsHeader';
@@ -31,6 +34,7 @@ interface CardDetailsDrawerProps {
     assignmentPolicy: string;
   }) => Promise<void>;
   onAssign: (assigneeGolemId: string | null) => Promise<void>;
+  onRequestReview: (input: { reviewerGolemIds: string[]; reviewerTeamId: string | null; requiredReviewCount: number }) => Promise<void>;
   onArchive: () => Promise<void>;
   onDispatchCommand: (input: CreateThreadCommandInput) => Promise<void>;
   onCancelRun: (runId: string) => Promise<void>;
@@ -88,6 +92,7 @@ export function CardDetailsDrawer({
   onClose,
   onUpdate,
   onAssign,
+  onRequestReview,
   onArchive,
   onDispatchCommand,
   onCancelRun,
@@ -96,6 +101,7 @@ export function CardDetailsDrawer({
   controlError,
 }: CardDetailsDrawerProps) {
   const drafts = useCardDetailsDrafts(card);
+  const [decompositionDialogOpen, setDecompositionDialogOpen] = useState(false);
 
   if (!open || !card) {
     return null;
@@ -105,6 +111,16 @@ export function CardDetailsDrawer({
     <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
       <div className="h-full w-full overflow-auto border-l border-border/70 bg-panel px-4 py-5 shadow-[0_20px_70px_rgba(26,20,15,0.14)] md:max-w-[880px] md:px-6">
         <CardDetailsHeader card={card} allGolems={allGolems} onClose={onClose} />
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setDecompositionDialogOpen(true)}
+            className="border border-border bg-muted/70 px-3 py-1.5 text-sm font-semibold text-foreground transition hover:bg-muted"
+          >
+            Break down
+          </button>
+        </div>
 
         {controlError ? (
           <div className="mt-3 border border-rose-700 bg-rose-950/40 px-4 py-2.5 text-sm text-rose-300">
@@ -149,6 +165,7 @@ export function CardDetailsDrawer({
                 });
               }}
             />
+            <CardWorkGraphPanel card={card} />
           </div>
 
           <div className="grid gap-4">
@@ -164,9 +181,24 @@ export function CardDetailsDrawer({
               isPending={isPending}
               onAssign={onAssign}
             />
+            <ReviewRequestPanel
+              card={card}
+              allGolems={allGolems}
+              teams={teams}
+              isPending={isPending}
+              onRequestReview={onRequestReview}
+            />
             <TransitionHistoryPanel card={card} isPending={isPending} onArchive={onArchive} />
           </div>
         </div>
+        <DecompositionPlanDialog
+          open={decompositionDialogOpen}
+          sourceCard={card}
+          allGolems={allGolems}
+          teams={teams}
+          onClose={() => setDecompositionDialogOpen(false)}
+          onSubmitted={() => setDecompositionDialogOpen(false)}
+        />
       </div>
     </div>
   );

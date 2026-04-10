@@ -173,6 +173,7 @@ class OrganizationControllerIntegrationTest {
         String cardId = cardPayload.get("id").asText();
         Assertions.assertEquals(serviceId, cardPayload.get("serviceId").asText());
         Assertions.assertEquals(serviceId, cardPayload.get("boardId").asText());
+        Assertions.assertEquals("TASK", cardPayload.get("kind").asText());
         Assertions.assertEquals(teamId, cardPayload.get("teamId").asText());
         Assertions.assertEquals(objectiveId, cardPayload.get("objectiveId").asText());
 
@@ -243,6 +244,142 @@ class OrganizationControllerIntegrationTest {
                         """.formatted(foreignTeamId))
                 .exchange()
                 .expectStatus().isBadRequest();
+    }
+
+    @Test
+    void shouldCreateEpicAndChildCardsWithGraphLinks() throws Exception {
+        String operatorToken = loginAsAdmin();
+        String serviceId = createService(operatorToken);
+        String golemId = registerOnlineGolem(operatorToken, "Atlas Epic", "host-epic");
+        String teamId = createTeam(operatorToken, golemId, serviceId);
+        String objectiveId = createObjective(operatorToken, teamId, serviceId);
+
+        EntityExchangeResult<String> epicResult = webTestClient.post()
+                .uri("/api/v1/cards")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "serviceId":"%s",
+                          "title":"Epic: onboarding revamp",
+                          "description":"Large delivery container",
+                          "prompt":"Coordinate the onboarding revamp at a high level",
+                          "kind":"EPIC",
+                          "columnId":"inbox",
+                          "teamId":"%s",
+                          "objectiveId":"%s",
+                          "assignmentPolicy":"MANUAL",
+                          "autoAssign":false
+                        }
+                        """.formatted(serviceId, teamId, objectiveId))
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(String.class)
+                .returnResult();
+
+        JsonNode epicPayload = objectMapper.readTree(epicResult.getResponseBody());
+        String epicCardId = epicPayload.get("id").asText();
+        Assertions.assertEquals("EPIC", epicPayload.get("kind").asText());
+        Assertions.assertFalse(epicPayload.hasNonNull("epicCardId"));
+
+        EntityExchangeResult<String> childResult = webTestClient.post()
+                .uri("/api/v1/cards")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "serviceId":"%s",
+                          "title":"Task under epic",
+                          "description":"Implementation task beneath the epic",
+                          "prompt":"Implement the child task for the epic",
+                          "kind":"TASK",
+                          "columnId":"inbox",
+                          "parentCardId":"%s",
+                          "epicCardId":"%s",
+                          "teamId":"%s",
+                          "objectiveId":"%s",
+                          "assignmentPolicy":"MANUAL",
+                          "autoAssign":false
+                        }
+                        """.formatted(serviceId, epicCardId, epicCardId, teamId, objectiveId))
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(String.class)
+                .returnResult();
+
+        JsonNode childPayload = objectMapper.readTree(childResult.getResponseBody());
+        String childCardId = childPayload.get("id").asText();
+        Assertions.assertEquals("TASK", childPayload.get("kind").asText());
+        Assertions.assertEquals(epicCardId, childPayload.get("parentCardId").asText());
+        Assertions.assertEquals(epicCardId, childPayload.get("epicCardId").asText());
+
+        EntityExchangeResult<String> reviewResult = webTestClient.post()
+                .uri("/api/v1/cards")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "serviceId":"%s",
+                          "title":"Review child task",
+                          "description":"Review work for the child task",
+                          "prompt":"Review the task under the epic",
+                          "kind":"REVIEW",
+                          "columnId":"review",
+                          "reviewOfCardId":"%s",
+                          "teamId":"%s",
+                          "objectiveId":"%s",
+                          "assignmentPolicy":"MANUAL",
+                          "autoAssign":false
+                        }
+                        """.formatted(serviceId, childCardId, teamId, objectiveId))
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(String.class)
+                .returnResult();
+
+        JsonNode reviewPayload = objectMapper.readTree(reviewResult.getResponseBody());
+        String reviewCardId = reviewPayload.get("id").asText();
+        Assertions.assertEquals("REVIEW", reviewPayload.get("kind").asText());
+        Assertions.assertEquals(childCardId, reviewPayload.get("reviewOfCardId").asText());
+
+        webTestClient.get()
+                .uri("/api/v1/cards?serviceId={serviceId}&kind=EPIC", serviceId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].id").isEqualTo(epicCardId)
+                .jsonPath("$[0].kind").isEqualTo("EPIC");
+
+        webTestClient.get()
+                .uri("/api/v1/cards?serviceId={serviceId}&epicCardId={epicCardId}", serviceId, epicCardId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].id").isEqualTo(childCardId)
+                .jsonPath("$[0].epicCardId").isEqualTo(epicCardId)
+                .jsonPath("$[0].kind").isEqualTo("TASK");
+
+        webTestClient.get()
+                .uri("/api/v1/cards?serviceId={serviceId}&reviewOfCardId={reviewOfCardId}", serviceId, childCardId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].id").isEqualTo(reviewCardId)
+                .jsonPath("$[0].kind").isEqualTo("REVIEW")
+                .jsonPath("$[0].reviewOfCardId").isEqualTo(childCardId);
+
+        webTestClient.get()
+                .uri("/api/v1/cards/{cardId}", childCardId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.kind").isEqualTo("TASK")
+                .jsonPath("$.parentCardId").isEqualTo(epicCardId)
+                .jsonPath("$.epicCardId").isEqualTo(epicCardId);
     }
 
     private String createService(String operatorToken) throws Exception {

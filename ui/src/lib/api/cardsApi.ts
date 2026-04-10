@@ -1,6 +1,9 @@
 import { apiRequest } from './httpClient';
 import type { AssignmentSuggestion } from './boardsApi';
 
+export type CardKind = 'EPIC' | 'TASK' | 'REVIEW';
+export type CardReviewStatus = 'NOT_REQUIRED' | 'REQUIRED' | 'IN_REVIEW' | 'APPROVED' | 'CHANGES_REQUESTED';
+
 export interface CardTransition {
   fromColumnId: string | null;
   toColumnId: string;
@@ -32,10 +35,19 @@ export interface CardSummary {
   teamId: string | null;
   objectiveId: string | null;
   threadId: string;
+  kind?: CardKind;
   title: string;
   columnId: string;
   assigneeGolemId: string | null;
   assignmentPolicy: string;
+  parentCardId?: string | null;
+  epicCardId?: string | null;
+  dependsOnCardIds?: string[];
+  reviewOfCardId?: string | null;
+  reviewerGolemIds?: string[];
+  reviewerTeamId?: string | null;
+  requiredReviewCount?: number;
+  reviewStatus?: CardReviewStatus | null;
   position: number | null;
   archived: boolean;
   controlState: CardControlState | null;
@@ -48,12 +60,21 @@ export interface CardDetail {
   teamId: string | null;
   objectiveId: string | null;
   threadId: string;
+  kind?: CardKind;
   title: string;
   description: string | null;
   prompt: string;
   columnId: string;
   assigneeGolemId: string | null;
   assignmentPolicy: string;
+  parentCardId?: string | null;
+  epicCardId?: string | null;
+  dependsOnCardIds?: string[];
+  reviewOfCardId?: string | null;
+  reviewerGolemIds?: string[];
+  reviewerTeamId?: string | null;
+  requiredReviewCount?: number;
+  reviewStatus?: CardReviewStatus | null;
   position: number | null;
   archived: boolean;
   archivedAt: string | null;
@@ -78,6 +99,42 @@ export function listCards(serviceId: string, includeArchived = false) {
   );
 }
 
+export function listCardsByQuery(input: {
+  serviceId?: string;
+  boardId?: string;
+  objectiveId?: string;
+  epicCardId?: string;
+  parentCardId?: string;
+  reviewOfCardId?: string;
+  kind?: CardKind;
+  includeArchived?: boolean;
+}) {
+  const params = new URLSearchParams();
+  if (input.serviceId) {
+    params.set('serviceId', input.serviceId);
+  }
+  if (input.boardId) {
+    params.set('boardId', input.boardId);
+  }
+  if (input.objectiveId) {
+    params.set('objectiveId', input.objectiveId);
+  }
+  if (input.epicCardId) {
+    params.set('epicCardId', input.epicCardId);
+  }
+  if (input.parentCardId) {
+    params.set('parentCardId', input.parentCardId);
+  }
+  if (input.reviewOfCardId) {
+    params.set('reviewOfCardId', input.reviewOfCardId);
+  }
+  if (input.kind) {
+    params.set('kind', input.kind);
+  }
+  params.set('includeArchived', String(input.includeArchived ?? false));
+  return apiRequest<CardSummary[]>(`/api/v1/cards?${params.toString()}`);
+}
+
 export function getCard(cardId: string) {
   return apiRequest<CardDetail>(`/api/v1/cards/${cardId}`);
 }
@@ -90,6 +147,10 @@ export function createCard(input: {
   columnId?: string;
   teamId?: string;
   objectiveId?: string;
+  kind?: CardKind;
+  parentCardId?: string | null;
+  epicCardId?: string | null;
+  dependsOnCardIds?: string[];
   assigneeGolemId?: string | null;
   assignmentPolicy?: string;
   autoAssign?: boolean;
@@ -108,11 +169,29 @@ export function updateCard(
     prompt?: string;
     teamId?: string;
     objectiveId?: string;
+    kind?: CardKind;
+    parentCardId?: string | null;
+    epicCardId?: string | null;
+    dependsOnCardIds?: string[];
     assignmentPolicy?: string;
   },
 ) {
   return apiRequest<CardDetail>(`/api/v1/cards/${cardId}`, {
     method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function requestCardReview(
+  cardId: string,
+  input: {
+    reviewerGolemIds?: string[];
+    reviewerTeamId?: string | null;
+    requiredReviewCount?: number | null;
+  },
+) {
+  return apiRequest<CardDetail>(`/api/v1/cards/${cardId}:request-review`, {
+    method: 'POST',
     body: JSON.stringify(input),
   });
 }

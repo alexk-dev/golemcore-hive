@@ -27,14 +27,19 @@ import me.golemcore.hive.adapter.inbound.web.dto.boards.CreateCardRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.CardDetailResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.CardSummaryResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.MoveCardRequest;
+import me.golemcore.hive.adapter.inbound.web.dto.boards.RequestReviewRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.UpdateCardAssigneeRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.UpdateCardRequest;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardControlStateSnapshot;
 import me.golemcore.hive.domain.model.CardTransitionOrigin;
+import me.golemcore.hive.workflow.application.CardCreateCommand;
+import me.golemcore.hive.workflow.application.CardQuery;
+import me.golemcore.hive.workflow.application.CardUpdateCommand;
 import me.golemcore.hive.execution.application.port.in.ExecutionOperationsUseCase;
 import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
+import me.golemcore.hive.workflow.application.port.in.ReviewWorkflowUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,12 +60,18 @@ public class CardsController extends BoardMappingSupport {
 
     private final CardWorkflowUseCase cardWorkflowUseCase;
     private final ExecutionOperationsUseCase executionOperationsUseCase;
+    private final ReviewWorkflowUseCase reviewWorkflowUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<List<CardSummaryResponse>>> listCards(
             Principal principal,
             @RequestParam(required = false) String serviceId,
             @RequestParam(required = false) String boardId,
+            @RequestParam(required = false) String kind,
+            @RequestParam(required = false) String parentCardId,
+            @RequestParam(required = false) String epicCardId,
+            @RequestParam(required = false) String reviewOfCardId,
+            @RequestParam(required = false) String objectiveId,
             @RequestParam(defaultValue = "false") boolean includeArchived) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
@@ -68,7 +79,14 @@ public class CardsController extends BoardMappingSupport {
             if ((serviceId != null && !serviceId.isBlank()) || (boardId != null && !boardId.isBlank())) {
                 resolvedServiceId = resolveServiceId(serviceId, boardId);
             }
-            List<Card> cards = cardWorkflowUseCase.listCards(resolvedServiceId, includeArchived);
+            List<Card> cards = cardWorkflowUseCase.listCards(new CardQuery(
+                    resolvedServiceId,
+                    includeArchived,
+                    parseCardKind(kind),
+                    parentCardId,
+                    epicCardId,
+                    reviewOfCardId,
+                    objectiveId));
             Map<String, CardControlStateSnapshot> controlStates = executionOperationsUseCase
                     .listActiveCardControlStates(cards);
             List<CardSummaryResponse> response = cards.stream()
@@ -84,7 +102,7 @@ public class CardsController extends BoardMappingSupport {
             @Valid @RequestBody CreateCardRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Card card = cardWorkflowUseCase.createCard(
+            Card card = cardWorkflowUseCase.createCard(new CardCreateCommand(
                     resolveServiceId(request.serviceId(), request.boardId()),
                     request.title(),
                     request.description(),
@@ -95,8 +113,11 @@ public class CardsController extends BoardMappingSupport {
                     request.assigneeGolemId(),
                     parseAssignmentPolicy(request.assignmentPolicy()),
                     request.autoAssign(),
-                    actor.getSubjectId(),
-                    actor.getName());
+                    parseCardKind(request.kind()),
+                    request.parentCardId(),
+                    request.epicCardId(),
+                    request.reviewOfCardId(),
+                    request.dependsOnCardIds()), actor.getSubjectId(), actor.getName());
             return ResponseEntity.status(HttpStatus.CREATED).body(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -117,14 +138,36 @@ public class CardsController extends BoardMappingSupport {
             @RequestBody UpdateCardRequest request) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Card card = cardWorkflowUseCase.updateCard(
-                    cardId,
+            Card card = cardWorkflowUseCase.updateCard(cardId, new CardUpdateCommand(
                     request != null ? request.title() : null,
                     request != null ? request.description() : null,
                     request != null ? request.prompt() : null,
                     request != null ? request.teamId() : null,
                     request != null ? request.objectiveId() : null,
-                    request != null ? parseAssignmentPolicy(request.assignmentPolicy()) : null);
+                    request != null ? parseAssignmentPolicy(request.assignmentPolicy()) : null,
+                    request != null ? parseCardKind(request.kind()) : null,
+                    request != null ? request.parentCardId() : null,
+                    request != null ? request.epicCardId() : null,
+                    request != null ? request.reviewOfCardId() : null,
+                    request != null ? request.dependsOnCardIds() : null));
+            return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PostMapping("/{cardId}:request-review")
+    public Mono<ResponseEntity<CardDetailResponse>> requestReview(
+            Principal principal,
+            @PathVariable String cardId,
+            @Valid @RequestBody RequestReviewRequest request) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Card card = reviewWorkflowUseCase.requestReview(
+                    cardId,
+                    request != null ? request.reviewerGolemIds() : null,
+                    request != null ? request.reviewerTeamId() : null,
+                    request != null ? request.requiredReviewCount() : null,
+                    actor.getSubjectId(),
+                    actor.getName());
             return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }

@@ -374,6 +374,9 @@ public class BoardWorkflowApplicationService implements BoardWorkflowUseCase {
                         signalMapping("BLOCKER_RAISED", BoardSignalDecision.AUTO_APPLY, "blocked"),
                         signalMapping("BLOCKER_CLEARED", BoardSignalDecision.SUGGEST_ONLY, "in_progress"),
                         signalMapping("REVIEW_REQUESTED", BoardSignalDecision.AUTO_APPLY, "review"),
+                        signalMapping("REVIEW_STARTED", BoardSignalDecision.AUTO_APPLY, "review"),
+                        signalMapping("REVIEW_APPROVED", BoardSignalDecision.AUTO_APPLY, "done"),
+                        signalMapping("CHANGES_REQUESTED", BoardSignalDecision.AUTO_APPLY, "done"),
                         signalMapping("WORK_COMPLETED", BoardSignalDecision.AUTO_APPLY, "review"),
                         signalMapping("PROGRESS_REPORTED", BoardSignalDecision.IGNORE, null)))
                 .build();

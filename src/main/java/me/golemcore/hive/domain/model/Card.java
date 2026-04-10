@@ -33,14 +33,27 @@ import lombok.NoArgsConstructor;
 public class Card {
 
     @Builder.Default
-    private int schemaVersion = 1;
+    private int schemaVersion = 2;
 
     private String id;
     private String serviceId;
     private String boardId;
+    @Builder.Default
+    private CardKind kind = CardKind.TASK;
+    private String parentCardId;
+    private String epicCardId;
+    @Builder.Default
+    private List<String> dependsOnCardIds = new ArrayList<>();
     private String teamId;
     private String objectiveId;
     private String threadId;
+    @Builder.Default
+    private List<String> reviewerGolemIds = new ArrayList<>();
+    private String reviewerTeamId;
+    private int requiredReviewCount;
+    @Builder.Default
+    private CardReviewStatus reviewStatus = CardReviewStatus.NOT_REQUIRED;
+    private String reviewOfCardId;
     private String title;
     private String description;
     private String prompt;

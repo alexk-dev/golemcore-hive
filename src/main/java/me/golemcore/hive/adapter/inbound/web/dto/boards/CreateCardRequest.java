@@ -19,5 +19,6 @@
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 
-public record CreateCardRequest(String serviceId,String boardId,@NotBlank String title,String description,@NotBlank String prompt,String columnId,String teamId,String objectiveId,String assigneeGolemId,String assignmentPolicy,boolean autoAssign){}
+public record CreateCardRequest(String serviceId,String boardId,@NotBlank String title,String description,@NotBlank String prompt,String columnId,String kind,String parentCardId,String epicCardId,String reviewOfCardId,List<String>dependsOnCardIds,String teamId,String objectiveId,String assigneeGolemId,String assignmentPolicy,boolean autoAssign){}

@@ -49,6 +49,7 @@ import me.golemcore.hive.domain.model.BoardTransitionRule;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardAssignmentPolicy;
 import me.golemcore.hive.domain.model.CardControlStateSnapshot;
+import me.golemcore.hive.domain.model.CardKind;
 import me.golemcore.hive.domain.model.CardTransitionEvent;
 import me.golemcore.hive.workflow.application.FlowRemapPreview;
 
@@ -86,13 +87,22 @@ abstract class BoardMappingSupport {
                 card.getId(),
                 card.getServiceId(),
                 card.getBoardId(),
+                cardKindName(card),
+                card.getParentCardId(),
+                card.getEpicCardId(),
+                card.getDependsOnCardIds() != null ? card.getDependsOnCardIds() : List.of(),
+                card.getReviewOfCardId(),
+                card.getReviewerGolemIds() != null ? card.getReviewerGolemIds() : List.of(),
+                card.getReviewerTeamId(),
+                card.getRequiredReviewCount(),
+                cardReviewStatusName(card),
                 card.getTeamId(),
                 card.getObjectiveId(),
                 card.getThreadId(),
                 card.getTitle(),
                 card.getColumnId(),
                 card.getAssigneeGolemId(),
-                card.getAssignmentPolicy().name(),
+                cardAssignmentPolicyName(card),
                 card.getPosition(),
                 card.isArchived(),
                 toCardControlStateResponse(controlState));
@@ -103,6 +113,15 @@ abstract class BoardMappingSupport {
                 card.getId(),
                 card.getServiceId(),
                 card.getBoardId(),
+                cardKindName(card),
+                card.getParentCardId(),
+                card.getEpicCardId(),
+                card.getDependsOnCardIds() != null ? card.getDependsOnCardIds() : List.of(),
+                card.getReviewOfCardId(),
+                card.getReviewerGolemIds() != null ? card.getReviewerGolemIds() : List.of(),
+                card.getReviewerTeamId(),
+                card.getRequiredReviewCount(),
+                cardReviewStatusName(card),
                 card.getTeamId(),
                 card.getObjectiveId(),
                 card.getThreadId(),
@@ -111,7 +130,7 @@ abstract class BoardMappingSupport {
                 card.getPrompt(),
                 card.getColumnId(),
                 card.getAssigneeGolemId(),
-                card.getAssignmentPolicy().name(),
+                cardAssignmentPolicyName(card),
                 card.getPosition(),
                 card.isArchived(),
                 card.getArchivedAt(),
@@ -157,6 +176,12 @@ abstract class BoardMappingSupport {
     protected CardAssignmentPolicy parseAssignmentPolicy(String value) {
         return value != null && !value.isBlank()
                 ? CardAssignmentPolicy.valueOf(value.toUpperCase(java.util.Locale.ROOT))
+                : null;
+    }
+
+    protected CardKind parseCardKind(String value) {
+        return value != null && !value.isBlank()
+                ? CardKind.valueOf(value.toUpperCase(java.util.Locale.ROOT))
                 : null;
     }
 
@@ -270,5 +295,18 @@ abstract class BoardMappingSupport {
                 controlState.cancelRequestedByActorName(),
                 controlState.cancelRequestedPending(),
                 controlState.canCancel());
+    }
+
+    private String cardKindName(Card card) {
+        return card.getKind() != null ? card.getKind().name() : CardKind.TASK.name();
+    }
+
+    private String cardAssignmentPolicyName(Card card) {
+        return card.getAssignmentPolicy() != null ? card.getAssignmentPolicy().name()
+                : CardAssignmentPolicy.MANUAL.name();
+    }
+
+    private String cardReviewStatusName(Card card) {
+        return card.getReviewStatus() != null ? card.getReviewStatus().name() : null;
     }
 }

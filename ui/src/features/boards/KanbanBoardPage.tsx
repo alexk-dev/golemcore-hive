@@ -1,12 +1,12 @@
 import { closestCorners, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { archiveCard, assignCard, createCard, getCard, getCardAssignees, listCards, moveCard, updateCard } from '../../lib/api/cardsApi';
+import { archiveCard, assignCard, createCard, getCard, getCardAssignees, listCards, moveCard, requestCardReview, updateCard } from '../../lib/api/cardsApi';
 import { cancelThreadRun, createThreadCommand, type CreateThreadCommandInput } from '../../lib/api/commandsApi';
-import { listGolems, type GolemSummary } from '../../lib/api/golemsApi';
+import { listGolems } from '../../lib/api/golemsApi';
 import { listObjectives } from '../../lib/api/objectivesApi';
-import { getService, getServiceRouting, type ServiceDetail, type ServiceRoutingResolved } from '../../lib/api/servicesApi';
+import { getService, getServiceRouting } from '../../lib/api/servicesApi';
 import { listTeams } from '../../lib/api/teamsApi';
 import { readErrorMessage } from '../../lib/format';
 import { CardComposerDialog } from '../cards/CardComposerDialog';
@@ -14,6 +14,7 @@ import { CardDetailsDrawer } from '../cards/CardDetailsDrawer';
 import { KanbanBoardHeader } from './KanbanBoardHeader';
 import { KanbanColumn } from './KanbanColumn';
 import { getMoveInput } from './kanbanDrag';
+import { useComposerAssigneeOptions } from './useComposerAssigneeOptions';
 import { useKanbanAutoScroll } from './useKanbanAutoScroll';
 
 const KANBAN_BACKGROUND_REFRESH_MS = 10_000;
@@ -92,6 +93,9 @@ function useKanbanBoardData({
       queryClient.invalidateQueries({ queryKey: ['card-assignees', selectedCardId] }),
     ]);
   };
+  const invalidateCardsAndSelectedCardQueries = async () => {
+    await Promise.all([queryClient.invalidateQueries({ queryKey: ['cards', serviceId] }), invalidateSelectedCardQueries()]);
+  };
   const invalidateThreadQueries = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['thread-runs', cardDetailsQuery.data?.threadId] }),
@@ -141,12 +145,17 @@ function useKanbanBoardData({
   });
   const assignCardMutation = useMutation({
     mutationFn: ({ cardId, assigneeGolemId }: { cardId: string; assigneeGolemId: string | null }) => assignCard(cardId, assigneeGolemId),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['cards', serviceId] }),
-        invalidateSelectedCardQueries(),
-      ]);
-    },
+    onSuccess: invalidateCardsAndSelectedCardQueries,
+  });
+  const requestReviewMutation = useMutation({
+    mutationFn: ({
+      cardId,
+      input,
+    }: {
+      cardId: string;
+      input: { reviewerGolemIds: string[]; reviewerTeamId: string | null; requiredReviewCount: number };
+    }) => requestCardReview(cardId, input),
+    onSuccess: invalidateCardsAndSelectedCardQueries,
   });
   const archiveCardMutation = useMutation({
     mutationFn: archiveCard,
@@ -207,43 +216,11 @@ function useKanbanBoardData({
     moveCardMutation,
     updateCardMutation,
     assignCardMutation,
+    requestReviewMutation,
     archiveCardMutation,
     createCommandMutation,
     cancelRunMutation,
   };
-}
-
-function useComposerAssigneeOptions({
-  board,
-  golems,
-  team,
-}: {
-  board?: ServiceDetail;
-  golems?: GolemSummary[];
-  team?: ServiceRoutingResolved;
-}) {
-  return useMemo(() => {
-    if (!board) {
-      return null;
-    }
-    const teamCandidates = team?.candidates ?? [];
-    return {
-      cardId: 'draft',
-      serviceId: board.id,
-      boardId: board.id,
-      teamCandidates,
-      allCandidates:
-        golems?.map((golem) => ({
-          golemId: golem.id,
-          displayName: golem.displayName,
-          state: golem.state,
-          score: 0,
-          reasons: ['Available from global fleet'],
-          roleSlugs: golem.roleSlugs,
-          inBoardTeam: teamCandidates.some((candidate) => candidate.golemId === golem.id),
-        })) ?? [],
-    };
-  }, [board, golems, team]);
 }
 
 export function KanbanBoardPage() {
@@ -360,6 +337,7 @@ export function KanbanBoardPage() {
         objectives={data.objectivesQuery.data ?? []}
         isPending={
           data.updateCardMutation.isPending || data.assignCardMutation.isPending || data.archiveCardMutation.isPending
+            || data.requestReviewMutation.isPending
         }
         isDispatchPending={data.createCommandMutation.isPending}
         isCancelPending={data.cancelRunMutation.isPending}
@@ -376,6 +354,12 @@ export function KanbanBoardPage() {
             return;
           }
           await data.assignCardMutation.mutateAsync({ cardId: selectedCardId, assigneeGolemId });
+        }}
+        onRequestReview={async (input) => {
+          if (!selectedCardId) {
+            return;
+          }
+          await data.requestReviewMutation.mutateAsync({ cardId: selectedCardId, input });
         }}
         onArchive={async () => {
           if (!selectedCardId) {

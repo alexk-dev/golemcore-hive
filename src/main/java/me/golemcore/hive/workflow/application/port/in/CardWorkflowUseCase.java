@@ -22,11 +22,17 @@ import java.util.List;
 import java.util.Optional;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardAssignmentPolicy;
+import me.golemcore.hive.domain.model.CardKind;
 import me.golemcore.hive.domain.model.CardTransitionOrigin;
+import me.golemcore.hive.workflow.application.CardCreateCommand;
+import me.golemcore.hive.workflow.application.CardQuery;
+import me.golemcore.hive.workflow.application.CardUpdateCommand;
 
 public interface CardWorkflowUseCase {
 
     List<Card> listCards(String serviceId, boolean includeArchived);
+
+    List<Card> listCards(CardQuery query);
 
     Optional<Card> findCard(String cardId);
 
@@ -46,6 +52,8 @@ public interface CardWorkflowUseCase {
             String actorId,
             String actorName);
 
+    Card createCard(CardCreateCommand command, String actorId, String actorName);
+
     Card updateCard(
             String cardId,
             String title,
@@ -54,6 +62,8 @@ public interface CardWorkflowUseCase {
             String teamId,
             String objectiveId,
             CardAssignmentPolicy assignmentPolicy);
+
+    Card updateCard(String cardId, CardUpdateCommand command);
 
     Card moveCard(
             String cardId,

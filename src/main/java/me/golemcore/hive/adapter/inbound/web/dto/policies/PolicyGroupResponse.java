@@ -26,7 +26,7 @@ import java.util.Map;
 
 public record PolicyGroupResponse(String id,String slug,String name,String description,String status,int currentVersion,PolicyGroupSpecResponse draftSpec,Instant createdAt,Instant updatedAt,Instant lastPublishedAt,String lastPublishedBy,String lastPublishedByName,int boundGolemCount){
 
-public record PolicyGroupSpecResponse(int schemaVersion,Map<String,PolicyProviderConfigResponse>llmProviders,PolicyModelRouterResponse modelRouter,PolicyModelCatalogResponse modelCatalog,PolicyToolsConfigResponse tools,PolicyMemoryConfigResponse memory,PolicyMcpConfigResponse mcp,PolicyAutonomyConfigResponse autonomy,String checksum){
+public record PolicyGroupSpecResponse(int schemaVersion,Map<String,PolicyProviderConfigResponse>llmProviders,PolicyModelRouterResponse modelRouter,PolicyModelCatalogResponse modelCatalog,PolicyToolsConfigResponse tools,PolicyMemoryConfigResponse memory,PolicyMcpConfigResponse mcp,PolicyAutonomyConfigResponse autonomy,PolicySdlcConfigResponse sdlc,String checksum){
 
 public PolicyGroupSpecResponse{llmProviders=llmProviders!=null?llmProviders:new LinkedHashMap<>();}}
 
@@ -66,4 +66,8 @@ public record PolicyMcpCatalogEntryResponse(String name,String description,Strin
 
 public PolicyMcpCatalogEntryResponse{envPresent=envPresent!=null?envPresent:new LinkedHashMap<>();}}
 
-public record PolicyAutonomyConfigResponse(Boolean enabled,Integer tickIntervalSeconds,Integer taskTimeLimitMinutes,Boolean autoStart,Integer maxGoals,String modelTier,Boolean reflectionEnabled,Integer reflectionFailureThreshold,String reflectionModelTier,Boolean reflectionTierPriority,Boolean notifyMilestones){}}
+public record PolicyAutonomyConfigResponse(Boolean enabled,Integer tickIntervalSeconds,Integer taskTimeLimitMinutes,Boolean autoStart,Integer maxGoals,String modelTier,Boolean reflectionEnabled,Integer reflectionFailureThreshold,String reflectionModelTier,Boolean reflectionTierPriority,Boolean notifyMilestones){}
+
+public record PolicySdlcConfigResponse(Boolean taskCreationEnabled,Boolean autoApplyDecompositionEnabled,Integer maxDecompositionFanOut,Boolean assignmentEnabled,Boolean reviewerAssignmentEnabled,Boolean requireReviewerSeparationOfDuties,Integer approvalRequiredAboveFanOut,List<String>allowedCardKinds){
+
+public PolicySdlcConfigResponse{allowedCardKinds=allowedCardKinds!=null?allowedCardKinds:new ArrayList<>();}}}

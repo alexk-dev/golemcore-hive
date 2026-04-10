@@ -421,6 +421,12 @@ public class PolicyGroupAdministrationApplicationService implements PolicyGroupA
         if (copy.getAutonomy() == null) {
             copy.setAutonomy(new PolicyGroupSpec.PolicyAutonomyConfig());
         }
+        if (copy.getSdlc() == null) {
+            copy.setSdlc(new PolicyGroupSpec.PolicySdlcConfig());
+        }
+        if (copy.getSdlc().getAllowedCardKinds() == null) {
+            copy.getSdlc().setAllowedCardKinds(new ArrayList<>());
+        }
         copy.setChecksum(policySpecCodecPort.calculateChecksum(copy));
         return copy;
     }

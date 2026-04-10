@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { CardAssigneeOptions, CardControlState, CardDetail } from '../../lib/api/cardsApi';
 import type { CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import type { GolemSummary } from '../../lib/api/golemsApi';
@@ -7,6 +8,7 @@ import { formatControlLabel, formatGolemDisplayName } from '../../lib/format';
 import { AssignmentPolicyBadge } from './AssignmentPolicyBadge';
 import { AssigneePicker } from './AssigneePicker';
 import { CommandForm } from './CommandForm';
+import { CardWorkGraphPanel } from './CardWorkGraphPanel';
 
 export function CardDispatchPanel({
   card,
@@ -257,6 +259,105 @@ export function AssigneeRoutingPanel({
   );
 }
 
+export function ReviewRequestPanel({
+  card,
+  allGolems,
+  teams,
+  isPending,
+  onRequestReview,
+}: {
+  card: CardDetail;
+  allGolems: GolemSummary[];
+  teams: TeamDetail[];
+  isPending: boolean;
+  onRequestReview: (input: { reviewerGolemIds: string[]; reviewerTeamId: string | null; requiredReviewCount: number }) => Promise<void>;
+}) {
+  const eligibleGolems = allGolems.filter((golem) => golem.id !== card.assigneeGolemId);
+  const [reviewerGolemId, setReviewerGolemId] = useState('');
+  const [reviewerTeamId, setReviewerTeamId] = useState('');
+  const [requiredReviewCount, setRequiredReviewCount] = useState(1);
+
+  useEffect(() => {
+    setReviewerGolemId(card.reviewerGolemIds?.[0] ?? '');
+    setReviewerTeamId(card.reviewerTeamId ?? '');
+    setRequiredReviewCount(card.requiredReviewCount && card.requiredReviewCount > 0 ? card.requiredReviewCount : 1);
+  }, [card.id, card.requiredReviewCount, card.reviewerGolemIds, card.reviewerTeamId]);
+
+  const canSubmit = Boolean(reviewerGolemId || reviewerTeamId);
+
+  return (
+    <form
+      className="panel grid gap-3 p-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!canSubmit) {
+          return;
+        }
+        void onRequestReview({
+          reviewerGolemIds: reviewerGolemId ? [reviewerGolemId] : [],
+          reviewerTeamId: reviewerTeamId || null,
+          requiredReviewCount,
+        });
+      }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Review gate</p>
+          <p className="mt-1 text-xs text-muted-foreground">{card.reviewStatus ?? 'NOT_REQUIRED'}</p>
+        </div>
+        <button
+          type="submit"
+          disabled={isPending || !canSubmit}
+          className="border border-border bg-panel/85 px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
+        >
+          Request
+        </button>
+      </div>
+      <label className="grid gap-1.5">
+        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Reviewer</span>
+        <select
+          value={reviewerGolemId}
+          onChange={(event) => setReviewerGolemId(event.target.value)}
+          className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
+        >
+          <option value="">No direct reviewer</option>
+          {eligibleGolems.map((golem) => (
+            <option key={golem.id} value={golem.id}>
+              {golem.displayName}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1.5">
+        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Reviewer team</span>
+        <select
+          value={reviewerTeamId}
+          onChange={(event) => setReviewerTeamId(event.target.value)}
+          className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
+        >
+          <option value="">No team gate</option>
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>
+              {team.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1.5">
+        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Required approvals</span>
+        <input
+          type="number"
+          min={1}
+          max={Math.max(1, eligibleGolems.length)}
+          value={requiredReviewCount}
+          onChange={(event) => setRequiredReviewCount(Math.max(1, Number(event.target.value) || 1))}
+          className="border border-border bg-panel px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
+        />
+      </label>
+    </form>
+  );
+}
+
 export function TransitionHistoryPanel({
   card,
   isPending,
@@ -302,3 +403,5 @@ export function TransitionHistoryPanel({
     </section>
   );
 }
+
+export { CardWorkGraphPanel };

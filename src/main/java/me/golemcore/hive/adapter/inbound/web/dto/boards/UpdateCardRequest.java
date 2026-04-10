@@ -18,4 +18,6 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
-public record UpdateCardRequest(String title,String description,String prompt,String teamId,String objectiveId,String assignmentPolicy){}
+import java.util.List;
+
+public record UpdateCardRequest(String title,String description,String prompt,String kind,String parentCardId,String epicCardId,String reviewOfCardId,List<String>dependsOnCardIds,String teamId,String objectiveId,String assignmentPolicy){}

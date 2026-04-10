@@ -1,0 +1,44 @@
+/*
+ * Copyright 2026 Aleksei Kuleshov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contact: alex@kuleshov.tech
+ */
+
+package me.golemcore.hive.workflow.application.port.in;
+
+import java.util.List;
+import me.golemcore.hive.domain.model.Card;
+import me.golemcore.hive.domain.model.CardReviewDecision;
+
+public interface ReviewWorkflowUseCase {
+
+    Card requestReview(
+            String cardId,
+            List<String> reviewerGolemIds,
+            String reviewerTeamId,
+            Integer requiredReviewCount,
+            String actorId,
+            String actorName);
+
+    Card activateReviewForCompletedWork(String implementationCardId, String actorId, String actorName);
+
+    Card applyDecision(
+            String reviewCardId,
+            CardReviewDecision decision,
+            String summary,
+            String details,
+            String actorId,
+            String actorName);
+}

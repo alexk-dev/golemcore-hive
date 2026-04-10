@@ -389,6 +389,38 @@ public class PolicyGroupAdministrationApplicationService implements PolicyGroupA
         if (copy.getModelCatalog().getModels() == null) {
             copy.getModelCatalog().setModels(new LinkedHashMap<>());
         }
+        if (copy.getTools() == null) {
+            copy.setTools(new PolicyGroupSpec.PolicyToolsConfig());
+        }
+        if (copy.getTools().getShellEnvironmentVariables() == null) {
+            copy.getTools().setShellEnvironmentVariables(new ArrayList<>());
+        }
+        if (copy.getMemory() == null) {
+            copy.setMemory(new PolicyGroupSpec.PolicyMemoryConfig());
+        }
+        if (copy.getMemory().getDisclosure() == null) {
+            copy.getMemory().setDisclosure(new PolicyGroupSpec.PolicyMemoryDisclosureConfig());
+        }
+        if (copy.getMemory().getReranking() == null) {
+            copy.getMemory().setReranking(new PolicyGroupSpec.PolicyMemoryRerankingConfig());
+        }
+        if (copy.getMemory().getDiagnostics() == null) {
+            copy.getMemory().setDiagnostics(new PolicyGroupSpec.PolicyMemoryDiagnosticsConfig());
+        }
+        if (copy.getMcp() == null) {
+            copy.setMcp(new PolicyGroupSpec.PolicyMcpConfig());
+        }
+        if (copy.getMcp().getCatalog() == null) {
+            copy.getMcp().setCatalog(new ArrayList<>());
+        }
+        for (PolicyGroupSpec.PolicyMcpCatalogEntry entry : copy.getMcp().getCatalog()) {
+            if (entry != null && entry.getEnv() == null) {
+                entry.setEnv(new LinkedHashMap<>());
+            }
+        }
+        if (copy.getAutonomy() == null) {
+            copy.setAutonomy(new PolicyGroupSpec.PolicyAutonomyConfig());
+        }
         copy.setChecksum(policySpecCodecPort.calculateChecksum(copy));
         return copy;
     }
@@ -399,26 +431,103 @@ public class PolicyGroupAdministrationApplicationService implements PolicyGroupA
         }
 
         PolicyGroupSpec mergedSpec = policySpecCodecPort.copy(nextSpec);
-        if (mergedSpec.getLlmProviders() == null) {
+        if (existingSpec == null) {
             return mergedSpec;
         }
-        if (existingSpec == null || existingSpec.getLlmProviders() == null) {
-            return mergedSpec;
+
+        mergeProviderSecrets(existingSpec, mergedSpec);
+        mergeToolSecrets(existingSpec, mergedSpec);
+        mergeMcpSecrets(existingSpec, mergedSpec);
+        return mergedSpec;
+    }
+
+    private void mergeProviderSecrets(PolicyGroupSpec existingSpec, PolicyGroupSpec mergedSpec) {
+        if (mergedSpec.getLlmProviders() == null || existingSpec.getLlmProviders() == null) {
+            return;
         }
 
         for (Map.Entry<String, PolicyGroupSpec.PolicyProviderConfig> entry : mergedSpec.getLlmProviders().entrySet()) {
             PolicyGroupSpec.PolicyProviderConfig incomingProvider = entry.getValue();
             PolicyGroupSpec.PolicyProviderConfig existingProvider = existingSpec.getLlmProviders().get(entry.getKey());
-            if (incomingProvider == null || existingProvider == null) {
-                continue;
-            }
-            if ((incomingProvider.getApiKey() == null || incomingProvider.getApiKey().isBlank())
-                    && existingProvider.getApiKey() != null
-                    && !existingProvider.getApiKey().isBlank()) {
+            if (incomingProvider != null
+                    && existingProvider != null
+                    && isBlank(incomingProvider.getApiKey())
+                    && !isBlank(existingProvider.getApiKey())) {
                 incomingProvider.setApiKey(existingProvider.getApiKey());
             }
         }
-        return mergedSpec;
+    }
+
+    private void mergeToolSecrets(PolicyGroupSpec existingSpec, PolicyGroupSpec mergedSpec) {
+        if (mergedSpec.getTools() == null
+                || mergedSpec.getTools().getShellEnvironmentVariables() == null
+                || existingSpec.getTools() == null
+                || existingSpec.getTools().getShellEnvironmentVariables() == null) {
+            return;
+        }
+
+        Map<String, PolicyGroupSpec.PolicyEnvironmentVariable> existingVariables = new LinkedHashMap<>();
+        for (PolicyGroupSpec.PolicyEnvironmentVariable variable : existingSpec.getTools()
+                .getShellEnvironmentVariables()) {
+            if (variable != null && variable.getName() != null) {
+                existingVariables.put(variable.getName(), variable);
+            }
+        }
+        for (PolicyGroupSpec.PolicyEnvironmentVariable variable : mergedSpec.getTools()
+                .getShellEnvironmentVariables()) {
+            if (variable == null || variable.getName() == null || !isBlank(variable.getValue())) {
+                continue;
+            }
+            PolicyGroupSpec.PolicyEnvironmentVariable existingVariable = existingVariables.get(variable.getName());
+            if (existingVariable != null && !isBlank(existingVariable.getValue())) {
+                variable.setValue(existingVariable.getValue());
+            }
+        }
+    }
+
+    private void mergeMcpSecrets(PolicyGroupSpec existingSpec, PolicyGroupSpec mergedSpec) {
+        if (mergedSpec.getMcp() == null
+                || mergedSpec.getMcp().getCatalog() == null
+                || existingSpec.getMcp() == null
+                || existingSpec.getMcp().getCatalog() == null) {
+            return;
+        }
+
+        Map<String, PolicyGroupSpec.PolicyMcpCatalogEntry> existingEntries = new LinkedHashMap<>();
+        for (PolicyGroupSpec.PolicyMcpCatalogEntry entry : existingSpec.getMcp().getCatalog()) {
+            if (entry != null && entry.getName() != null) {
+                existingEntries.put(entry.getName(), entry);
+            }
+        }
+        for (PolicyGroupSpec.PolicyMcpCatalogEntry entry : mergedSpec.getMcp().getCatalog()) {
+            if (entry == null || entry.getName() == null) {
+                continue;
+            }
+            mergeMcpEntrySecrets(existingEntries.get(entry.getName()), entry);
+        }
+    }
+
+    private void mergeMcpEntrySecrets(
+            PolicyGroupSpec.PolicyMcpCatalogEntry existingEntry,
+            PolicyGroupSpec.PolicyMcpCatalogEntry incomingEntry) {
+        if (existingEntry == null || existingEntry.getEnv() == null) {
+            return;
+        }
+        if (incomingEntry.getEnv() == null) {
+            incomingEntry.setEnv(new LinkedHashMap<>(existingEntry.getEnv()));
+            return;
+        }
+
+        for (Map.Entry<String, String> envEntry : incomingEntry.getEnv().entrySet()) {
+            String existingValue = existingEntry.getEnv().get(envEntry.getKey());
+            if (isBlank(envEntry.getValue()) && !isBlank(existingValue)) {
+                envEntry.setValue(existingValue);
+            }
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private void validateSlug(String slug) {

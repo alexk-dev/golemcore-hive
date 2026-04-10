@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -134,7 +135,7 @@ class PolicyGroupServiceTest {
     }
 
     @Test
-    void shouldPreserveProviderSecretsWhenDraftUpdateOmitsApiKey() {
+    void shouldPreserveSecretsWhenDraftUpdateOmitsRuntimeSecretValues() {
         HiveProperties properties = new HiveProperties();
         properties.getStorage().setBasePath(tempDir.toString());
         ObjectMapper objectMapper = new ObjectMapper();
@@ -163,11 +164,25 @@ class PolicyGroupServiceTest {
         PolicyGroupSpec updatedWithoutSecret = buildSpec("openai", "openai/gpt-5.1", "openai/gpt-5.1");
         updatedWithoutSecret.getLlmProviders().get("openai").setApiKey(null);
         updatedWithoutSecret.getLlmProviders().get("openai").setRequestTimeoutSeconds(45);
+        updatedWithoutSecret.getTools().getShellEnvironmentVariables().get(0).setValue(null);
+        updatedWithoutSecret.getMcp().getCatalog().get(0).getEnv().put("GITHUB_TOKEN", "");
 
         PolicyGroup updatedGroup = service.updateDraft(group.getId(), updatedWithoutSecret);
 
         assertEquals("secret-openai", updatedGroup.getDraftSpec().getLlmProviders().get("openai").getApiKey());
         assertEquals(45, updatedGroup.getDraftSpec().getLlmProviders().get("openai").getRequestTimeoutSeconds());
+        assertEquals("secret-shell-token",
+                updatedGroup.getDraftSpec().getTools().getShellEnvironmentVariables().get(0).getValue());
+        assertEquals("secret-mcp-token",
+                updatedGroup.getDraftSpec().getMcp().getCatalog().get(0).getEnv().get("GITHUB_TOKEN"));
+
+        PolicyGroupSpec updatedWithoutMcpEnv = buildSpec("openai", "openai/gpt-5.1", "openai/gpt-5.1");
+        updatedWithoutMcpEnv.getMcp().getCatalog().get(0).setEnv(null);
+
+        PolicyGroup updatedAgain = service.updateDraft(group.getId(), updatedWithoutMcpEnv);
+
+        assertEquals("secret-mcp-token",
+                updatedAgain.getDraftSpec().getMcp().getCatalog().get(0).getEnv().get("GITHUB_TOKEN"));
     }
 
     @Test
@@ -268,6 +283,9 @@ class PolicyGroupServiceTest {
                 .maxInputTokens(200_000)
                 .build());
 
+        Map<String, String> mcpEnv = new LinkedHashMap<>();
+        mcpEnv.put("GITHUB_TOKEN", "secret-mcp-token");
+
         return PolicyGroupSpec.builder()
                 .schemaVersion(1)
                 .llmProviders(providers)
@@ -283,6 +301,75 @@ class PolicyGroupServiceTest {
                 .modelCatalog(PolicyGroupSpec.PolicyModelCatalog.builder()
                         .defaultModel(defaultModel)
                         .models(models)
+                        .build())
+                .tools(PolicyGroupSpec.PolicyToolsConfig.builder()
+                        .filesystemEnabled(true)
+                        .shellEnabled(true)
+                        .skillManagementEnabled(true)
+                        .skillTransitionEnabled(true)
+                        .tierEnabled(true)
+                        .goalManagementEnabled(true)
+                        .shellEnvironmentVariables(List.of(PolicyGroupSpec.PolicyEnvironmentVariable.builder()
+                                .name("GITHUB_TOKEN")
+                                .value("secret-shell-token")
+                                .build()))
+                        .build())
+                .memory(PolicyGroupSpec.PolicyMemoryConfig.builder()
+                        .version(2)
+                        .enabled(true)
+                        .softPromptBudgetTokens(1_800)
+                        .maxPromptBudgetTokens(6_000)
+                        .workingTopK(6)
+                        .episodicTopK(8)
+                        .semanticTopK(8)
+                        .proceduralTopK(4)
+                        .promotionEnabled(true)
+                        .promotionMinConfidence(0.75d)
+                        .decayEnabled(true)
+                        .decayDays(90)
+                        .retrievalLookbackDays(30)
+                        .codeAwareExtractionEnabled(true)
+                        .disclosure(PolicyGroupSpec.PolicyMemoryDisclosureConfig.builder()
+                                .mode("summary")
+                                .promptStyle("balanced")
+                                .toolExpansionEnabled(true)
+                                .disclosureHintsEnabled(true)
+                                .detailMinScore(0.8d)
+                                .build())
+                        .reranking(PolicyGroupSpec.PolicyMemoryRerankingConfig.builder()
+                                .enabled(true)
+                                .profile("balanced")
+                                .build())
+                        .diagnostics(PolicyGroupSpec.PolicyMemoryDiagnosticsConfig.builder()
+                                .verbosity("basic")
+                                .build())
+                        .build())
+                .mcp(PolicyGroupSpec.PolicyMcpConfig.builder()
+                        .enabled(true)
+                        .defaultStartupTimeout(30)
+                        .defaultIdleTimeout(5)
+                        .catalog(List.of(PolicyGroupSpec.PolicyMcpCatalogEntry.builder()
+                                .name("github")
+                                .description("GitHub tools")
+                                .command("npx -y @modelcontextprotocol/server-github")
+                                .env(mcpEnv)
+                                .startupTimeoutSeconds(45)
+                                .idleTimeoutMinutes(10)
+                                .enabled(true)
+                                .build()))
+                        .build())
+                .autonomy(PolicyGroupSpec.PolicyAutonomyConfig.builder()
+                        .enabled(true)
+                        .tickIntervalSeconds(1)
+                        .taskTimeLimitMinutes(10)
+                        .autoStart(true)
+                        .maxGoals(3)
+                        .modelTier("balanced")
+                        .reflectionEnabled(true)
+                        .reflectionFailureThreshold(2)
+                        .reflectionModelTier("reasoning")
+                        .reflectionTierPriority(true)
+                        .notifyMilestones(true)
                         .build())
                 .build();
     }

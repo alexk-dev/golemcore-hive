@@ -21,6 +21,89 @@ export interface PolicyModelConfigResponse {
   maxInputTokens: number | null;
 }
 
+export interface PolicyEnvironmentVariableResponse {
+  name: string | null;
+  valuePresent: boolean;
+}
+
+export interface PolicyToolsConfigResponse {
+  filesystemEnabled: boolean | null;
+  shellEnabled: boolean | null;
+  skillManagementEnabled: boolean | null;
+  skillTransitionEnabled: boolean | null;
+  tierEnabled: boolean | null;
+  goalManagementEnabled: boolean | null;
+  shellEnvironmentVariables: PolicyEnvironmentVariableResponse[];
+}
+
+export interface PolicyMemoryConfigResponse {
+  version: number | null;
+  enabled: boolean | null;
+  softPromptBudgetTokens: number | null;
+  maxPromptBudgetTokens: number | null;
+  workingTopK: number | null;
+  episodicTopK: number | null;
+  semanticTopK: number | null;
+  proceduralTopK: number | null;
+  promotionEnabled: boolean | null;
+  promotionMinConfidence: number | null;
+  decayEnabled: boolean | null;
+  decayDays: number | null;
+  retrievalLookbackDays: number | null;
+  codeAwareExtractionEnabled: boolean | null;
+  disclosure: PolicyMemoryDisclosureResponse | null;
+  reranking: PolicyMemoryRerankingResponse | null;
+  diagnostics: PolicyMemoryDiagnosticsResponse | null;
+}
+
+export interface PolicyMemoryDisclosureResponse {
+  mode: string | null;
+  promptStyle: string | null;
+  toolExpansionEnabled: boolean | null;
+  disclosureHintsEnabled: boolean | null;
+  detailMinScore: number | null;
+}
+
+export interface PolicyMemoryRerankingResponse {
+  enabled: boolean | null;
+  profile: string | null;
+}
+
+export interface PolicyMemoryDiagnosticsResponse {
+  verbosity: string | null;
+}
+
+export interface PolicyMcpConfigResponse {
+  enabled: boolean | null;
+  defaultStartupTimeout: number | null;
+  defaultIdleTimeout: number | null;
+  catalog: PolicyMcpCatalogEntryResponse[];
+}
+
+export interface PolicyMcpCatalogEntryResponse {
+  name: string | null;
+  description: string | null;
+  command: string | null;
+  envPresent: Record<string, boolean>;
+  startupTimeoutSeconds: number | null;
+  idleTimeoutMinutes: number | null;
+  enabled: boolean | null;
+}
+
+export interface PolicyAutonomyConfigResponse {
+  enabled: boolean | null;
+  tickIntervalSeconds: number | null;
+  taskTimeLimitMinutes: number | null;
+  autoStart: boolean | null;
+  maxGoals: number | null;
+  modelTier: string | null;
+  reflectionEnabled: boolean | null;
+  reflectionFailureThreshold: number | null;
+  reflectionModelTier: string | null;
+  reflectionTierPriority: boolean | null;
+  notifyMilestones: boolean | null;
+}
+
 export interface PolicyGroupSpecResponse {
   schemaVersion: number;
   llmProviders: Record<string, PolicyProviderConfigResponse>;
@@ -34,6 +117,10 @@ export interface PolicyGroupSpecResponse {
     defaultModel: string | null;
     models: Record<string, PolicyModelConfigResponse>;
   } | null;
+  tools: PolicyToolsConfigResponse | null;
+  memory: PolicyMemoryConfigResponse | null;
+  mcp: PolicyMcpConfigResponse | null;
+  autonomy: PolicyAutonomyConfigResponse | null;
   checksum: string | null;
 }
 
@@ -84,6 +171,89 @@ export interface PolicyDraftModelConfig {
   maxInputTokens?: number | null;
 }
 
+export interface PolicyDraftEnvironmentVariable {
+  name?: string | null;
+  value?: string | null;
+}
+
+export interface PolicyDraftToolsConfig {
+  filesystemEnabled?: boolean | null;
+  shellEnabled?: boolean | null;
+  skillManagementEnabled?: boolean | null;
+  skillTransitionEnabled?: boolean | null;
+  tierEnabled?: boolean | null;
+  goalManagementEnabled?: boolean | null;
+  shellEnvironmentVariables?: PolicyDraftEnvironmentVariable[];
+}
+
+export interface PolicyDraftMemoryConfig {
+  version?: number | null;
+  enabled?: boolean | null;
+  softPromptBudgetTokens?: number | null;
+  maxPromptBudgetTokens?: number | null;
+  workingTopK?: number | null;
+  episodicTopK?: number | null;
+  semanticTopK?: number | null;
+  proceduralTopK?: number | null;
+  promotionEnabled?: boolean | null;
+  promotionMinConfidence?: number | null;
+  decayEnabled?: boolean | null;
+  decayDays?: number | null;
+  retrievalLookbackDays?: number | null;
+  codeAwareExtractionEnabled?: boolean | null;
+  disclosure?: PolicyDraftMemoryDisclosure | null;
+  reranking?: PolicyDraftMemoryReranking | null;
+  diagnostics?: PolicyDraftMemoryDiagnostics | null;
+}
+
+export interface PolicyDraftMemoryDisclosure {
+  mode?: string | null;
+  promptStyle?: string | null;
+  toolExpansionEnabled?: boolean | null;
+  disclosureHintsEnabled?: boolean | null;
+  detailMinScore?: number | null;
+}
+
+export interface PolicyDraftMemoryReranking {
+  enabled?: boolean | null;
+  profile?: string | null;
+}
+
+export interface PolicyDraftMemoryDiagnostics {
+  verbosity?: string | null;
+}
+
+export interface PolicyDraftMcpConfig {
+  enabled?: boolean | null;
+  defaultStartupTimeout?: number | null;
+  defaultIdleTimeout?: number | null;
+  catalog?: PolicyDraftMcpCatalogEntry[];
+}
+
+export interface PolicyDraftMcpCatalogEntry {
+  name?: string | null;
+  description?: string | null;
+  command?: string | null;
+  env?: Record<string, string | null> | null;
+  startupTimeoutSeconds?: number | null;
+  idleTimeoutMinutes?: number | null;
+  enabled?: boolean | null;
+}
+
+export interface PolicyDraftAutonomyConfig {
+  enabled?: boolean | null;
+  tickIntervalSeconds?: number | null;
+  taskTimeLimitMinutes?: number | null;
+  autoStart?: boolean | null;
+  maxGoals?: number | null;
+  modelTier?: string | null;
+  reflectionEnabled?: boolean | null;
+  reflectionFailureThreshold?: number | null;
+  reflectionModelTier?: string | null;
+  reflectionTierPriority?: boolean | null;
+  notifyMilestones?: boolean | null;
+}
+
 export interface PolicyDraftSpec {
   schemaVersion: number;
   llmProviders: Record<string, PolicyDraftProviderConfig>;
@@ -97,6 +267,10 @@ export interface PolicyDraftSpec {
     defaultModel?: string | null;
     models?: Record<string, PolicyDraftModelConfig>;
   } | null;
+  tools: PolicyDraftToolsConfig | null;
+  memory: PolicyDraftMemoryConfig | null;
+  mcp: PolicyDraftMcpConfig | null;
+  autonomy: PolicyDraftAutonomyConfig | null;
 }
 
 export interface GolemPolicyBinding {

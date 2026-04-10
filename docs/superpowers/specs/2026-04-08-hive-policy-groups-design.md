@@ -1,13 +1,13 @@
 # Hive Policy Groups Design
 
-Status: Draft v1
+Status: Draft v2
 Date: 2026-04-08
 Target repo: `golemcore-hive`
 Related runtime: `golemcore-bot`
 
 ## 1. Summary
 
-This design adds org-level `Policy Groups` to Hive so an operator can centrally manage LLM provider settings, model catalog entries, and routing policy for connected golems.
+This design adds org-level `Policy Groups` to Hive so an operator can centrally manage LLM provider settings, model catalog entries, routing policy, and runtime policy for connected golems.
 
 Each golem may have exactly one active policy group.
 
@@ -18,6 +18,10 @@ Hive becomes the source of truth for:
 - provider profiles and API keys,
 - model catalog snapshot,
 - tier and routing bindings,
+- tool policy and shell environment secrets,
+- memory retrieval and disclosure policy,
+- MCP server catalog and environment secrets,
+- autonomy runtime controls,
 - rollout target version for attached golems.
 
 When a golem is attached to a policy group, the corresponding local settings in `golemcore-bot` become read-only and are synchronized from Hive.
@@ -30,22 +34,22 @@ Make Hive the organization-level operating system layer for AI execution policy.
 
 The operator should be able to:
 
-- define one reusable LLM policy template,
+- define one reusable runtime policy template,
 - publish versioned changes,
 - attach a golem to that policy,
 - observe whether the golem applied the intended version,
 - roll back to an earlier version when needed,
-- manage all LLM configuration from Hive instead of per-bot local settings.
+- manage LLM, tools, memory, MCP, and autonomy configuration from Hive instead of per-bot local settings.
 
 ## 3. Problem
 
-Today `golemcore-bot` owns provider config, model catalog, and router settings locally.
+Today `golemcore-bot` owns provider config, model catalog, router settings, tool access, memory behavior, MCP catalog, and autonomy settings locally.
 
 This creates four problems for an AI-native organization:
 
 - policy drift across golems,
 - manual and error-prone secret rotation,
-- weak governance for model and routing changes,
+- weak governance for model, routing, tool, memory, MCP, and autonomy changes,
 - no central rollout or rollback workflow.
 
 Hive already acts as the control plane for fleet operations, but it does not yet own the runtime policy package that determines how each golem actually uses models.
@@ -59,6 +63,7 @@ Hive already acts as the control plane for fleet operations, but it does not yet
 - one active policy group per golem,
 - Hive-managed synchronization to bot,
 - read-only local bot settings for managed sections,
+- runtime policy sections for tools, memory, MCP, and autonomy,
 - drift reporting and rollout visibility,
 - rollback by selecting an earlier published version.
 
@@ -67,11 +72,11 @@ Hive already acts as the control plane for fleet operations, but it does not yet
 - multiple policy groups merged on one golem,
 - partial local overrides for managed policy sections,
 - real-time remote execution against Hive-hosted config without local persistence,
-- generalized management of non-LLM runtime sections such as tools, auto mode, memory, or MCP catalog.
+- fine-grained staged rollout percentages or canary groups.
 
 ## 5. Design Principles
 
-- Hive is the source of truth for managed LLM policy.
+- Hive is the source of truth for managed runtime policy.
 - Bot remains the execution plane and persists the last applied working snapshot locally.
 - One golem maps to one active policy group in v1.
 - Published policy versions are immutable.
@@ -83,11 +88,15 @@ Hive already acts as the control plane for fleet operations, but it does not yet
 
 Use `snapshot policy groups`.
 
-Hive stores a full, versioned LLM policy package:
+Hive stores a full, versioned runtime policy package:
 
 - `llm.providers` including raw API keys,
 - `modelRouter`,
-- managed `modelCatalog`.
+- managed `modelCatalog`,
+- `tools`,
+- `memory`,
+- `mcp`,
+- `autonomy`.
 
 Each publish creates a new immutable version.
 
@@ -108,6 +117,10 @@ When a golem is attached to a policy group:
 - Hive owns `llm.providers`,
 - Hive owns `modelRouter`,
 - Hive owns the managed model catalog snapshot,
+- Hive owns managed tool policy and shell environment secrets,
+- Hive owns managed memory retrieval and disclosure policy,
+- Hive owns managed MCP catalog and MCP environment secrets,
+- Hive owns managed autonomy controls,
 - bot dashboard editing for those sections becomes read-only.
 
 The bot still owns:
@@ -116,7 +129,7 @@ The bot still owns:
 - runtime execution against the applied snapshot,
 - temporary operation while out of sync on a previously applied version.
 
-This mirrors the existing managed-configuration pattern already used by Hive bootstrap settings in the bot, but applies it to LLM policy sections instead of only to Hive connectivity metadata.
+This mirrors the existing managed-configuration pattern already used by Hive bootstrap settings in the bot, but applies it to runtime policy sections instead of only to Hive connectivity metadata.
 
 ## 8. Versioning Model
 
@@ -162,6 +175,10 @@ It contains:
 - `llmProviders`
 - `modelRouter`
 - `modelCatalog`
+- `tools`
+- `memory`
+- `mcp`
+- `autonomy`
 - `checksum`
 
 `draftSpec` is editable.
@@ -232,6 +249,57 @@ Each binding includes:
 This is a versioned snapshot of the model metadata currently managed in the bot catalog.
 
 It remains a separate layer from provider profiles and tier bindings.
+
+### `tools`
+
+Tool policy mirrors bot runtime toggles for:
+
+- filesystem tool access,
+- shell tool access,
+- skill management and skill transition access,
+- tier and goal management access,
+- shell environment variables.
+
+Operator read APIs expose only `valuePresent` for shell environment variables.
+
+Machine policy packages include raw shell environment values.
+
+### `memory`
+
+Memory policy mirrors the bot Memory V2 runtime shape:
+
+- retrieval budgets and top-k controls,
+- promotion and decay controls,
+- retrieval lookback,
+- code-aware extraction,
+- disclosure mode and prompt style,
+- reranking profile,
+- diagnostics verbosity.
+
+### `mcp`
+
+MCP policy mirrors the bot MCP server catalog:
+
+- global enablement,
+- default startup and idle timeouts,
+- server name, description, command, timeouts, and enabled state,
+- server environment variables.
+
+Operator read APIs expose only `envPresent` for MCP environment variables.
+
+Machine policy packages include raw MCP environment values.
+
+### `autonomy`
+
+Autonomy policy mirrors the bot auto-mode runtime controls:
+
+- enablement,
+- tick interval and task time limit,
+- auto-start behavior,
+- maximum goals,
+- model tier,
+- reflection controls,
+- milestone notifications.
 
 ## 11. Sync and Apply Lifecycle
 
@@ -318,6 +386,10 @@ The system does not fail closed.
 - `llmProviders`
 - `modelRouter`
 - `modelCatalog`
+- `tools`
+- `memory`
+- `mcp`
+- `autonomy`
 
 ### `policy-apply-result` request
 
@@ -362,6 +434,10 @@ When a golem has an active policy binding:
 - bot `LLM Providers` becomes read-only,
 - bot `Model Router` becomes read-only,
 - bot managed `Model Catalog` becomes read-only.
+- bot managed `Tools` policy becomes read-only.
+- bot managed `Memory` policy becomes read-only.
+- bot managed `MCP` catalog becomes read-only.
+- bot managed `Autonomy` policy becomes read-only.
 
 The bot UI should display:
 
@@ -379,19 +455,19 @@ The bot should not erase the last applied config on detach.
 
 ## 15. Security Model
 
-Hive stores raw provider API keys because the chosen product direction is full central authority.
+Hive stores raw provider API keys and runtime environment secrets because the chosen product direction is full central authority.
 
 That requires three rules:
 
 1. Secrets must be encrypted at rest in Hive storage.
-2. Operator read APIs must never return raw secret values after initial write and instead expose presence metadata such as `apiKeyPresent`.
+2. Operator read APIs must never return raw secret values after initial write and instead expose presence metadata such as `apiKeyPresent`, `valuePresent`, or `envPresent`.
 3. Full policy packages including secrets must be available only to machine-scoped bot endpoints.
 
-The control channel must never transport raw API keys.
+The control channel must never transport raw API keys, shell environment values, or MCP environment values.
 
 Secret delivery should happen only over the machine-authenticated HTTPS package fetch.
 
-If an operator updates a draft policy and omits an existing provider `apiKey`, Hive preserves the stored key instead of clearing it.
+If an operator updates a draft policy and omits an existing provider `apiKey`, shell environment value, or MCP environment value, Hive preserves the stored secret instead of clearing it.
 
 ## 16. Validation Rules
 
@@ -447,10 +523,14 @@ Detach removes central authority but preserves the last applied snapshot locally
 ### Create and publish
 
 1. Operator creates a policy group.
-2. Operator edits the group draft in three sections:
+2. Operator edits the group draft in runtime policy sections:
    - `Providers`
    - `Model Catalog`
    - `Model Router`
+   - `Tools`
+   - `Memory`
+   - `MCP`
+   - `Autonomy`
 3. Operator publishes a new version with a `changeSummary`.
 
 ### Attach
@@ -533,9 +613,10 @@ The implemented v1 operator UI uses:
 - online golems converge to the target version automatically,
 - offline golems converge after reconnect,
 - bot local LLM policy settings become read-only when managed,
+- bot local tool, memory, MCP, and autonomy settings become read-only when managed,
 - Hive shows target version, applied version, and sync status,
 - operator can roll back to an earlier version,
-- full package delivery includes raw API keys only on machine endpoints.
+- full package delivery includes raw API keys and runtime environment secrets only on machine endpoints.
 
 ### Failure behavior
 
@@ -552,9 +633,8 @@ The implemented v1 operator UI uses:
 
 ## 21. Open Questions
 
-These questions are intentionally deferred from v1:
+These questions are intentionally deferred beyond runtime policy groups:
 
-- Should policy groups later expand beyond LLM settings into tools, memory, auto mode, or MCP?
 - Should Hive support staged rollout percentages or canary groups?
 - Should the bot keep an explicit local history of previously applied Hive policy versions for forensics?
 
@@ -565,7 +645,7 @@ Build v1 with:
 - one active policy group per golem,
 - immutable published versions,
 - drift-allowed rollout,
-- Hive-owned secrets and LLM policy package,
+- Hive-owned secrets and runtime policy package,
 - read-only local bot editing for managed policy sections,
 - pull-based convergence with WebSocket-triggered sync.
 

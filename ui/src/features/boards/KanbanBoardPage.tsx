@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { archiveCard, assignCard, createCard, getCard, getCardAssignees, listCards, moveCard, updateCard } from '../../lib/api/cardsApi';
 import { cancelThreadRun, createThreadCommand, type CreateThreadCommandInput } from '../../lib/api/commandsApi';
-import { listGolems } from '../../lib/api/golemsApi';
+import { listGolems, type GolemSummary } from '../../lib/api/golemsApi';
 import { listObjectives } from '../../lib/api/objectivesApi';
-import { getService, getServiceRouting } from '../../lib/api/servicesApi';
+import { getService, getServiceRouting, type ServiceDetail, type ServiceRoutingResolved } from '../../lib/api/servicesApi';
 import { listTeams } from '../../lib/api/teamsApi';
 import { readErrorMessage } from '../../lib/format';
 import { CardComposerDialog } from '../cards/CardComposerDialog';
@@ -188,27 +188,11 @@ function useKanbanBoardData({
     },
   });
 
-  const composerAssigneeOptions = useMemo(() => {
-    if (!boardQuery.data) {
-      return null;
-    }
-    return {
-      cardId: 'draft',
-      serviceId: boardQuery.data.id,
-      boardId: boardQuery.data.id,
-      teamCandidates: teamQuery.data?.candidates ?? [],
-      allCandidates:
-        golemsQuery.data?.map((golem) => ({
-          golemId: golem.id,
-          displayName: golem.displayName,
-          state: golem.state,
-          score: 0,
-          reasons: ['Available from global fleet'],
-          roleSlugs: golem.roleSlugs,
-          inBoardTeam: (teamQuery.data?.candidates ?? []).some((candidate) => candidate.golemId === golem.id),
-        })) ?? [],
-    };
-  }, [boardQuery.data, golemsQuery.data, teamQuery.data]);
+  const composerAssigneeOptions = useComposerAssigneeOptions({
+    board: boardQuery.data,
+    golems: golemsQuery.data,
+    team: teamQuery.data,
+  });
 
   return {
     boardQuery,
@@ -227,6 +211,39 @@ function useKanbanBoardData({
     createCommandMutation,
     cancelRunMutation,
   };
+}
+
+function useComposerAssigneeOptions({
+  board,
+  golems,
+  team,
+}: {
+  board?: ServiceDetail;
+  golems?: GolemSummary[];
+  team?: ServiceRoutingResolved;
+}) {
+  return useMemo(() => {
+    if (!board) {
+      return null;
+    }
+    const teamCandidates = team?.candidates ?? [];
+    return {
+      cardId: 'draft',
+      serviceId: board.id,
+      boardId: board.id,
+      teamCandidates,
+      allCandidates:
+        golems?.map((golem) => ({
+          golemId: golem.id,
+          displayName: golem.displayName,
+          state: golem.state,
+          score: 0,
+          reasons: ['Available from global fleet'],
+          roleSlugs: golem.roleSlugs,
+          inBoardTeam: teamCandidates.some((candidate) => candidate.golemId === golem.id),
+        })) ?? [],
+    };
+  }, [board, golems, team]);
 }
 
 export function KanbanBoardPage() {

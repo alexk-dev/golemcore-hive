@@ -9,7 +9,7 @@ interface AuditTimelineProps {
   events: AuditEvent[];
 }
 
-const ROW_HEIGHT = 32;
+const ROW_HEIGHT = 36;
 
 export function AuditTimeline({ events }: AuditTimelineProps) {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -26,7 +26,9 @@ export function AuditTimeline({ events }: AuditTimelineProps) {
 
   if (!events.length) {
     return (
-      <p className="text-sm text-muted-foreground">No audit events match the current filter.</p>
+      <div className="soft-card px-5 py-8 text-center">
+        <p className="text-sm text-muted-foreground">No audit events match the current filter.</p>
+      </div>
     );
   }
 

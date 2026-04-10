@@ -25,7 +25,7 @@ export function InspectionSelfEvolvingArtifactLineageRail({
               return null;
             }
             return (
-              <article key={node.nodeId} className="border border-border/70 bg-white/80 p-3">
+              <article key={node.nodeId} className="border border-border/70 bg-panel/80 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-foreground">{node.rolloutStage || node.nodeId}</p>
@@ -33,7 +33,7 @@ export function InspectionSelfEvolvingArtifactLineageRail({
                       {node.lifecycleState || 'unknown'} · {node.attributionMode || 'unclassified'}
                     </p>
                   </div>
-                  <span className="inline-flex items-center border border-border bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  <span className="inline-flex items-center border border-border bg-panel px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                     {node.contentRevisionId || 'n/a'}
                   </span>
                 </div>

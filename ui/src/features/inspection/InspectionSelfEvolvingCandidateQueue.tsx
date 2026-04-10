@@ -12,7 +12,7 @@ export function InspectionSelfEvolvingCandidateQueue({ candidates }: { candidate
           <p className="text-sm text-muted-foreground">No candidates queued for this golem.</p>
         ) : (
           candidates.map((candidate) => (
-            <div key={candidate.id} className="border border-border/70 bg-white/70 p-3">
+            <div key={candidate.id} className="border border-border/70 bg-muted/70 p-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-foreground">{candidate.id}</span>
                 <span className="text-xs text-muted-foreground">{candidate.status}</span>

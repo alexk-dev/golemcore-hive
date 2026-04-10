@@ -19,21 +19,22 @@ describe('AppShell', () => {
   it('renders grouped navigation sections', () => {
     renderShell('/boards');
 
-    expect(screen.getByText('Hive')).toBeInTheDocument();
-    expect(screen.getByText('Operate')).toBeInTheDocument();
-    expect(screen.getByText('Fleet')).toBeInTheDocument();
-    expect(screen.getByText('Observe')).toBeInTheDocument();
-    expect(screen.getByText('Boards')).toBeInTheDocument();
-    expect(screen.getByText('Policies')).toBeInTheDocument();
-    expect(screen.getByText('Golems')).toBeInTheDocument();
-    expect(screen.getByText('Roles')).toBeInTheDocument();
+    // Desktop + mobile sidebars both render navigation, so use getAllByText
+    expect(screen.getAllByText('Hive').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Operate').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Fleet').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Observe').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Boards').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Policies').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Golems').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Roles').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders child route content', () => {
     renderShell('/boards/board_1');
 
     expect(screen.getByText('Board page')).toBeInTheDocument();
-    expect(screen.getByText('Hive')).toBeInTheDocument();
+    expect(screen.getAllByText('Hive').length).toBeGreaterThanOrEqual(1);
   });
 });
 

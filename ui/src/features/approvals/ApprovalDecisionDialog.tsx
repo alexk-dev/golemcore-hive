@@ -32,7 +32,7 @@ export function ApprovalDecisionDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm">
       <div className="panel w-full max-w-lg p-5">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-lg font-bold tracking-tight text-foreground">
@@ -43,7 +43,7 @@ export function ApprovalDecisionDialog({
           <button
             type="button"
             onClick={onClose}
-            className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
+            className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground"
           >
             Close
           </button>
@@ -68,14 +68,14 @@ export function ApprovalDecisionDialog({
               onChange={(event) => setComment(event.target.value)}
               disabled={isPending}
               placeholder={mode === 'approve' ? 'Optional note' : 'Reason for rejection'}
-              className="border border-border bg-white/90 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary disabled:opacity-60"
+              className="border border-border bg-panel/90 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary disabled:opacity-60"
             />
           </label>
           <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+              className="border border-border bg-panel/80 px-4 py-2 text-sm font-semibold text-foreground"
             >
               Cancel
             </button>
@@ -83,7 +83,7 @@ export function ApprovalDecisionDialog({
               type="submit"
               disabled={isPending}
               className={[
-                ' px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-60',
+                ' px-4 py-2 text-sm font-semibold text-primary-foreground transition disabled:opacity-60',
                 mode === 'approve' ? 'bg-accent' : 'bg-primary',
               ].join(' ')}
             >

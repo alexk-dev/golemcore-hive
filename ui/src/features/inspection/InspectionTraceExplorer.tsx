@@ -42,7 +42,7 @@ export function InspectionTraceExplorer({
   if (errorMessage != null) {
     return (
       <section className="panel p-4">
-        <p className="text-sm font-semibold text-rose-900">{errorMessage}</p>
+        <p className="text-sm font-semibold text-rose-300">{errorMessage}</p>
       </section>
     );
   }

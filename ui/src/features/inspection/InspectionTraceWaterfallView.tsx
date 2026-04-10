@@ -61,13 +61,13 @@ function computeWaterfallRows(record: InspectionTraceRecord): WaterfallRow[] {
 
 function waterfallBarClasses(kind: string | null, statusCode: string | null): string {
   if (statusCode === 'ERROR') {
-    return 'bg-rose-500';
+    return 'bg-rose-950/400';
   }
   switch (kind) {
     case 'LLM':
       return 'bg-accent';
     case 'TOOL':
-      return 'bg-amber-500';
+      return 'bg-amber-950/400';
     case 'OUTBOUND':
       return 'bg-primary';
     case null:
@@ -223,7 +223,7 @@ function WaterfallRowCard({
   onSelect: () => void;
 }) {
   return (
-    <div className={isSelected ? 'border border-primary/40 bg-primary/5 p-2' : 'border border-border/70 bg-white/70 p-2'}>
+    <div className={isSelected ? 'border border-primary/40 bg-primary/5 p-2' : 'border border-border/70 bg-muted/70 p-2'}>
       <div className="grid gap-2 md:grid-cols-[minmax(220px,320px)_minmax(0,1fr)]">
         <div className="flex items-center gap-2" style={{ paddingLeft: `${row.depth * 16}px` }}>
           {isParent ? (

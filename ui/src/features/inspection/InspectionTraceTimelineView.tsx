@@ -43,7 +43,7 @@ export function InspectionTraceTimelineView({
                 spans.map(({ span }) => (
                   <tr
                     key={span.spanId}
-                    className={span.spanId === selectedSpanId ? 'bg-primary/5' : 'cursor-pointer border-b border-border/60 hover:bg-white'}
+                    className={span.spanId === selectedSpanId ? 'bg-primary/5' : 'cursor-pointer border-b border-border/60 hover:bg-muted'}
                     onClick={() => setSelectedSpanId(span.spanId)}
                   >
                     <td className="py-2 pr-4 text-foreground">{span.name ?? span.spanId}</td>

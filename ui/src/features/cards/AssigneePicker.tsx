@@ -52,7 +52,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           onClick={() => setActiveTab('team')}
           className={[
             ' px-3 py-1.5 text-sm font-semibold transition',
-            activeTab === 'team' ? 'bg-foreground text-white' : 'border border-border bg-white text-foreground',
+            activeTab === 'team' ? 'bg-primary text-primary-foreground' : 'border border-border bg-panel text-foreground',
           ].join(' ')}
         >
           Team
@@ -62,7 +62,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           onClick={() => setActiveTab('all')}
           className={[
             ' px-3 py-1.5 text-sm font-semibold transition',
-            activeTab === 'all' ? 'bg-foreground text-white' : 'border border-border bg-white text-foreground',
+            activeTab === 'all' ? 'bg-primary text-primary-foreground' : 'border border-border bg-panel text-foreground',
           ].join(' ')}
         >
           All
@@ -71,7 +71,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Filter golems"
-          className="ml-auto min-w-[180px] border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-primary"
+          className="ml-auto min-w-[180px] border border-border bg-panel px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/50"
         />
       </div>
 
@@ -82,7 +82,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
           onClick={() => void onAssign(null)}
           className={[
             ' border p-3 text-left transition',
-            currentAssigneeId === null ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-white/70',
+            currentAssigneeId === null ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-muted/70',
           ].join(' ')}
         >
           <span className="text-sm font-semibold text-foreground">Unassigned</span>
@@ -97,7 +97,7 @@ export function AssigneePicker({ options, allGolems, currentAssigneeId, isPendin
               onClick={() => void onAssign(candidate.golemId)}
               className={[
                 ' border p-3 text-left transition',
-                currentAssigneeId === candidate.golemId ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-white/70',
+                currentAssigneeId === candidate.golemId ? 'border-primary/40 bg-primary/5' : 'border-border/70 bg-muted/70',
               ].join(' ')}
             >
               <div className="flex items-center justify-between gap-2">

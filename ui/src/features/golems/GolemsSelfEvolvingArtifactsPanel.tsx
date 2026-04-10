@@ -61,12 +61,12 @@ export function GolemsSelfEvolvingArtifactsPanel({ golems }: { golems: GolemSumm
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search evolved artifacts"
-          className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         />
         <select
           value={artifactType}
           onChange={(event) => setArtifactType(event.target.value)}
-          className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+          className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         >
           {ARTIFACT_TYPES.map((value) => (
             <option key={value || 'all'} value={value}>
@@ -89,7 +89,7 @@ export function GolemsSelfEvolvingArtifactsPanel({ golems }: { golems: GolemSumm
           <SelectionCard label="Right" artifact={rightSelection} />
 
           {!sameStream(leftSelection, rightSelection) && leftSelection && rightSelection ? (
-            <div className="border border-amber-300 bg-amber-100 p-3 text-sm text-amber-900">
+            <div className="border border-amber-700 bg-amber-900/40 p-3 text-sm text-amber-300">
               Choose the same artifact stream on both sides to compare across golems.
             </div>
           ) : null}
@@ -123,7 +123,7 @@ function ArtifactSearchResults({
   return (
     <div className="grid gap-2">
       {artifacts.map((artifact) => (
-        <article key={`${artifact.golemId}:${artifact.artifactStreamId}`} className="border border-border/70 bg-white/80 p-3">
+        <article key={`${artifact.golemId}:${artifact.artifactStreamId}`} className="border border-border/70 bg-panel/80 p-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
@@ -146,14 +146,14 @@ function ArtifactSearchResults({
             <button
               type="button"
               onClick={() => onSelectLeft(artifact)}
-              className="border border-border bg-white px-3 py-1 text-xs font-semibold text-foreground"
+              className="border border-border bg-panel px-3 py-1 text-xs font-semibold text-foreground"
             >
               Set left
             </button>
             <button
               type="button"
               onClick={() => onSelectRight(artifact)}
-              className="border border-border bg-white px-3 py-1 text-xs font-semibold text-foreground"
+              className="border border-border bg-panel px-3 py-1 text-xs font-semibold text-foreground"
             >
               Set right
             </button>
@@ -166,7 +166,7 @@ function ArtifactSearchResults({
 
 function SelectionCard({ label, artifact }: { label: string; artifact: SelfEvolvingArtifactCatalogEntry | null }) {
   return (
-    <article className="border border-border/70 bg-white/80 p-3">
+    <article className="border border-border/70 bg-panel/80 p-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
       {artifact ? (
         <div className="mt-2">
@@ -209,7 +209,7 @@ function CompareSummaryCard({
   compareQuery: UseQueryResult<SelfEvolvingArtifactFleetCompare>;
 }) {
   return (
-    <article className="border border-border/70 bg-white/80 p-3">
+    <article className="border border-border/70 bg-panel/80 p-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Compare summary</p>
       {compareQuery.isLoading ? (
         <p className="mt-2 text-sm text-muted-foreground">Computing fleet compare...</p>
@@ -220,7 +220,7 @@ function CompareSummaryCard({
             {compareQuery.data.leftRevisionId} vs {compareQuery.data.rightRevisionId}
           </p>
           {compareQuery.data.warnings.map((warning) => (
-            <p key={warning} className="text-xs text-amber-900">{warning}</p>
+            <p key={warning} className="text-xs text-amber-300">{warning}</p>
           ))}
         </div>
       ) : (

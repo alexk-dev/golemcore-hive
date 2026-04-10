@@ -37,7 +37,7 @@ function NoticePanel({ children }: { children: string }) {
 
 function ErrorPanel({ children }: { children: string }) {
   return (
-    <section className="border border-rose-200 bg-rose-100 p-4 text-sm text-rose-900">
+    <section className="border border-rose-200 bg-rose-900/40 p-4 text-sm text-rose-300">
       {children}
     </section>
   );
@@ -197,7 +197,7 @@ export function InspectionOnlineContent({
   const canExportTrace = hasTraceSummaryData(traceSummary);
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+    <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
       <InspectionSessionsSidebar
         sessions={sessions}
         selectedSessionId={selectedSessionId}

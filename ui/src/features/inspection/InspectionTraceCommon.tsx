@@ -25,11 +25,11 @@ function toneClasses(tone: TraceTagTone): string {
     case 'info':
       return 'border-sky-200 bg-sky-100 text-sky-900';
     case 'success':
-      return 'border-emerald-200 bg-emerald-100 text-emerald-900';
+      return 'border-emerald-200 bg-emerald-900/40 text-emerald-300';
     case 'warning':
-      return 'border-amber-200 bg-amber-100 text-amber-900';
+      return 'border-amber-200 bg-amber-900/40 text-amber-300';
     case 'danger':
-      return 'border-rose-200 bg-rose-100 text-rose-900';
+      return 'border-rose-200 bg-rose-900/40 text-rose-300';
     case 'muted':
     default:
       return 'border-border bg-muted/70 text-muted-foreground';
@@ -54,7 +54,7 @@ export function TraceSummaryRow({
   onLoadTrace: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border border-border/70 bg-white/70 px-3 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 border border-border/70 bg-muted/70 px-3 py-3">
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-foreground">{item.traceName ?? item.traceId}</p>
         <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -70,7 +70,7 @@ export function TraceSummaryRow({
           type="button"
           onClick={onLoadTrace}
           disabled={isLoadingTrace}
-          className="bg-foreground px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+          className="bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
         >
           {isLoadingTrace ? 'Loading...' : 'Load details'}
         </button>
@@ -105,7 +105,7 @@ export function TraceSummaryCard({
           type="button"
           onClick={onExportTrace}
           disabled={isExporting}
-          className="border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground disabled:opacity-60"
+          className="border border-border bg-panel px-3 py-1.5 text-xs font-semibold text-foreground disabled:opacity-60"
         >
           {isExporting ? 'Exporting...' : 'Export JSON'}
         </button>
@@ -149,8 +149,8 @@ export function TraceTabs({ mode, onChange }: { mode: TraceViewMode; onChange: (
           onClick={() => onChange(tab.key)}
           className={
             mode === tab.key
-              ? 'bg-foreground px-3 py-1.5 text-xs font-semibold text-white'
-              : 'border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground'
+              ? 'bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground'
+              : 'border border-border bg-panel px-3 py-1.5 text-xs font-semibold text-foreground'
           }
         >
           {tab.label}
@@ -172,7 +172,7 @@ export function SnapshotPreview({
   onExportSnapshotPayload: SnapshotExportHandler;
 }) {
   return (
-    <div className="border border-border/70 bg-white/70 p-3">
+    <div className="border border-border/70 bg-muted/70 p-3">
       <div className="flex flex-wrap items-center gap-2">
         <TracePill>{snapshot.role ?? 'snapshot'}</TracePill>
         {snapshot.contentType ? <TracePill tone="info">{snapshot.contentType}</TracePill> : null}
@@ -187,7 +187,7 @@ export function SnapshotPreview({
             onClick={() => {
               void onExportSnapshotPayload(snapshot.snapshotId, snapshot.role, spanName);
             }}
-            className="border border-border bg-white px-2 py-1 text-[11px] font-semibold text-foreground disabled:opacity-60"
+            className="border border-border bg-panel px-2 py-1 text-[11px] font-semibold text-foreground disabled:opacity-60"
           >
             {isExportingSnapshot ? 'Exporting...' : 'Export payload'}
           </button>
@@ -195,7 +195,7 @@ export function SnapshotPreview({
       </div>
       <div className="mt-2">
         {snapshot.payloadAvailable && snapshot.payloadPreview ? (
-          <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words bg-foreground p-3 text-xs text-white">
+          <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words bg-muted p-3 text-xs text-foreground">
             {snapshot.payloadPreview}
           </pre>
         ) : (
@@ -238,7 +238,7 @@ export function TraceOverview({
             type="button"
             onClick={onExportTrace}
             disabled={isExporting}
-            className="border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground disabled:opacity-60"
+            className="border border-border bg-panel px-3 py-1.5 text-xs font-semibold text-foreground disabled:opacity-60"
           >
             {isExporting ? 'Exporting...' : 'Export JSON'}
           </button>

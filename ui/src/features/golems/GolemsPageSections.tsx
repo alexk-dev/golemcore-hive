@@ -40,12 +40,12 @@ export function GolemFiltersPanel({
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
         placeholder="Search by name, host, or id"
-        className="border border-border bg-white/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary"
+        className="border border-border bg-panel/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
       />
       <select
         value={stateFilter}
         onChange={(event) => onStateFilterChange(event.target.value)}
-        className="border border-border bg-white/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary"
+        className="border border-border bg-panel/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
       >
         {fleetStates.map((state) => (
           <option key={state || 'all'} value={state}>
@@ -56,7 +56,7 @@ export function GolemFiltersPanel({
       <select
         value={roleFilter}
         onChange={(event) => onRoleFilterChange(event.target.value)}
-        className="border border-border bg-white/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary"
+        className="border border-border bg-panel/90 px-3 py-1.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
       >
         <option value="">All roles</option>
         {roles.map((role) => (
@@ -116,7 +116,7 @@ export function GolemRegistryPanel({
                     onClick={() => onSelect(golem.id)}
                     className={[
                       'absolute left-0 flex w-full items-center gap-3 px-3 text-left text-sm transition',
-                      selected ? 'bg-primary/5' : 'bg-white/70 hover:bg-white',
+                      selected ? 'bg-primary/5' : 'bg-muted/70 hover:bg-muted',
                     ].join(' ')}
                     style={{ height: GOLEM_ROW_HEIGHT, top: virtualRow.start }}
                   >
@@ -191,14 +191,14 @@ export function GolemActionDialog({
   const submitLabel = isPending ? (mode === 'pause' ? 'Pausing...' : 'Revoking...') : title;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm">
       <div className="panel w-full max-w-md p-5">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-sm font-bold text-foreground">{title}</h3>
           <button
             type="button"
             onClick={onCancel}
-            className="border border-border bg-white/70 px-2 py-1 text-xs font-semibold text-foreground"
+            className="border border-border bg-muted/70 px-2 py-1 text-xs font-semibold text-foreground"
           >
             Close
           </button>
@@ -217,7 +217,7 @@ export function GolemActionDialog({
               value={reason}
               onChange={(event) => onReasonChange(event.target.value)}
               rows={2}
-              className="border border-border bg-white/90 px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               placeholder="Optional reason"
             />
           </label>
@@ -225,14 +225,14 @@ export function GolemActionDialog({
             <button
               type="button"
               onClick={onCancel}
-              className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground"
+              className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="bg-foreground px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
+              className="bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
             >
               {submitLabel}
             </button>

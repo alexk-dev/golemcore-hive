@@ -39,7 +39,7 @@ export function LoginPage() {
             <label className="block space-y-1.5">
               <span className="text-sm font-medium text-foreground">Username</span>
               <input
-                className="w-full border border-border bg-white/80 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
+                className="w-full border border-border bg-panel/80 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
@@ -51,7 +51,7 @@ export function LoginPage() {
               <span className="text-sm font-medium text-foreground">Password</span>
               <input
                 type="password"
-                className="w-full border border-border bg-white/80 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
+                className="w-full border border-border bg-panel/80 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
@@ -61,13 +61,13 @@ export function LoginPage() {
           </div>
 
           {error ? (
-            <div className="border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</div>
+            <div className="border border-red-800 bg-red-950/50 px-4 py-2.5 text-sm text-red-400">{error}</div>
           ) : null}
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-foreground px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-95 disabled:opacity-70"
+            className="w-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-95 disabled:opacity-60"
           >
             {submitting ? 'Signing in...' : 'Sign in'}
           </button>

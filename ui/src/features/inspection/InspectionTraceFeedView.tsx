@@ -15,13 +15,13 @@ function bubbleClasses(kind: 'system' | 'llm' | 'tool' | 'outbound' | 'user' | '
     case 'assistant':
       return 'border-emerald-200 bg-emerald-50';
     case 'tool':
-      return 'border-amber-200 bg-amber-50';
+      return 'border-amber-200 bg-amber-950/40';
     case 'llm':
       return 'border-accent/20 bg-accent/5';
     case 'outbound':
       return 'border-primary/25 bg-primary/5';
     case 'system':
-      return 'border-border bg-white';
+      return 'border-border bg-panel';
     case 'other':
     default:
       return 'border-border bg-muted/40';
@@ -143,7 +143,7 @@ function TraceBubble({
             <button
               type="button"
               onClick={() => onSelectSpan(item.spanId)}
-              className="border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground"
+              className="border border-border bg-panel px-3 py-1.5 text-xs font-semibold text-foreground"
             >
               Span detail
             </button>

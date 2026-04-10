@@ -55,7 +55,7 @@ export function SystemSettingsPage() {
 
   return (
     <div className="grid gap-5">
-      <section className="grid gap-3 lg:grid-cols-3">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <SettingCard label="Production mode" value={settings.productionMode ? 'Enabled' : 'Disabled'} />
         <SettingCard label="Storage path" value={settings.storageBasePath} />
         <SettingCard label="Secure refresh cookie" value={settings.secureRefreshCookie ? 'Enabled' : 'Disabled'} />
@@ -102,7 +102,7 @@ export function SystemSettingsPage() {
         <div className="mt-4 grid gap-3">
           {settings.recentNotifications.length ? (
             settings.recentNotifications.map((notification) => (
-              <article key={notification.id} className="border border-border/70 bg-white/70 p-4">
+              <article key={notification.id} className="border border-border/70 bg-muted/70 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex flex-wrap gap-2">
@@ -117,7 +117,7 @@ export function SystemSettingsPage() {
                       type="button"
                       onClick={() => acknowledgeMutation.mutate(notification.id)}
                       disabled={acknowledgeMutation.isPending}
-                      className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground disabled:opacity-60"
+                      className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground disabled:opacity-60"
                     >
                       Acknowledge
                     </button>
@@ -128,7 +128,9 @@ export function SystemSettingsPage() {
               </article>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground">No notifications yet.</p>
+            <div className="soft-card px-4 py-6 text-center">
+              <p className="text-sm text-muted-foreground">No notifications yet.</p>
+            </div>
           )}
         </div>
       </section>
@@ -154,7 +156,7 @@ function EnrollmentTokensSection({
         <button
           type="button"
           onClick={onCreateToken}
-          className="bg-foreground px-3 py-1.5 text-sm font-semibold text-white"
+          className="bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground"
         >
           Create token
         </button>
@@ -176,7 +178,7 @@ function EnrollmentTokensSection({
                   type="button"
                   disabled={isRevoking}
                   onClick={() => onRevoke(token.id)}
-                  className="shrink-0 border border-rose-300 bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-900"
+                  className="shrink-0 border border-rose-700 bg-rose-900/40 px-2 py-1 text-xs font-semibold text-rose-300"
                 >
                   Revoke
                 </button>
@@ -209,7 +211,7 @@ function SettingCard({ label, value }: { label: string; value: string }) {
 
 function ToggleCard({ label, enabled }: { label: string; enabled: boolean }) {
   return (
-    <div className="border border-border bg-white/80 px-4 py-3">
+    <div className="border border-border bg-panel/80 px-4 py-3">
       <p className="text-sm font-semibold text-foreground">{label}</p>
       <p className="mt-1 text-sm text-muted-foreground">{enabled ? 'Enabled' : 'Disabled'}</p>
     </div>

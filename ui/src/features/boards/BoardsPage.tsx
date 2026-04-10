@@ -43,7 +43,7 @@ export function BoardsPage() {
 
   return (
     <div className="grid gap-5">
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_320px]">
         <div className="grid gap-4">
           {boardsQuery.data?.length ? (
             boardsQuery.data.map((board) => (
@@ -62,13 +62,13 @@ export function BoardsPage() {
                   <div className="flex flex-wrap gap-2">
                     <Link
                       to={`/boards/${board.id}`}
-                      className="bg-foreground px-4 py-2 text-sm font-semibold text-white"
+                      className="bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
                     >
                       Open board
                     </Link>
                     <Link
                       to={`/boards/${board.id}/settings`}
-                      className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+                      className="border border-border bg-panel/80 px-4 py-2 text-sm font-semibold text-foreground"
                     >
                       Settings
                     </Link>
@@ -86,7 +86,7 @@ export function BoardsPage() {
               </article>
             ))
           ) : (
-            <article className="panel p-6 text-sm text-muted-foreground">
+            <article className="panel py-10 text-center text-sm text-muted-foreground">
               No boards yet. Create one to get started.
             </article>
           )}
@@ -99,7 +99,7 @@ export function BoardsPage() {
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               placeholder="Engineering backlog"
             />
           </label>
@@ -109,7 +109,7 @@ export function BoardsPage() {
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}
-              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             />
           </label>
           <div className="grid gap-4 md:grid-cols-2">
@@ -118,7 +118,7 @@ export function BoardsPage() {
               <select
                 value={templateKey}
                 onChange={(event) => setTemplateKey(event.target.value)}
-                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               >
                 {templateOptions.map((option) => (
                   <option key={option.key} value={option.key}>
@@ -132,7 +132,7 @@ export function BoardsPage() {
               <select
                 value={defaultAssignmentPolicy}
                 onChange={(event) => setDefaultAssignmentPolicy(event.target.value)}
-                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               >
                 <option value="MANUAL">MANUAL</option>
                 <option value="SUGGESTED">SUGGESTED</option>
@@ -143,7 +143,7 @@ export function BoardsPage() {
           <button
             type="submit"
             disabled={createBoardMutation.isPending || !name.trim()}
-            className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
           >
               {createBoardMutation.isPending ? 'Creating...' : 'Create board'}
             </button>

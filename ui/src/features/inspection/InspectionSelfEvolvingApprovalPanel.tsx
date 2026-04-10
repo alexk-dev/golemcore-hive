@@ -12,7 +12,7 @@ export function InspectionSelfEvolvingApprovalPanel({ approvals }: { approvals: 
           <p className="text-sm text-muted-foreground">No promotion approvals recorded for this golem.</p>
         ) : (
           approvals.map((approval) => (
-            <div key={approval.id} className="border border-border/70 bg-white/70 p-3">
+            <div key={approval.id} className="border border-border/70 bg-muted/70 p-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-foreground">{approval.id}</span>
                 <span className="text-xs text-muted-foreground">{approval.status}</span>

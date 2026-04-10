@@ -45,7 +45,7 @@ export function HomePage() {
               <Link
                 key={board.id}
                 to={`/boards/${board.id}`}
-                className="flex items-center justify-between gap-3 border border-border/70 bg-white/70 p-3 transition hover:bg-white"
+                className="flex items-center justify-between gap-3 border border-border/70 bg-muted/70 p-3 transition hover:bg-muted"
               >
                 <div>
                   <p className="text-sm font-semibold text-foreground">{board.name}</p>
@@ -53,7 +53,7 @@ export function HomePage() {
                 </div>
               </Link>
             )) : (
-              <p className="text-sm text-muted-foreground">No boards yet.</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">No boards yet. Create one to get started.</p>
             )}
           </div>
         </section>
@@ -67,7 +67,7 @@ export function HomePage() {
             {recentAudit.length ? recentAudit.slice(0, 6).map((event) => (
               <div
                 key={event.id}
-                className="border border-border/70 bg-white/70 p-3"
+                className="border border-border/70 bg-muted/70 p-3"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="pill">{event.eventType}</span>
@@ -78,7 +78,7 @@ export function HomePage() {
                 <p className="mt-1 text-sm text-foreground">{event.summary || 'No summary'}</p>
               </div>
             )) : (
-              <p className="text-sm text-muted-foreground">No audit events yet.</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">No audit events yet.</p>
             )}
           </div>
         </section>
@@ -89,7 +89,7 @@ export function HomePage() {
 
 function MetricCard({ label, value, to }: { label: string; value: number | string; to: string }) {
   return (
-    <Link to={to} className="panel p-4 transition hover:shadow-md">
+    <Link to={to} className="panel p-4 transition hover:border-primary/30 hover:shadow-md">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{value}</p>
     </Link>

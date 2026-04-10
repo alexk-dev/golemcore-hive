@@ -4,8 +4,8 @@ import { useAuth } from '../../app/providers/useAuth';
 
 export function LoginPage() {
   const { login, status } = useAuth();
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('change-me-now');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -43,7 +43,7 @@ export function LoginPage() {
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
-                placeholder="admin"
+                placeholder="Username"
               />
             </label>
 
@@ -55,6 +55,7 @@ export function LoginPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
+                placeholder="Password"
               />
             </label>
           </div>

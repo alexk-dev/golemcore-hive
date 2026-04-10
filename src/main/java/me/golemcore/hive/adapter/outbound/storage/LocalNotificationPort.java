@@ -20,7 +20,7 @@ package me.golemcore.hive.adapter.outbound.storage;
 
 import lombok.extern.slf4j.Slf4j;
 import me.golemcore.hive.domain.model.NotificationEvent;
-import me.golemcore.hive.port.outbound.NotificationPort;
+import me.golemcore.hive.infrastructure.notification.NotificationPort;
 import org.springframework.stereotype.Component;
 
 @Component

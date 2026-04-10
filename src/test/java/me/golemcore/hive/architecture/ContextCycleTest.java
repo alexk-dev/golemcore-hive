@@ -34,7 +34,8 @@ class ContextCycleTest {
                     "me.golemcore.hive.fleet",
                     "me.golemcore.hive.workflow",
                     "me.golemcore.hive.execution",
-                    "me.golemcore.hive.governance");
+                    "me.golemcore.hive.governance",
+                    "me.golemcore.hive.selfevolving");
 
     @Test
     void contextPackagesMustStayAcyclic() {

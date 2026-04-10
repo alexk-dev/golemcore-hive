@@ -59,6 +59,7 @@ class GovernanceControllerIntegrationTest {
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("hive.storage.base-path", () -> tempDir.toString());
         registry.add("hive.security.cookie.secure", () -> false);
+        registry.add("hive.bootstrap.admin.enabled", () -> true);
         registry.add("hive.bootstrap.admin.username", () -> "admin");
         registry.add("hive.bootstrap.admin.password", () -> "change-me-now");
         registry.add("hive.bootstrap.admin.display-name", () -> "Hive Admin");
@@ -151,6 +152,25 @@ class GovernanceControllerIntegrationTest {
                 .expectBody()
                 .jsonPath("$.highCostThresholdMicros").isEqualTo(5000000)
                 .jsonPath("$.recentNotifications[0].type").isEqualTo("APPROVAL_REQUESTED");
+
+        EntityExchangeResult<String> settingsResult = webTestClient.get()
+                .uri("/api/v1/system/settings")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .returnResult();
+        JsonNode settingsPayload = objectMapper.readTree(settingsResult.getResponseBody());
+        String notificationId = settingsPayload.get("recentNotifications").get(0).get("id").asText();
+
+        webTestClient.post()
+                .uri("/api/v1/system/notifications/{notificationId}:ack", notificationId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(notificationId)
+                .jsonPath("$.acknowledged").isEqualTo(true);
     }
 
     private String createBoard(String operatorToken) throws Exception {

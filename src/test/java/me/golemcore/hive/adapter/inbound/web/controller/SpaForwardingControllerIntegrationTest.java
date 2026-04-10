@@ -52,6 +52,7 @@ class SpaForwardingControllerIntegrationTest {
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("hive.storage.base-path", () -> tempDir.toString());
         registry.add("hive.security.cookie.secure", () -> false);
+        registry.add("hive.bootstrap.admin.enabled", () -> true);
         registry.add("hive.bootstrap.admin.username", () -> "admin");
         registry.add("hive.bootstrap.admin.password", () -> "change-me-now");
         registry.add("hive.bootstrap.admin.display-name", () -> "Hive Admin");

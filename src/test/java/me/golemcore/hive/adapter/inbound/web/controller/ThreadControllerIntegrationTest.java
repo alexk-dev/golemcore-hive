@@ -64,6 +64,7 @@ class ThreadControllerIntegrationTest {
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("hive.storage.base-path", () -> tempDir.toString());
         registry.add("hive.security.cookie.secure", () -> false);
+        registry.add("hive.bootstrap.admin.enabled", () -> true);
         registry.add("hive.bootstrap.admin.username", () -> "admin");
         registry.add("hive.bootstrap.admin.password", () -> "change-me-now");
         registry.add("hive.bootstrap.admin.display-name", () -> "Hive Admin");
@@ -326,7 +327,7 @@ class ThreadControllerIntegrationTest {
         BlockingQueue<String> controlMessages = new LinkedBlockingQueue<>();
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
         Disposable subscription = applicationContext
-                .getBean(me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter.class)
+                .getBean(me.golemcore.hive.infrastructure.control.InMemoryGolemControlChannelGateway.class)
                 .register(developer.golemId(), sink)
                 .subscribe(controlMessages::add);
         try {
@@ -406,7 +407,8 @@ class ThreadControllerIntegrationTest {
                     .jsonPath("$.length()").isEqualTo(1);
         } finally {
             subscription.dispose();
-            applicationContext.getBean(me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter.class)
+            applicationContext
+                    .getBean(me.golemcore.hive.infrastructure.control.InMemoryGolemControlChannelGateway.class)
                     .unregister(developer.golemId(), sink);
         }
     }
@@ -465,7 +467,7 @@ class ThreadControllerIntegrationTest {
         BlockingQueue<String> controlMessages = new LinkedBlockingQueue<>();
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
         Disposable subscription = applicationContext
-                .getBean(me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter.class)
+                .getBean(me.golemcore.hive.infrastructure.control.InMemoryGolemControlChannelGateway.class)
                 .register(developer.golemId(), sink)
                 .subscribe(controlMessages::add);
         try {
@@ -628,7 +630,8 @@ class ThreadControllerIntegrationTest {
                     .jsonPath("$[0].controlState").isEmpty();
         } finally {
             subscription.dispose();
-            applicationContext.getBean(me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter.class)
+            applicationContext
+                    .getBean(me.golemcore.hive.infrastructure.control.InMemoryGolemControlChannelGateway.class)
                     .unregister(developer.golemId(), sink);
         }
     }

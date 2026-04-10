@@ -26,7 +26,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.domain.model.GolemRole;
 import me.golemcore.hive.fleet.application.port.out.GolemRoleRepository;
-import me.golemcore.hive.port.outbound.StoragePort;
+import me.golemcore.hive.infrastructure.storage.StoragePort;
 import org.springframework.stereotype.Component;
 
 @Component

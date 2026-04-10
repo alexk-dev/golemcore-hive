@@ -23,7 +23,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.budgets.BudgetSnapshotResponse;
 import me.golemcore.hive.domain.model.BudgetSnapshot;
-import me.golemcore.hive.domain.service.BudgetService;
+import me.golemcore.hive.governance.application.port.in.GovernanceOperationsUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,7 +37,7 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class BudgetsController {
 
-    private final BudgetService budgetService;
+    private final GovernanceOperationsUseCase governanceOperationsUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<List<BudgetSnapshotResponse>>> listBudgetSnapshots(
@@ -46,7 +46,8 @@ public class BudgetsController {
             @RequestParam(required = false) String query) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<BudgetSnapshotResponse> response = budgetService.listSnapshots(scopeType, query).stream()
+            List<BudgetSnapshotResponse> response = governanceOperationsUseCase.listBudgetSnapshots(scopeType, query)
+                    .stream()
                     .map(this::toResponse)
                     .toList();
             return ResponseEntity.ok(response);

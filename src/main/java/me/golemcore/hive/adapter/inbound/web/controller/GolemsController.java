@@ -43,8 +43,8 @@ import me.golemcore.hive.fleet.application.MachineTokenPair;
 import me.golemcore.hive.fleet.application.RegistrationResult;
 import me.golemcore.hive.fleet.application.port.in.GolemEnrollmentUseCase;
 import me.golemcore.hive.fleet.application.port.in.GolemFleetUseCase;
+import me.golemcore.hive.governance.application.port.in.GovernanceOperationsUseCase;
 import me.golemcore.hive.domain.model.PolicySyncStatus;
-import me.golemcore.hive.domain.service.PolicyGroupService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -65,7 +65,7 @@ public class GolemsController {
 
     private final GolemEnrollmentUseCase golemEnrollmentUseCase;
     private final GolemFleetUseCase golemFleetUseCase;
-    private final PolicyGroupService policyGroupService;
+    private final GovernanceOperationsUseCase governanceOperationsUseCase;
     private final HiveProperties properties;
 
     @PostMapping("/register")
@@ -160,7 +160,7 @@ public class GolemsController {
                     .build();
             Golem golem = golemFleetUseCase.updateHeartbeat(golemId, heartbeatPing);
             if (request != null) {
-                policyGroupService.recordHeartbeatSyncState(
+                governanceOperationsUseCase.recordHeartbeatSyncState(
                         golemId,
                         request.policyGroupId(),
                         request.targetPolicyVersion(),

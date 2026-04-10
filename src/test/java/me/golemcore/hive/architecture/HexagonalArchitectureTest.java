@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 class HexagonalArchitectureTest {
 
     private static final String[] CONTEXT_CORE_PACKAGES = {
+            "me.golemcore.hive.domain..",
             "me.golemcore.hive.auth.application..",
             "me.golemcore.hive.auth.domain..",
             "me.golemcore.hive.fleet.application..",
@@ -38,7 +39,9 @@ class HexagonalArchitectureTest {
             "me.golemcore.hive.execution.application..",
             "me.golemcore.hive.execution.domain..",
             "me.golemcore.hive.governance.application..",
-            "me.golemcore.hive.governance.domain.." };
+            "me.golemcore.hive.governance.domain..",
+            "me.golemcore.hive.selfevolving.application..",
+            "me.golemcore.hive.selfevolving.domain.." };
 
     private static final JavaClasses IMPORTED_CLASSES = new ClassFileImporter()
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -54,6 +57,7 @@ class HexagonalArchitectureTest {
                 .resideInAnyPackage(
                         "me.golemcore.hive..adapter..",
                         "me.golemcore.hive..config..",
+                        "me.golemcore.hive.infrastructure..",
                         "me.golemcore.hive.port..",
                         "org.springframework..",
                         "reactor..",
@@ -71,7 +75,8 @@ class HexagonalArchitectureTest {
                         "me.golemcore.hive.fleet.application.port.out..",
                         "me.golemcore.hive.workflow.application.port.out..",
                         "me.golemcore.hive.execution.application.port.out..",
-                        "me.golemcore.hive.governance.application.port.out..")
+                        "me.golemcore.hive.governance.application.port.out..",
+                        "me.golemcore.hive.selfevolving.application.port.out..")
                 .should()
                 .beInterfaces()
                 .because("application outbound ports define the hexagonal seam")
@@ -79,19 +84,21 @@ class HexagonalArchitectureTest {
     }
 
     @Test
-    void applicationServicesMustNotUseLegacyGlobalStoragePort() {
+    void applicationServicesAndSharedDomainMustNotDependOnInfrastructureSpis() {
         noClasses()
                 .that()
                 .resideInAnyPackage(
+                        "me.golemcore.hive.domain..",
                         "me.golemcore.hive.auth.application..",
                         "me.golemcore.hive.fleet.application..",
                         "me.golemcore.hive.workflow.application..",
                         "me.golemcore.hive.execution.application..",
-                        "me.golemcore.hive.governance.application..")
+                        "me.golemcore.hive.governance.application..",
+                        "me.golemcore.hive.selfevolving.application..")
                 .should()
                 .dependOnClassesThat()
-                .resideInAnyPackage("me.golemcore.hive.port.outbound..")
-                .because("new application services must depend on business ports, not the legacy global storage port")
+                .resideInAnyPackage("me.golemcore.hive.infrastructure..")
+                .because("core code must depend on contextual business ports instead of low-level infrastructure spis")
                 .check(IMPORTED_CLASSES);
     }
 }

@@ -50,7 +50,7 @@ import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardAssignmentPolicy;
 import me.golemcore.hive.domain.model.CardControlStateSnapshot;
 import me.golemcore.hive.domain.model.CardTransitionEvent;
-import me.golemcore.hive.domain.service.FlowRemapService;
+import me.golemcore.hive.workflow.application.FlowRemapPreview;
 
 abstract class BoardMappingSupport {
 
@@ -154,8 +154,8 @@ abstract class BoardMappingSupport {
                 : null;
     }
 
-    protected RemapPreviewResponse toRemapPreviewResponse(FlowRemapService.RemapPreview preview) {
-        return new RemapPreviewResponse(preview.getRemovedColumnIds(), preview.getAffectedCardCounts());
+    protected RemapPreviewResponse toRemapPreviewResponse(FlowRemapPreview preview) {
+        return new RemapPreviewResponse(preview.removedColumnIds(), preview.affectedCardCounts());
     }
 
     private BoardColumn toBoardColumn(BoardColumnPayload payload) {

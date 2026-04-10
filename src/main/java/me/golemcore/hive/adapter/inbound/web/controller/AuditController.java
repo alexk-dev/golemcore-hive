@@ -24,7 +24,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.audit.AuditEventResponse;
 import me.golemcore.hive.domain.model.AuditEvent;
-import me.golemcore.hive.domain.service.AuditService;
+import me.golemcore.hive.governance.application.port.in.GovernanceOperationsUseCase;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,7 +39,7 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class AuditController {
 
-    private final AuditService auditService;
+    private final GovernanceOperationsUseCase governanceOperationsUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<List<AuditEventResponse>>> listAuditEvents(
@@ -53,8 +53,8 @@ public class AuditController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<AuditEventResponse> response = auditService
-                    .listEvents(actorId, golemId, boardId, cardId, from, to, eventType)
+            List<AuditEventResponse> response = governanceOperationsUseCase
+                    .listAuditEvents(actorId, golemId, boardId, cardId, from, to, eventType)
                     .stream()
                     .map(this::toResponse)
                     .toList();

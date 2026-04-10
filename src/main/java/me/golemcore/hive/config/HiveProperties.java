@@ -87,12 +87,9 @@ public class HiveProperties {
 
     @Data
     public static class AdminProperties {
-        private boolean enabled = true;
-        @NotBlank
-        private String username = "admin";
-        @NotBlank
-        private String password = "change-me-now";
-        @NotBlank
+        private boolean enabled;
+        private String username;
+        private String password;
         private String displayName = "Hive Admin";
     }
 

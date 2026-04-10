@@ -26,7 +26,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.domain.model.EnrollmentToken;
 import me.golemcore.hive.fleet.application.port.out.EnrollmentTokenRepository;
-import me.golemcore.hive.port.outbound.StoragePort;
+import me.golemcore.hive.infrastructure.storage.StoragePort;
 import org.springframework.stereotype.Component;
 
 @Component

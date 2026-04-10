@@ -24,7 +24,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.auth.application.port.out.OperatorRefreshSessionRepository;
 import me.golemcore.hive.domain.model.RefreshSession;
-import me.golemcore.hive.port.outbound.StoragePort;
+import me.golemcore.hive.infrastructure.storage.StoragePort;
 import org.springframework.stereotype.Component;
 
 @Component

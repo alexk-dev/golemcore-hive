@@ -44,6 +44,7 @@ import me.golemcore.hive.fleet.application.ActorContext;
 import me.golemcore.hive.fleet.application.FleetSettings;
 import me.golemcore.hive.fleet.application.port.in.EvaluateGolemPresenceUseCase;
 import me.golemcore.hive.fleet.application.port.in.GolemFleetUseCase;
+import me.golemcore.hive.fleet.application.port.in.GolemPolicyBindingMaintenanceUseCase;
 import me.golemcore.hive.fleet.application.port.out.FleetAuditPort;
 import me.golemcore.hive.fleet.application.port.out.FleetNotificationPort;
 import me.golemcore.hive.fleet.application.port.out.GolemRepository;
@@ -51,7 +52,8 @@ import me.golemcore.hive.fleet.application.port.out.GolemRoleRepository;
 import me.golemcore.hive.fleet.application.port.out.HeartbeatRepository;
 
 @RequiredArgsConstructor
-public class GolemFleetApplicationService implements GolemFleetUseCase, EvaluateGolemPresenceUseCase {
+public class GolemFleetApplicationService
+        implements GolemFleetUseCase, EvaluateGolemPresenceUseCase, GolemPolicyBindingMaintenanceUseCase {
 
     private static final Pattern ROLE_SLUG_PATTERN = Pattern.compile("^[a-z0-9][a-z0-9._-]{0,62}$");
 

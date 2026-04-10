@@ -21,6 +21,8 @@ package me.golemcore.hive.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import me.golemcore.hive.domain.model.EnrollmentToken;
+import me.golemcore.hive.domain.model.ThreadRecord;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,6 +34,8 @@ public class JacksonConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper.addMixIn(EnrollmentToken.class, EnrollmentTokenJacksonMixin.class);
+        objectMapper.addMixIn(ThreadRecord.class, ThreadRecordJacksonMixin.class);
         return objectMapper;
     }
 }

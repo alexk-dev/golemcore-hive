@@ -35,7 +35,7 @@ import me.golemcore.hive.domain.model.SelfEvolvingRunProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingTacticProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingTacticSearchExplanationProjection;
 import me.golemcore.hive.domain.model.SelfEvolvingTacticSearchStatusProjection;
-import me.golemcore.hive.domain.service.SelfEvolvingProjectionService;
+import me.golemcore.hive.selfevolving.application.port.in.SelfEvolvingReadUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,7 +52,7 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class SelfEvolvingController {
 
-    private final SelfEvolvingProjectionService selfEvolvingProjectionService;
+    private final SelfEvolvingReadUseCase selfEvolvingReadUseCase;
 
     @GetMapping("/golems/{golemId}/runs")
     public Mono<ResponseEntity<List<SelfEvolvingRunResponse>>> listRuns(
@@ -60,7 +60,7 @@ public class SelfEvolvingController {
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            return ResponseEntity.ok(selfEvolvingProjectionService.listRuns(golemId).stream()
+            return ResponseEntity.ok(selfEvolvingReadUseCase.listRuns(golemId).stream()
                     .map(this::toRunResponse)
                     .toList());
         }).subscribeOn(Schedulers.boundedElastic());
@@ -73,7 +73,7 @@ public class SelfEvolvingController {
             @PathVariable String runId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            SelfEvolvingRunProjection projection = selfEvolvingProjectionService.findRun(golemId, runId)
+            SelfEvolvingRunProjection projection = selfEvolvingReadUseCase.findRun(golemId, runId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SelfEvolving run not found"));
             return ResponseEntity.ok(toRunResponse(projection));
         }).subscribeOn(Schedulers.boundedElastic());
@@ -85,7 +85,7 @@ public class SelfEvolvingController {
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            return ResponseEntity.ok(selfEvolvingProjectionService.listCandidates(golemId).stream()
+            return ResponseEntity.ok(selfEvolvingReadUseCase.listCandidates(golemId).stream()
                     .map(this::toCandidateResponse)
                     .toList());
         }).subscribeOn(Schedulers.boundedElastic());
@@ -97,7 +97,7 @@ public class SelfEvolvingController {
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            return ResponseEntity.ok(selfEvolvingProjectionService.listCampaigns(golemId).stream()
+            return ResponseEntity.ok(selfEvolvingReadUseCase.listCampaigns(golemId).stream()
                     .map(this::toCampaignResponse)
                     .toList());
         }).subscribeOn(Schedulers.boundedElastic());
@@ -111,7 +111,7 @@ public class SelfEvolvingController {
             ControllerActorSupport.requirePrivilegedOperator(principal);
             return ResponseEntity.ok(SelfEvolvingLineageResponse.builder()
                     .golemId(golemId)
-                    .nodes(selfEvolvingProjectionService.listLineage(golemId))
+                    .nodes(selfEvolvingReadUseCase.listLineage(golemId))
                     .build());
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -122,7 +122,7 @@ public class SelfEvolvingController {
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            return ResponseEntity.ok(selfEvolvingProjectionService.listArtifacts(golemId));
+            return ResponseEntity.ok(selfEvolvingReadUseCase.listArtifacts(golemId));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -132,7 +132,7 @@ public class SelfEvolvingController {
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            return ResponseEntity.ok(selfEvolvingProjectionService.listTactics(golemId));
+            return ResponseEntity.ok(selfEvolvingReadUseCase.listTactics(golemId));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -145,8 +145,8 @@ public class SelfEvolvingController {
             ControllerActorSupport.requirePrivilegedOperator(principal);
             Map<String, Object> payload = new java.util.LinkedHashMap<>();
             payload.put("query", q);
-            payload.put("status", selfEvolvingProjectionService.getTacticSearchStatus(golemId, q).orElse(null));
-            payload.put("results", selfEvolvingProjectionService.searchTactics(golemId, q));
+            payload.put("status", selfEvolvingReadUseCase.getTacticSearchStatus(golemId, q).orElse(null));
+            payload.put("results", selfEvolvingReadUseCase.searchTactics(golemId, q));
             return ResponseEntity.ok(payload);
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -158,7 +158,7 @@ public class SelfEvolvingController {
             @RequestParam(required = false) String q) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            SelfEvolvingTacticSearchStatusProjection projection = selfEvolvingProjectionService
+            SelfEvolvingTacticSearchStatusProjection projection = selfEvolvingReadUseCase
                     .getTacticSearchStatus(golemId, q)
                     .orElseThrow(
                             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic search status not found"));
@@ -173,7 +173,7 @@ public class SelfEvolvingController {
             @PathVariable String tacticId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            SelfEvolvingTacticProjection projection = selfEvolvingProjectionService.findTactic(golemId, tacticId)
+            SelfEvolvingTacticProjection projection = selfEvolvingReadUseCase.findTactic(golemId, tacticId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic not found"));
             return ResponseEntity.ok(projection);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -186,7 +186,7 @@ public class SelfEvolvingController {
             @PathVariable String tacticId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            SelfEvolvingTacticProjection projection = selfEvolvingProjectionService.findTactic(golemId, tacticId)
+            SelfEvolvingTacticProjection projection = selfEvolvingReadUseCase.findTactic(golemId, tacticId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic not found"));
             SelfEvolvingTacticSearchExplanationProjection explanation = projection.getExplanation();
             if (explanation == null) {
@@ -203,9 +203,9 @@ public class SelfEvolvingController {
             @PathVariable String tacticId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            SelfEvolvingTacticProjection tactic = selfEvolvingProjectionService.findTactic(golemId, tacticId)
+            SelfEvolvingTacticProjection tactic = selfEvolvingReadUseCase.findTactic(golemId, tacticId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic not found"));
-            SelfEvolvingArtifactLineageProjection projection = selfEvolvingProjectionService
+            SelfEvolvingArtifactLineageProjection projection = selfEvolvingReadUseCase
                     .findArtifactLineage(golemId, tactic.getArtifactStreamId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic lineage not found"));
             return ResponseEntity.ok(projection);
@@ -219,9 +219,9 @@ public class SelfEvolvingController {
             @PathVariable String tacticId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            SelfEvolvingTacticProjection tactic = selfEvolvingProjectionService.findTactic(golemId, tacticId)
+            SelfEvolvingTacticProjection tactic = selfEvolvingReadUseCase.findTactic(golemId, tacticId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tactic not found"));
-            Map<String, Object> projection = selfEvolvingProjectionService
+            Map<String, Object> projection = selfEvolvingReadUseCase
                     .findArtifactEvidence(
                             golemId,
                             tactic.getArtifactStreamId(),
@@ -240,7 +240,7 @@ public class SelfEvolvingController {
             @PathVariable String artifactStreamId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            SelfEvolvingArtifactCatalogProjection projection = selfEvolvingProjectionService
+            SelfEvolvingArtifactCatalogProjection projection = selfEvolvingReadUseCase
                     .findArtifactSummary(golemId, artifactStreamId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact summary not found"));
             return ResponseEntity.ok(projection);
@@ -254,7 +254,7 @@ public class SelfEvolvingController {
             @PathVariable String artifactStreamId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            SelfEvolvingArtifactLineageProjection projection = selfEvolvingProjectionService
+            SelfEvolvingArtifactLineageProjection projection = selfEvolvingReadUseCase
                     .findArtifactLineage(golemId, artifactStreamId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact lineage not found"));
             return ResponseEntity.ok(projection);
@@ -270,7 +270,7 @@ public class SelfEvolvingController {
             @RequestParam String toRevisionId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Map<String, Object> projection = selfEvolvingProjectionService
+            Map<String, Object> projection = selfEvolvingReadUseCase
                     .findArtifactDiff(golemId, artifactStreamId, "revision", fromRevisionId, toRevisionId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact diff not found"));
             return ResponseEntity.ok(projection);
@@ -286,7 +286,7 @@ public class SelfEvolvingController {
             @RequestParam String toNodeId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Map<String, Object> projection = selfEvolvingProjectionService
+            Map<String, Object> projection = selfEvolvingReadUseCase
                     .findArtifactDiff(golemId, artifactStreamId, "transition", fromNodeId, toNodeId)
                     .orElseThrow(
                             () -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -303,7 +303,7 @@ public class SelfEvolvingController {
             @RequestParam String revisionId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Map<String, Object> projection = selfEvolvingProjectionService
+            Map<String, Object> projection = selfEvolvingReadUseCase
                     .findArtifactEvidence(golemId, artifactStreamId, "revision", revisionId, revisionId)
                     .orElseThrow(
                             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact evidence not found"));
@@ -320,7 +320,7 @@ public class SelfEvolvingController {
             @RequestParam String toRevisionId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Map<String, Object> projection = selfEvolvingProjectionService
+            Map<String, Object> projection = selfEvolvingReadUseCase
                     .findArtifactEvidence(golemId, artifactStreamId, "compare", fromRevisionId, toRevisionId)
                     .orElseThrow(
                             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact evidence not found"));
@@ -337,7 +337,7 @@ public class SelfEvolvingController {
             @RequestParam String toNodeId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Map<String, Object> projection = selfEvolvingProjectionService
+            Map<String, Object> projection = selfEvolvingReadUseCase
                     .findArtifactEvidence(golemId, artifactStreamId, "transition", fromNodeId, toNodeId)
                     .orElseThrow(
                             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact evidence not found"));
@@ -355,7 +355,7 @@ public class SelfEvolvingController {
             @RequestParam String rightRevisionId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            SelfEvolvingArtifactCompareProjection projection = selfEvolvingProjectionService
+            SelfEvolvingArtifactCompareProjection projection = selfEvolvingReadUseCase
                     .compareArtifacts(artifactStreamId, leftGolemId, rightGolemId, leftRevisionId, rightRevisionId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Artifact compare not found"));
             return ResponseEntity.ok(projection);
@@ -374,7 +374,7 @@ public class SelfEvolvingController {
             @RequestParam(required = false, name = "q") String query) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            return ResponseEntity.ok(selfEvolvingProjectionService.searchArtifacts(
+            return ResponseEntity.ok(selfEvolvingReadUseCase.searchArtifacts(
                     golemId,
                     artifactType,
                     artifactSubtype,

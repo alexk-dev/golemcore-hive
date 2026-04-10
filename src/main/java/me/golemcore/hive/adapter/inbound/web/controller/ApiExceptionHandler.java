@@ -19,7 +19,8 @@
 package me.golemcore.hive.adapter.inbound.web.controller;
 
 import me.golemcore.hive.adapter.inbound.web.dto.inspection.InspectionErrorResponse;
-import me.golemcore.hive.domain.service.GolemInspectionService;
+import me.golemcore.hive.domain.model.InspectionErrorCode;
+import me.golemcore.hive.execution.application.InspectionOperationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,14 +39,24 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(exception.getMessage()));
     }
 
-    @ExceptionHandler(GolemInspectionService.InspectionException.class)
+    @ExceptionHandler(InspectionOperationException.class)
     public ResponseEntity<InspectionErrorResponse> handleInspectionException(
-            GolemInspectionService.InspectionException exception) {
-        return ResponseEntity.status(exception.getStatus()).body(new InspectionErrorResponse(
+            InspectionOperationException exception) {
+        return ResponseEntity.status(toHttpStatus(exception.getCode())).body(new InspectionErrorResponse(
                 exception.getCode().name(),
                 exception.getMessage(),
                 exception.getRequestId(),
                 exception.isRetryable()));
+    }
+
+    private HttpStatus toHttpStatus(InspectionErrorCode errorCode) {
+        return switch (errorCode) {
+        case NOT_FOUND -> HttpStatus.NOT_FOUND;
+        case INVALID_REQUEST -> HttpStatus.BAD_REQUEST;
+        case REQUEST_TIMEOUT -> HttpStatus.GATEWAY_TIMEOUT;
+        case GOLEM_OFFLINE, DELIVERY_FAILED -> HttpStatus.CONFLICT;
+        default -> HttpStatus.BAD_GATEWAY;
+        };
     }
 
     public record ErrorResponse(String error) {

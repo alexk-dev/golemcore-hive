@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.domain.model.HeartbeatPing;
 import me.golemcore.hive.fleet.application.port.out.HeartbeatRepository;
-import me.golemcore.hive.port.outbound.StoragePort;
+import me.golemcore.hive.infrastructure.storage.StoragePort;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -23,10 +23,10 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.system.NotificationEventResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.system.SystemSettingsResponse;
-import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.NotificationEvent;
-import me.golemcore.hive.domain.service.NotificationService;
-import me.golemcore.hive.port.outbound.StoragePort;
+import me.golemcore.hive.governance.application.SystemHealthSnapshot;
+import me.golemcore.hive.governance.application.SystemSettingsSnapshot;
+import me.golemcore.hive.governance.application.port.in.SystemAdministrationUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,40 +41,41 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class SystemController {
 
-    private final HiveProperties properties;
-    private final StoragePort storagePort;
-    private final NotificationService notificationService;
+    private final SystemAdministrationUseCase systemAdministrationUseCase;
 
     @GetMapping("/health")
     public Mono<ResponseEntity<Map<String, Object>>> health() {
-        storagePort.ensureDirectory("meta");
-        return Mono.just(ResponseEntity.ok(Map.of(
-                "status", "UP",
-                "application", "golemcore-hive",
-                "storageBasePath", properties.getStorage().getBasePath(),
-                "storageReady", true)));
+        return Mono.fromCallable(() -> {
+            SystemHealthSnapshot health = systemAdministrationUseCase.health();
+            Map<String, Object> response = Map.of(
+                    "status", "UP",
+                    "application", health.application(),
+                    "storageBasePath", health.storageBasePath(),
+                    "storageReady", health.storageReady());
+            return ResponseEntity.ok(response);
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
     @GetMapping("/settings")
     public Mono<ResponseEntity<SystemSettingsResponse>> settings(Principal principal) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
+            SystemSettingsSnapshot settings = systemAdministrationUseCase.settings();
             SystemSettingsResponse response = new SystemSettingsResponse(
-                    properties.getDeployment().isProductionMode(),
-                    properties.getStorage().getBasePath(),
-                    properties.getSecurity().getCookie().isSecure(),
-                    properties.getGovernance().getApprovals().getHighCostThresholdMicros(),
+                    settings.productionMode(),
+                    settings.storageBasePath(),
+                    settings.secureRefreshCookie(),
+                    settings.highCostThresholdMicros(),
                     new SystemSettingsResponse.RetentionDefaults(
-                            properties.getGovernance().getRetention().getApprovalsDays(),
-                            properties.getGovernance().getRetention().getAuditDays(),
-                            properties.getGovernance().getRetention().getNotificationsDays()),
+                            settings.retention().approvalsDays(),
+                            settings.retention().auditDays(),
+                            settings.retention().notificationsDays()),
                     new SystemSettingsResponse.NotificationDefaults(
-                            properties.getGovernance().getNotifications().isApprovalRequested(),
-                            properties.getGovernance().getNotifications().isBlockerRaised(),
-                            properties.getGovernance().getNotifications().isGolemOffline(),
-                            properties.getGovernance().getNotifications().isCommandFailed()),
-                    notificationService.listNotifications().stream().limit(20).map(this::toNotificationResponse)
-                            .toList());
+                            settings.notifications().approvalRequested(),
+                            settings.notifications().blockerRaised(),
+                            settings.notifications().golemOffline(),
+                            settings.notifications().commandFailed()),
+                    settings.recentNotifications().stream().map(this::toNotificationResponse).toList());
             return ResponseEntity.ok(response);
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -85,7 +86,8 @@ public class SystemController {
             @PathVariable String notificationId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(toNotificationResponse(notificationService.acknowledge(notificationId)));
+            return ResponseEntity.ok(
+                    toNotificationResponse(systemAdministrationUseCase.acknowledgeNotification(notificationId)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 

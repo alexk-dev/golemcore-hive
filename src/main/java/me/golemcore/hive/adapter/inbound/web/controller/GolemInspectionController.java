@@ -20,11 +20,13 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.security.Principal;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.InspectionRequestBody;
 import me.golemcore.hive.domain.model.InspectionRpcResponse;
-import me.golemcore.hive.domain.service.GolemInspectionService;
+import me.golemcore.hive.execution.application.InspectionActor;
+import me.golemcore.hive.execution.application.port.in.GolemInspectionUseCase;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -42,7 +44,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class GolemInspectionController {
 
-    private final GolemInspectionService golemInspectionService;
+    private final GolemInspectionUseCase golemInspectionUseCase;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @GetMapping("/sessions")
@@ -51,7 +53,7 @@ public class GolemInspectionController {
             @PathVariable String golemId,
             @RequestParam(required = false) String channel) {
         AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-        return golemInspectionService.execute(actor, golemId, InspectionRequestBody.builder()
+        return executeInspection(toInspectionActor(actor), golemId, InspectionRequestBody.builder()
                 .operation("sessions.list")
                 .channel(channel)
                 .build()).map(response -> ResponseEntity.ok(response.payload()));
@@ -111,7 +113,7 @@ public class GolemInspectionController {
             @PathVariable String golemId,
             @PathVariable String sessionId) {
         AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-        return golemInspectionService.execute(actor, golemId, InspectionRequestBody.builder()
+        return executeInspection(toInspectionActor(actor), golemId, InspectionRequestBody.builder()
                 .operation("session.trace.export")
                 .sessionId(sessionId)
                 .build()).map(
@@ -129,7 +131,7 @@ public class GolemInspectionController {
             @PathVariable String sessionId,
             @PathVariable String snapshotId) {
         AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-        return golemInspectionService.execute(actor, golemId, InspectionRequestBody.builder()
+        return executeInspection(toInspectionActor(actor), golemId, InspectionRequestBody.builder()
                 .operation("session.trace.snapshot.payload")
                 .sessionId(sessionId)
                 .snapshotId(snapshotId)
@@ -155,7 +157,7 @@ public class GolemInspectionController {
             @PathVariable String golemId,
             @PathVariable String sessionId) {
         AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-        return golemInspectionService.execute(actor, golemId, InspectionRequestBody.builder()
+        return executeInspection(toInspectionActor(actor), golemId, InspectionRequestBody.builder()
                 .operation("session.clear")
                 .sessionId(sessionId)
                 .build()).map(ignored -> ResponseEntity.noContent().build());
@@ -167,7 +169,7 @@ public class GolemInspectionController {
             @PathVariable String golemId,
             @PathVariable String sessionId) {
         AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-        return golemInspectionService.execute(actor, golemId, InspectionRequestBody.builder()
+        return executeInspection(toInspectionActor(actor), golemId, InspectionRequestBody.builder()
                 .operation("session.delete")
                 .sessionId(sessionId)
                 .build()).map(ignored -> ResponseEntity.noContent().build());
@@ -178,8 +180,17 @@ public class GolemInspectionController {
             String golemId,
             InspectionRequestBody requestBody) {
         AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-        return golemInspectionService.execute(actor, golemId, requestBody)
+        return executeInspection(toInspectionActor(actor), golemId, requestBody)
                 .map(response -> ResponseEntity.ok(response.payload()));
+    }
+
+    private Mono<InspectionRpcResponse> executeInspection(
+            InspectionActor actor,
+            String golemId,
+            InspectionRequestBody requestBody) {
+        CompletableFuture<InspectionRpcResponse> responseFuture = golemInspectionUseCase.execute(actor, golemId,
+                requestBody);
+        return Mono.fromFuture(responseFuture);
     }
 
     private ResponseEntity<String> toSnapshotPayloadResponse(
@@ -206,5 +217,9 @@ public class GolemInspectionController {
 
     private String sanitizeExportName(String value) {
         return value.replaceAll("[^a-zA-Z0-9._-]", "_");
+    }
+
+    private InspectionActor toInspectionActor(AuthenticatedActor actor) {
+        return new InspectionActor(actor.getSubjectId(), actor.getName());
     }
 }

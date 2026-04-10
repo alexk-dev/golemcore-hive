@@ -19,7 +19,7 @@
 package me.golemcore.hive.fleet.adapter.config;
 
 import me.golemcore.hive.config.HiveProperties;
-import me.golemcore.hive.domain.service.GolemRegistryService;
+import me.golemcore.hive.fleet.adapter.out.support.GolemRegistryService;
 import me.golemcore.hive.fleet.application.FleetSettings;
 import me.golemcore.hive.fleet.application.port.in.GolemFleetUseCase;
 import me.golemcore.hive.fleet.application.port.out.EnrollmentTokenRepository;

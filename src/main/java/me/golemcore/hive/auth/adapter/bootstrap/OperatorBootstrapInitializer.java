@@ -51,17 +51,42 @@ public class OperatorBootstrapInitializer {
             return;
         }
 
+        String username = normalize(adminProperties.getUsername());
+        String password = normalize(adminProperties.getPassword());
+        if (username == null && password == null) {
+            log.info("[Auth] Bootstrap admin credentials are not configured, skipping operator bootstrap");
+            return;
+        }
+        if (username == null || password == null) {
+            throw new IllegalStateException("Bootstrap admin requires both username and password when enabled");
+        }
+
         Instant now = Instant.now();
         OperatorAccount operatorAccount = OperatorAccount.builder()
                 .id("op_" + UUID.randomUUID().toString().replace("-", ""))
-                .username(adminProperties.getUsername())
-                .displayName(adminProperties.getDisplayName())
-                .passwordHash(passwordHashPort.encode(adminProperties.getPassword()))
+                .username(username)
+                .displayName(resolveDisplayName(adminProperties, username))
+                .passwordHash(passwordHashPort.encode(password))
                 .roles(Set.of(Role.ADMIN, Role.OPERATOR))
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
         operatorAccountRepository.save(operatorAccount);
         log.info("[Auth] Bootstrapped default admin operator '{}'", operatorAccount.getUsername());
+    }
+
+    private String resolveDisplayName(HiveProperties.AdminProperties adminProperties, String username) {
+        String displayName = normalize(adminProperties.getDisplayName());
+        if (displayName != null) {
+            return displayName;
+        }
+        return username;
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }

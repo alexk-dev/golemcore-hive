@@ -24,7 +24,11 @@ import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventBatchRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.events.GolemEventBatchResponse;
 import me.golemcore.hive.domain.model.GolemScope;
-import me.golemcore.hive.domain.service.EventIngestionService;
+import me.golemcore.hive.execution.application.EventIngestionResult;
+import me.golemcore.hive.execution.application.GolemEventBatchCommand;
+import me.golemcore.hive.execution.application.GolemEventCommand;
+import me.golemcore.hive.execution.application.GolemEventEvidenceInput;
+import me.golemcore.hive.execution.application.port.in.EventIngestionUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,7 +43,7 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class GolemEventsController {
 
-    private final EventIngestionService eventIngestionService;
+    private final EventIngestionUseCase eventIngestionUseCase;
 
     @PostMapping("/{golemId}/events:batch")
     public Mono<ResponseEntity<GolemEventBatchResponse>> ingestEvents(
@@ -48,13 +52,48 @@ public class GolemEventsController {
             @Valid @RequestBody GolemEventBatchRequest request) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireGolemScope(principal, golemId, GolemScope.EVENTS_WRITE.value());
-            EventIngestionService.BatchResult result = eventIngestionService.ingestBatch(golemId, request);
+            EventIngestionResult result = eventIngestionUseCase.ingestBatch(golemId, toBatchCommand(request));
             return ResponseEntity.ok(new GolemEventBatchResponse(
-                    result.getAcceptedEvents(),
-                    result.getRuntimeEvents(),
-                    result.getLifecycleSignals(),
-                    result.getAutoAppliedTransitions(),
-                    result.getSuggestedTransitions()));
+                    result.acceptedEvents(),
+                    result.runtimeEvents(),
+                    result.lifecycleSignals(),
+                    result.autoAppliedTransitions(),
+                    result.suggestedTransitions()));
         }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private GolemEventBatchCommand toBatchCommand(GolemEventBatchRequest request) {
+        return new GolemEventBatchCommand(
+                request.schemaVersion(),
+                request.golemId(),
+                request.events().stream().map(event -> new GolemEventCommand(
+                        event.schemaVersion(),
+                        event.eventType(),
+                        event.golemId(),
+                        event.runtimeEventType(),
+                        event.signalId(),
+                        event.cardId(),
+                        event.commandId(),
+                        event.requestId(),
+                        event.runId(),
+                        event.threadId(),
+                        event.signalType(),
+                        event.summary(),
+                        event.details(),
+                        event.blockerCode(),
+                        event.evidenceRefs() == null
+                                ? java.util.List.of()
+                                : event.evidenceRefs().stream()
+                                        .map(ref -> new GolemEventEvidenceInput(ref.kind(), ref.ref()))
+                                        .toList(),
+                        event.inputTokens(),
+                        event.outputTokens(),
+                        event.accumulatedCostMicros(),
+                        event.operation(),
+                        event.success(),
+                        event.errorCode(),
+                        event.errorMessage(),
+                        event.payload(),
+                        event.createdAt())).toList());
     }
 }

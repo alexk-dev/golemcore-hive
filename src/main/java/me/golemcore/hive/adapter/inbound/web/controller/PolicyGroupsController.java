@@ -27,10 +27,10 @@ import me.golemcore.hive.adapter.inbound.web.dto.policies.PolicyGroupVersionResp
 import me.golemcore.hive.adapter.inbound.web.dto.policies.PublishPolicyGroupRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.policies.RollbackPolicyGroupRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.policies.UpdatePolicyGroupDraftRequest;
+import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.PolicyGroup;
 import me.golemcore.hive.domain.model.PolicyGroupVersion;
-import me.golemcore.hive.domain.service.PolicyLifecycleService;
-import me.golemcore.hive.domain.service.PolicyGroupService;
+import me.golemcore.hive.governance.application.port.in.GovernanceOperationsUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,14 +48,13 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class PolicyGroupsController {
 
-    private final PolicyGroupService policyGroupService;
-    private final PolicyLifecycleService policyLifecycleService;
+    private final GovernanceOperationsUseCase governanceOperationsUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<List<PolicyGroupResponse>>> listPolicyGroups(Principal principal) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<PolicyGroupResponse> response = policyGroupService.listPolicyGroups().stream()
+            List<PolicyGroupResponse> response = governanceOperationsUseCase.listPolicyGroups().stream()
                     .map(this::toPolicyGroupResponse)
                     .toList();
             return ResponseEntity.ok(response);
@@ -67,9 +66,8 @@ public class PolicyGroupsController {
             Principal principal,
             @RequestBody CreatePolicyGroupRequest request) {
         return Mono.fromCallable(() -> {
-            me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor actor = ControllerActorSupport
-                    .requirePrivilegedOperator(principal);
-            PolicyGroup policyGroup = policyGroupService.createPolicyGroup(
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            PolicyGroup policyGroup = governanceOperationsUseCase.createPolicyGroup(
                     request.slug(),
                     request.name(),
                     request.description(),
@@ -83,7 +81,7 @@ public class PolicyGroupsController {
     public Mono<ResponseEntity<PolicyGroupResponse>> getPolicyGroup(Principal principal, @PathVariable String groupId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(toPolicyGroupResponse(policyGroupService.getPolicyGroup(groupId)));
+            return ResponseEntity.ok(toPolicyGroupResponse(governanceOperationsUseCase.getPolicyGroup(groupId)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -94,7 +92,7 @@ public class PolicyGroupsController {
             @RequestBody UpdatePolicyGroupDraftRequest request) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            PolicyGroup policyGroup = policyGroupService.updateDraft(groupId,
+            PolicyGroup policyGroup = governanceOperationsUseCase.updatePolicyGroupDraft(groupId,
                     PolicyMappingSupport.toPolicyGroupSpec(request));
             return ResponseEntity.ok(toPolicyGroupResponse(policyGroup));
         }).subscribeOn(Schedulers.boundedElastic());
@@ -106,9 +104,8 @@ public class PolicyGroupsController {
             @PathVariable String groupId,
             @RequestBody(required = false) PublishPolicyGroupRequest request) {
         return Mono.fromCallable(() -> {
-            me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor actor = ControllerActorSupport
-                    .requirePrivilegedOperator(principal);
-            PolicyGroupVersion version = policyLifecycleService.publish(
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            PolicyGroupVersion version = governanceOperationsUseCase.publishPolicyGroup(
                     groupId,
                     request != null ? request.changeSummary() : null,
                     actor.getSubjectId(),
@@ -124,7 +121,8 @@ public class PolicyGroupsController {
             @PathVariable String groupId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<PolicyGroupVersionResponse> response = policyGroupService.listVersions(groupId).stream()
+            List<PolicyGroupVersionResponse> response = governanceOperationsUseCase.listPolicyGroupVersions(groupId)
+                    .stream()
                     .map(PolicyMappingSupport::toPolicyGroupVersionResponse)
                     .toList();
             return ResponseEntity.ok(response);
@@ -137,9 +135,8 @@ public class PolicyGroupsController {
             @PathVariable String groupId,
             @RequestBody RollbackPolicyGroupRequest request) {
         return Mono.fromCallable(() -> {
-            me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor actor = ControllerActorSupport
-                    .requirePrivilegedOperator(principal);
-            PolicyGroup policyGroup = policyLifecycleService.rollback(
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            PolicyGroup policyGroup = governanceOperationsUseCase.rollbackPolicyGroup(
                     groupId,
                     request.version() != null ? request.version() : 0,
                     request.changeSummary(),
@@ -150,7 +147,7 @@ public class PolicyGroupsController {
     }
 
     private PolicyGroupResponse toPolicyGroupResponse(PolicyGroup policyGroup) {
-        int boundGolemCount = policyGroupService.listBindingsForPolicyGroup(policyGroup.getId()).size();
+        int boundGolemCount = governanceOperationsUseCase.countPolicyGroupBindings(policyGroup.getId());
         return PolicyMappingSupport.toPolicyGroupResponse(policyGroup, boundGolemCount);
     }
 }

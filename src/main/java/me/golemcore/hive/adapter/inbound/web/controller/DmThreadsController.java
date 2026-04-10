@@ -25,8 +25,8 @@ import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.threads.DirectThreadResponse;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.ThreadRecord;
-import me.golemcore.hive.domain.service.ThreadService;
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
+import me.golemcore.hive.workflow.application.port.in.ThreadWorkflowUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,7 +40,7 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class DmThreadsController {
 
-    private final ThreadService threadService;
+    private final ThreadWorkflowUseCase threadWorkflowUseCase;
     private final GolemDirectoryUseCase golemDirectoryUseCase;
 
     @GetMapping
@@ -48,7 +48,7 @@ public class DmThreadsController {
             @RequestParam(defaultValue = "10") int limit) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<ThreadRecord> threads = threadService.listDirectThreads();
+            List<ThreadRecord> threads = threadWorkflowUseCase.listDirectThreads();
             List<DirectThreadResponse> response = new ArrayList<>();
             for (ThreadRecord thread : threads) {
                 if (response.size() >= Math.min(limit, 50)) {

@@ -32,8 +32,7 @@ import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.CardLifecycleSignal;
 import me.golemcore.hive.domain.model.CommandRecord;
 import me.golemcore.hive.domain.model.RunProjection;
-import me.golemcore.hive.domain.service.CommandDispatchService;
-import me.golemcore.hive.domain.service.EventIngestionService;
+import me.golemcore.hive.execution.application.port.in.ExecutionOperationsUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,15 +48,14 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class CommandsController {
 
-    private final CommandDispatchService commandDispatchService;
-    private final EventIngestionService eventIngestionService;
+    private final ExecutionOperationsUseCase executionOperationsUseCase;
 
     @GetMapping("/commands")
     public Mono<ResponseEntity<List<CommandRecordResponse>>> listCommands(Principal principal,
             @PathVariable String threadId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<CommandRecordResponse> response = commandDispatchService.listCommands(threadId).stream()
+            List<CommandRecordResponse> response = executionOperationsUseCase.listCommands(threadId).stream()
                     .map(this::toCommandResponse)
                     .toList();
             return ResponseEntity.ok(response);
@@ -74,7 +72,7 @@ public class CommandsController {
             ApprovalRiskLevel riskLevel = request.approvalRiskLevel() != null && !request.approvalRiskLevel().isBlank()
                     ? ApprovalRiskLevel.valueOf(request.approvalRiskLevel())
                     : null;
-            CommandDispatchService.DispatchResult result = commandDispatchService.createCommand(
+            CommandRecord command = executionOperationsUseCase.createCommand(
                     threadId,
                     request.body(),
                     riskLevel,
@@ -82,7 +80,7 @@ public class CommandsController {
                     request.approvalReason(),
                     actor.getSubjectId(),
                     actor.getName());
-            return ResponseEntity.ok(toCommandResponse(result.getCommand()));
+            return ResponseEntity.ok(toCommandResponse(command));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -93,7 +91,7 @@ public class CommandsController {
             @PathVariable String runId) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            RunProjection run = commandDispatchService.requestRunCancellation(
+            RunProjection run = executionOperationsUseCase.requestRunCancellation(
                     threadId,
                     runId,
                     actor.getSubjectId(),
@@ -107,7 +105,7 @@ public class CommandsController {
             @PathVariable String threadId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<RunProjectionResponse> response = commandDispatchService.listRuns(threadId).stream()
+            List<RunProjectionResponse> response = executionOperationsUseCase.listRuns(threadId).stream()
                     .map(this::toRunResponse)
                     .toList();
             return ResponseEntity.ok(response);
@@ -119,7 +117,7 @@ public class CommandsController {
             @PathVariable String threadId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<CardLifecycleSignalResponse> response = eventIngestionService.listSignals(threadId).stream()
+            List<CardLifecycleSignalResponse> response = executionOperationsUseCase.listSignals(threadId).stream()
                     .map(this::toSignalResponse)
                     .toList();
             return ResponseEntity.ok(response);

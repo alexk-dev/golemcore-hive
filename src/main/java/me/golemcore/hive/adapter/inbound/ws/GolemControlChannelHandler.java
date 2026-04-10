@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.security.JwtTokenProvider;
 import me.golemcore.hive.adapter.inbound.web.security.SubjectType;
 import me.golemcore.hive.domain.model.GolemScope;
-import me.golemcore.hive.domain.service.CommandDispatchService;
+import me.golemcore.hive.execution.application.port.in.ExecutionOperationsUseCase;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
@@ -35,8 +35,8 @@ import reactor.core.publisher.Sinks;
 public class GolemControlChannelHandler implements WebSocketHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final InMemoryGolemControlChannelAdapter golemControlChannelAdapter;
-    private final CommandDispatchService commandDispatchService;
+    private final GolemControlChannelSessions golemControlChannelSessions;
+    private final ExecutionOperationsUseCase executionOperationsUseCase;
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
@@ -51,12 +51,12 @@ public class GolemControlChannelHandler implements WebSocketHandler {
 
         String golemId = jwtTokenProvider.getSubjectId(token);
         Sinks.Many<String> sink = Sinks.many().unicast().onBackpressureBuffer();
-        Mono<Void> output = session.send(golemControlChannelAdapter.register(golemId, sink).map(session::textMessage));
+        Mono<Void> output = session.send(golemControlChannelSessions.register(golemId, sink).map(session::textMessage));
         Mono<Void> input = session.receive().then();
 
-        commandDispatchService.dispatchPendingCommands(golemId);
+        executionOperationsUseCase.dispatchPendingCommands(golemId);
         return Mono.when(input, output)
-                .doFinally(signalType -> golemControlChannelAdapter.unregister(golemId, sink));
+                .doFinally(signalType -> golemControlChannelSessions.unregister(golemId, sink));
     }
 
     private String extractToken(WebSocketSession session) {

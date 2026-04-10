@@ -96,12 +96,15 @@ npm run dev
 
 The Vite dev server proxies `/api` and `/ws` to the backend on `http://localhost:8080`.
 
-Default bootstrap operator:
+Bootstrap operator provisioning is disabled by default.
 
-- username: `admin`
-- password: `change-me-now`
+To enable a local bootstrap operator, configure all three properties explicitly:
 
-Override bootstrap credentials in `src/main/resources/application.yml` or environment-backed Spring properties before using the app outside local development.
+- `hive.bootstrap.admin.enabled=true`
+- `hive.bootstrap.admin.username=<username>`
+- `hive.bootstrap.admin.password=<password>`
+
+You can set them in `src/main/resources/application.yml` or via environment-backed Spring properties.
 
 ## Storage layout
 

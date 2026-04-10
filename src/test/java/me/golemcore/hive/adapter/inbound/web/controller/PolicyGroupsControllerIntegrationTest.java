@@ -37,10 +37,10 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import me.golemcore.hive.adapter.inbound.ws.InMemoryGolemControlChannelAdapter;
+import me.golemcore.hive.infrastructure.control.InMemoryGolemControlChannelGateway;
 import me.golemcore.hive.adapter.inbound.web.security.JwtTokenProvider;
 import me.golemcore.hive.domain.model.Golem;
-import me.golemcore.hive.domain.service.GolemRegistryService;
+import me.golemcore.hive.fleet.adapter.out.support.GolemRegistryService;
 import reactor.core.Disposable;
 import reactor.core.publisher.Sinks;
 
@@ -75,6 +75,7 @@ class PolicyGroupsControllerIntegrationTest {
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("hive.storage.base-path", () -> tempDir.toString());
         registry.add("hive.security.cookie.secure", () -> false);
+        registry.add("hive.bootstrap.admin.enabled", () -> true);
         registry.add("hive.bootstrap.admin.username", () -> "admin");
         registry.add("hive.bootstrap.admin.password", () -> "change-me-now");
         registry.add("hive.bootstrap.admin.display-name", () -> "Hive Admin");
@@ -410,8 +411,8 @@ class PolicyGroupsControllerIntegrationTest {
         RegisteredGolem unsupportedGolem = registerGolem(operatorToken, "Legacy Runner", false);
         RegisteredGolem supportedGolem = registerGolem(operatorToken, "Managed Runner", true);
 
-        InMemoryGolemControlChannelAdapter controlChannelService = applicationContext.getBean(
-                InMemoryGolemControlChannelAdapter.class);
+        InMemoryGolemControlChannelGateway controlChannelService = applicationContext.getBean(
+                InMemoryGolemControlChannelGateway.class);
         BlockingQueue<String> unsupportedMessages = new LinkedBlockingQueue<>();
         BlockingQueue<String> supportedMessages = new LinkedBlockingQueue<>();
         Sinks.Many<String> unsupportedSink = Sinks.many().unicast().onBackpressureBuffer();

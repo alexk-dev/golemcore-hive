@@ -35,14 +35,14 @@ function SidebarContent({ logout, user, onNavigate }: {
 }) {
   return (
     <>
-      <div className="px-4 py-4">
-        <span className="text-sm font-bold tracking-tight text-foreground">Hive</span>
+      <div className="px-5 py-5">
+        <span className="text-base font-bold tracking-tight text-foreground">Hive</span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-3 px-2">
+      <nav className="flex flex-1 flex-col gap-5 px-3">
         {navGroups.map((group) => (
           <div key={group.label}>
-            <p className="px-3 pb-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               {group.label}
             </p>
             <div className="flex flex-col gap-0.5">
@@ -54,10 +54,10 @@ function SidebarContent({ logout, user, onNavigate }: {
                   onClick={onNavigate}
                   className={({ isActive }) =>
                     [
-                      'px-3 py-1.5 text-sm transition',
+                      'rounded-md px-3 py-2 text-sm transition',
                       isActive
-                        ? 'bg-primary text-primary-foreground font-bold'
-                        : 'text-foreground hover:bg-muted',
+                        ? 'bg-primary text-primary-foreground font-semibold'
+                        : 'text-foreground/80 hover:bg-muted hover:text-foreground',
                     ].join(' ')
                   }
                 >
@@ -69,16 +69,16 @@ function SidebarContent({ logout, user, onNavigate }: {
         ))}
       </nav>
 
-      <div className="flex flex-col gap-0.5 border-t border-border/60 px-2 py-2">
+      <div className="flex flex-col gap-0.5 border-t border-border/60 px-3 py-3">
         <NavLink
           to="/settings"
           onClick={onNavigate}
           className={({ isActive }) =>
             [
-              'px-3 py-1.5 text-sm transition',
+              'rounded-md px-3 py-2 text-sm transition',
               isActive
                 ? 'bg-primary text-primary-foreground font-semibold'
-                : 'text-foreground hover:bg-muted',
+                : 'text-foreground/80 hover:bg-muted hover:text-foreground',
             ].join(' ')
           }
         >
@@ -86,15 +86,15 @@ function SidebarContent({ logout, user, onNavigate }: {
         </NavLink>
       </div>
 
-      <div className="border-t border-border/60 px-4 py-3">
-        <p className="truncate text-sm text-foreground">{user?.displayName}</p>
+      <div className="border-t border-border/60 px-5 py-4">
+        <p className="truncate text-sm font-medium text-foreground">{user?.displayName}</p>
         {user?.roles?.length ? (
-          <p className="truncate text-xs text-muted-foreground">{user.roles.join(' / ')}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{user.roles.join(' / ')}</p>
         ) : null}
         <button
           type="button"
           onClick={() => { logout(); }}
-          className="mt-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+          className="mt-3 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
         >
           Sign out
         </button>
@@ -110,7 +110,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-48 shrink-0 flex-col border-r border-border/70 bg-muted/60 backdrop-blur md:flex">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border/70 bg-muted/60 backdrop-blur md:flex">
         <SidebarContent logout={logout} user={user} />
       </aside>
 
@@ -125,7 +125,7 @@ export function AppShell() {
       {/* Mobile sidebar */}
       <aside
         className={[
-          'fixed inset-y-0 left-0 z-50 flex w-56 flex-col border-r border-border/70 bg-muted transition-transform duration-200 md:hidden',
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border/70 bg-muted transition-transform duration-200 md:hidden',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         ].join(' ')}
       >

@@ -248,22 +248,22 @@ function CardThreadHeader({
               type="button"
               disabled={isCancelPending || cancelRequestedPending}
               onClick={() => onCancelRun(controllableRun.id)}
-              className="border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-900 transition hover:bg-rose-100 disabled:opacity-60"
+              className="border border-rose-700 bg-rose-950/40 px-3 py-1.5 text-sm font-semibold text-rose-300 transition hover:bg-rose-900/40 disabled:opacity-60"
             >
               {isCancelPending ? 'Sending stop...' : cancelRequestedPending ? 'Stop requested' : cancelActionLabel}
             </button>
           ) : null}
-          <Link to={`/services/${serviceId}`} className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground">
+          <Link to={`/services/${serviceId}`} className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground">
             Back to service
           </Link>
         </div>
       </div>
       {cancelRequestedPending && controllableRun ? (
-        <p className="mt-2 text-xs text-rose-900">
+        <p className="mt-2 text-xs text-rose-300">
           Stop requested{controllableRun.cancelRequestedByActorName ? ` by ${controllableRun.cancelRequestedByActorName}` : ''}. Waiting for bot confirmation.
         </p>
       ) : null}
-      {actionError ? <p className="mt-2 text-sm text-rose-900">{actionError}</p> : null}
+      {actionError ? <p className="mt-2 text-sm text-rose-300">{actionError}</p> : null}
     </section>
   );
 }
@@ -296,7 +296,7 @@ export function CardThreadPage() {
       <CardThreadHeader
         title={data.cardQuery.data.title}
         columnId={data.cardQuery.data.columnId}
-        serviceId={data.cardQuery.data.serviceId}
+        serviceId={data.cardQuery.data.serviceId || data.cardQuery.data.boardId}
         liveState={liveState}
         targetGolem={targetGolem}
         controllableRun={data.latestControllableRun}

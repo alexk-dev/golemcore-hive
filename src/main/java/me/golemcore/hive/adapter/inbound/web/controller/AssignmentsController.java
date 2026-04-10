@@ -24,9 +24,9 @@ import me.golemcore.hive.adapter.inbound.web.dto.boards.BoardTeamResolvedRespons
 import me.golemcore.hive.adapter.inbound.web.dto.boards.CardAssigneeOptionsResponse;
 import me.golemcore.hive.domain.model.Board;
 import me.golemcore.hive.domain.model.Card;
-import me.golemcore.hive.domain.service.AssignmentService;
-import me.golemcore.hive.domain.service.BoardService;
-import me.golemcore.hive.domain.service.CardService;
+import me.golemcore.hive.workflow.application.port.in.AssignmentWorkflowUseCase;
+import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
+import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,20 +38,21 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class AssignmentsController extends BoardMappingSupport {
 
-    private final AssignmentService assignmentService;
-    private final BoardService boardService;
-    private final CardService cardService;
+    private final AssignmentWorkflowUseCase assignmentWorkflowUseCase;
+    private final BoardWorkflowUseCase boardWorkflowUseCase;
+    private final CardWorkflowUseCase cardWorkflowUseCase;
 
     @GetMapping("/api/v1/boards/{boardId}/team")
     public Mono<ResponseEntity<BoardTeamResolvedResponse>> getBoardTeam(Principal principal,
             @PathVariable String boardId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Board board = boardService.getBoard(boardId);
+            Board board = boardWorkflowUseCase.getBoard(boardId);
             return ResponseEntity.ok(new BoardTeamResolvedResponse(
                     boardId,
                     boardId,
-                    assignmentService.getTeamCandidates(board).stream().map(this::toAssignmentSuggestionResponse)
+                    assignmentWorkflowUseCase.getTeamCandidates(board).stream()
+                            .map(this::toAssignmentSuggestionResponse)
                             .toList()));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -61,11 +62,12 @@ public class AssignmentsController extends BoardMappingSupport {
             @PathVariable String serviceId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Board board = boardService.getBoard(serviceId);
+            Board board = boardWorkflowUseCase.getBoard(serviceId);
             return ResponseEntity.ok(new BoardTeamResolvedResponse(
                     serviceId,
                     serviceId,
-                    assignmentService.getTeamCandidates(board).stream().map(this::toAssignmentSuggestionResponse)
+                    assignmentWorkflowUseCase.getTeamCandidates(board).stream()
+                            .map(this::toAssignmentSuggestionResponse)
                             .toList()));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -75,15 +77,17 @@ public class AssignmentsController extends BoardMappingSupport {
             @PathVariable String cardId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Card card = cardService.getCard(cardId);
-            Board board = boardService.getBoard(card.getServiceId());
+            Card card = cardWorkflowUseCase.getCard(cardId);
+            Board board = boardWorkflowUseCase.getBoard(card.getBoardId());
             return ResponseEntity.ok(new CardAssigneeOptionsResponse(
                     cardId,
                     board.getId(),
                     board.getId(),
-                    assignmentService.getTeamCandidates(board).stream().map(this::toAssignmentSuggestionResponse)
+                    assignmentWorkflowUseCase.getTeamCandidates(board).stream()
+                            .map(this::toAssignmentSuggestionResponse)
                             .toList(),
-                    assignmentService.getAllCandidates(board).stream().map(this::toAssignmentSuggestionResponse)
+                    assignmentWorkflowUseCase.getAllCandidates(board).stream()
+                            .map(this::toAssignmentSuggestionResponse)
                             .toList()));
         }).subscribeOn(Schedulers.boundedElastic());
     }

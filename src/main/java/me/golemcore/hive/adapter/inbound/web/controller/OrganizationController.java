@@ -24,7 +24,7 @@ import me.golemcore.hive.adapter.inbound.web.dto.organization.OrganizationRespon
 import me.golemcore.hive.adapter.inbound.web.dto.organization.UpdateOrganizationRequest;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.Organization;
-import me.golemcore.hive.domain.service.OrganizationService;
+import me.golemcore.hive.workflow.application.port.in.OrganizationWorkflowUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -39,13 +39,13 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class OrganizationController {
 
-    private final OrganizationService organizationService;
+    private final OrganizationWorkflowUseCase organizationWorkflowUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<OrganizationResponse>> getOrganization(Principal principal) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(toOrganizationResponse(organizationService.getOrganization()));
+            return ResponseEntity.ok(toOrganizationResponse(organizationWorkflowUseCase.getOrganization()));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -55,7 +55,7 @@ public class OrganizationController {
             @RequestBody UpdateOrganizationRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Organization organization = organizationService.updateOrganization(
+            Organization organization = organizationWorkflowUseCase.updateOrganization(
                     request != null ? request.name() : null,
                     request != null ? request.description() : null,
                     actor.getSubjectId(),

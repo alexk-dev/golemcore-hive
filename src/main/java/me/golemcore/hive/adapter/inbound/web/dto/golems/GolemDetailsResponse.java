@@ -22,4 +22,4 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
-public record GolemDetailsResponse(String id,String displayName,String hostLabel,String runtimeVersion,String buildVersion,String state,Instant registeredAt,Instant createdAt,Instant updatedAt,Instant lastHeartbeatAt,Instant lastSeenAt,Instant lastStateChangeAt,int heartbeatIntervalSeconds,int missedHeartbeatCount,String pauseReason,String revokeReason,String controlChannelUrl,Set<String>supportedChannels,GolemCapabilitySnapshotRequest capabilities,HeartbeatRequest lastHeartbeat,List<String>roleSlugs){}
+public record GolemDetailsResponse(String id,String displayName,String hostLabel,String runtimeVersion,String buildVersion,String state,Instant registeredAt,Instant createdAt,Instant updatedAt,Instant lastHeartbeatAt,Instant lastSeenAt,Instant lastStateChangeAt,int heartbeatIntervalSeconds,int missedHeartbeatCount,String pauseReason,String revokeReason,String controlChannelUrl,Set<String>supportedChannels,GolemCapabilitySnapshotRequest capabilities,HeartbeatRequest lastHeartbeat,List<String>roleSlugs,GolemPolicyBindingResponse policyBinding){}

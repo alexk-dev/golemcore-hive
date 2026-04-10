@@ -33,8 +33,8 @@ import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardControlStateSnapshot;
 import me.golemcore.hive.domain.model.CardTransitionOrigin;
-import me.golemcore.hive.domain.service.CardService;
-import me.golemcore.hive.domain.service.CommandDispatchService;
+import me.golemcore.hive.execution.application.port.in.ExecutionOperationsUseCase;
+import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,8 +53,8 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class CardsController extends BoardMappingSupport {
 
-    private final CardService cardService;
-    private final CommandDispatchService commandDispatchService;
+    private final CardWorkflowUseCase cardWorkflowUseCase;
+    private final ExecutionOperationsUseCase executionOperationsUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<List<CardSummaryResponse>>> listCards(
@@ -68,8 +68,8 @@ public class CardsController extends BoardMappingSupport {
             if ((serviceId != null && !serviceId.isBlank()) || (boardId != null && !boardId.isBlank())) {
                 resolvedServiceId = resolveServiceId(serviceId, boardId);
             }
-            List<Card> cards = cardService.listCards(resolvedServiceId, includeArchived);
-            Map<String, CardControlStateSnapshot> controlStates = commandDispatchService
+            List<Card> cards = cardWorkflowUseCase.listCards(resolvedServiceId, includeArchived);
+            Map<String, CardControlStateSnapshot> controlStates = executionOperationsUseCase
                     .listActiveCardControlStates(cards);
             List<CardSummaryResponse> response = cards.stream()
                     .map(card -> toCardSummaryResponse(card, controlStates.get(card.getId())))
@@ -84,7 +84,7 @@ public class CardsController extends BoardMappingSupport {
             @Valid @RequestBody CreateCardRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Card card = cardService.createCard(
+            Card card = cardWorkflowUseCase.createCard(
                     resolveServiceId(request.serviceId(), request.boardId()),
                     request.title(),
                     request.description(),
@@ -105,7 +105,7 @@ public class CardsController extends BoardMappingSupport {
     public Mono<ResponseEntity<CardDetailResponse>> getCard(Principal principal, @PathVariable String cardId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Card card = cardService.getCard(cardId);
+            Card card = cardWorkflowUseCase.getCard(cardId);
             return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -117,7 +117,7 @@ public class CardsController extends BoardMappingSupport {
             @RequestBody UpdateCardRequest request) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Card card = cardService.updateCard(
+            Card card = cardWorkflowUseCase.updateCard(
                     cardId,
                     request != null ? request.title() : null,
                     request != null ? request.description() : null,
@@ -136,13 +136,13 @@ public class CardsController extends BoardMappingSupport {
             @Valid @RequestBody MoveCardRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Card existingCard = cardService.getCard(cardId);
+            Card existingCard = cardWorkflowUseCase.getCard(cardId);
             boolean shouldAutoDispatchPrompt = shouldAutoDispatchPromptOnMove(existingCard, request.targetColumnId());
             if (shouldAutoDispatchPrompt
                     && (existingCard.getAssigneeGolemId() == null || existingCard.getAssigneeGolemId().isBlank())) {
                 throw new IllegalArgumentException("Card must be assigned before the first move to in_progress");
             }
-            Card card = cardService.moveCard(
+            Card card = cardWorkflowUseCase.moveCard(
                     cardId,
                     request.targetColumnId(),
                     request.targetIndex(),
@@ -151,7 +151,7 @@ public class CardsController extends BoardMappingSupport {
                     actor.getName(),
                     request.summary());
             if (shouldAutoDispatchPrompt) {
-                commandDispatchService.createCommand(
+                executionOperationsUseCase.createCommand(
                         card.getThreadId(),
                         card.getPrompt(),
                         null,
@@ -179,7 +179,7 @@ public class CardsController extends BoardMappingSupport {
             @RequestBody UpdateCardAssigneeRequest request) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Card card = cardService.assignCard(cardId, request != null ? request.assigneeGolemId() : null);
+            Card card = cardWorkflowUseCase.assignCard(cardId, request != null ? request.assigneeGolemId() : null);
             return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -188,13 +188,13 @@ public class CardsController extends BoardMappingSupport {
     public Mono<ResponseEntity<CardDetailResponse>> archiveCard(Principal principal, @PathVariable String cardId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Card card = cardService.archiveCard(cardId);
+            Card card = cardWorkflowUseCase.archiveCard(cardId);
             return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
     private CardControlStateSnapshot findControlState(Card card) {
-        return commandDispatchService.listActiveCardControlStates(List.of(card)).get(card.getId());
+        return executionOperationsUseCase.listActiveCardControlStates(List.of(card)).get(card.getId());
     }
 
     private boolean shouldAutoDispatchPromptOnMove(Card card, String targetColumnId) {

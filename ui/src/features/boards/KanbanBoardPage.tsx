@@ -249,7 +249,16 @@ export function KanbanBoardPage() {
   }, [selectedCardId]);
 
   if (!data.boardQuery.data) {
-    return <div className="panel p-6 md:p-8 text-sm text-muted-foreground">Loading service queue…</div>;
+    return (
+      <div className="grid gap-4">
+        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+        <div className="grid grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-48 animate-pulse rounded border border-border/50 bg-muted/50" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const cards = data.cardsQuery.data ?? [];
@@ -292,6 +301,7 @@ export function KanbanBoardPage() {
                 cards={cards
                   .filter((card) => card.columnId === column.id && !card.archived)
                   .sort((left, right) => (left.position ?? 0) - (right.position ?? 0))}
+                allGolems={data.golemsQuery.data ?? []}
                 onOpenCard={setSelectedCardId}
               />
             ))}

@@ -36,9 +36,10 @@ import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.RunProjection;
 import me.golemcore.hive.domain.model.ThreadMessage;
 import me.golemcore.hive.domain.model.ThreadRecord;
-import me.golemcore.hive.domain.service.CommandDispatchService;
-import me.golemcore.hive.domain.service.GolemRegistryService;
-import me.golemcore.hive.domain.service.ThreadService;
+import me.golemcore.hive.execution.application.port.in.ExecutionOperationsUseCase;
+import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
+import me.golemcore.hive.workflow.application.ThreadMessagePage;
+import me.golemcore.hive.workflow.application.port.in.ThreadWorkflowUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,18 +56,18 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class DirectMessagesController {
 
-    private final ThreadService threadService;
-    private final GolemRegistryService golemRegistryService;
-    private final CommandDispatchService commandDispatchService;
+    private final ThreadWorkflowUseCase threadWorkflowUseCase;
+    private final GolemDirectoryUseCase golemDirectoryUseCase;
+    private final ExecutionOperationsUseCase executionOperationsUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<DirectThreadResponse>> getDirectThread(Principal principal,
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
-            ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
+            ThreadRecord thread = threadWorkflowUseCase.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
             return ResponseEntity.ok(toDirectThreadResponse(thread, golem));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -79,11 +80,11 @@ public class DirectMessagesController {
             @RequestParam(required = false) String before) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
-            ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
+            ThreadRecord thread = threadWorkflowUseCase.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
             Instant beforeInstant = before != null ? Instant.parse(before) : null;
-            ThreadService.MessagePage page = threadService.listMessagesPaginated(
+            ThreadMessagePage page = threadWorkflowUseCase.listMessagesPaginated(
                     thread.getId(), Math.min(limit, 200), beforeInstant);
             List<ThreadMessageResponse> messages = page.messages().stream()
                     .map(this::toThreadMessageResponse)
@@ -99,10 +100,10 @@ public class DirectMessagesController {
             @Valid @RequestBody PostThreadMessageRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
-            ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
-            ThreadMessage message = threadService.postOperatorMessage(thread.getId(), request.body(),
+            ThreadRecord thread = threadWorkflowUseCase.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
+            ThreadMessage message = threadWorkflowUseCase.postOperatorMessage(thread.getId(), request.body(),
                     actor.getSubjectId(), actor.getName());
             return ResponseEntity.ok(toThreadMessageResponse(message));
         }).subscribeOn(Schedulers.boundedElastic());
@@ -115,12 +116,15 @@ public class DirectMessagesController {
             @Valid @RequestBody CreateThreadCommandRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
-            ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
-            CommandDispatchService.DispatchResult result = commandDispatchService.createDirectCommand(
-                    thread.getId(), request.body(), actor.getSubjectId(), actor.getName());
-            return ResponseEntity.ok(toCommandResponse(result.getCommand()));
+            ThreadRecord thread = threadWorkflowUseCase.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
+            CommandRecord command = executionOperationsUseCase.createDirectCommand(
+                    thread.getId(),
+                    request.body(),
+                    actor.getSubjectId(),
+                    actor.getName());
+            return ResponseEntity.ok(toCommandResponse(command));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -129,10 +133,10 @@ public class DirectMessagesController {
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
-            ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
-            List<CommandRecordResponse> response = commandDispatchService.listCommands(thread.getId()).stream()
+            ThreadRecord thread = threadWorkflowUseCase.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
+            List<CommandRecordResponse> response = executionOperationsUseCase.listCommands(thread.getId()).stream()
                     .map(this::toCommandResponse)
                     .toList();
             return ResponseEntity.ok(response);
@@ -144,10 +148,10 @@ public class DirectMessagesController {
             @PathVariable String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Golem golem = golemRegistryService.findGolem(golemId)
+            Golem golem = golemDirectoryUseCase.findGolem(golemId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
-            ThreadRecord thread = threadService.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
-            List<RunProjectionResponse> response = commandDispatchService.listRuns(thread.getId()).stream()
+            ThreadRecord thread = threadWorkflowUseCase.getOrCreateDirectThread(golem.getId(), golem.getDisplayName());
+            List<RunProjectionResponse> response = executionOperationsUseCase.listRuns(thread.getId()).stream()
                     .map(this::toRunResponse)
                     .toList();
             return ResponseEntity.ok(response);

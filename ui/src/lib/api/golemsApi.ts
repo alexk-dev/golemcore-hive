@@ -25,6 +25,23 @@ export interface HeartbeatSnapshot {
   lastErrorSummary: string | null;
   uptimeSeconds: number;
   capabilitySnapshotHash: string | null;
+  policyGroupId?: string | null;
+  targetPolicyVersion?: number | null;
+  appliedPolicyVersion?: number | null;
+  syncStatus?: string | null;
+  lastPolicyErrorDigest?: string | null;
+}
+
+export interface GolemPolicyBinding {
+  policyGroupId: string;
+  targetVersion: number;
+  appliedVersion: number | null;
+  syncStatus: string | null;
+  lastSyncRequestedAt: string | null;
+  lastAppliedAt: string | null;
+  lastErrorDigest: string | null;
+  lastErrorAt: string | null;
+  driftSince: string | null;
 }
 
 export interface GolemSummary {
@@ -37,6 +54,7 @@ export interface GolemSummary {
   lastSeenAt: string | null;
   missedHeartbeatCount: number;
   roleSlugs: string[];
+  policyBinding?: GolemPolicyBinding | null;
 }
 
 export interface GolemDetails {
@@ -61,6 +79,7 @@ export interface GolemDetails {
   capabilities: GolemCapabilitySnapshot | null;
   lastHeartbeat: HeartbeatSnapshot | null;
   roleSlugs: string[];
+  policyBinding?: GolemPolicyBinding | null;
 }
 
 export interface EnrollmentToken {
@@ -69,7 +88,7 @@ export interface EnrollmentToken {
   note: string | null;
   createdByUsername: string | null;
   createdAt: string;
-  expiresAt: string;
+  expiresAt: string | null;
   lastUsedAt: string | null;
   registrationCount: number;
   revokedAt: string | null;
@@ -85,8 +104,17 @@ export interface EnrollmentTokenCreated {
   preview: string;
   note: string | null;
   createdAt: string;
-  expiresAt: string;
+  expiresAt: string | null;
 }
+
+export type EnrollmentTokenExpirationPreset =
+  | 'ONE_HOUR'
+  | 'EIGHT_HOURS'
+  | 'ONE_DAY'
+  | 'SEVEN_DAYS'
+  | 'ONE_MONTH'
+  | 'ONE_YEAR'
+  | 'UNLIMITED';
 
 export interface GolemRole {
   slug: string;
@@ -137,12 +165,12 @@ export function listEnrollmentTokens() {
   return apiRequest<EnrollmentToken[]>('/api/v1/enrollment-tokens');
 }
 
-export function createEnrollmentToken(note: string, expiresInMinutes?: number | null) {
+export function createEnrollmentToken(note: string, expirationPreset: EnrollmentTokenExpirationPreset) {
   return apiRequest<EnrollmentTokenCreated>('/api/v1/enrollment-tokens', {
     method: 'POST',
     body: JSON.stringify({
       note,
-      expiresInMinutes: expiresInMinutes || undefined,
+      expirationPreset,
     }),
   });
 }

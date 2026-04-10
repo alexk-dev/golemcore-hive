@@ -25,7 +25,7 @@ import me.golemcore.hive.adapter.inbound.web.dto.approvals.ApprovalDecisionReque
 import me.golemcore.hive.adapter.inbound.web.dto.approvals.ApprovalRequestResponse;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.ApprovalRequest;
-import me.golemcore.hive.domain.service.ApprovalService;
+import me.golemcore.hive.governance.application.port.in.GovernanceOperationsUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,7 +42,7 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class ApprovalsController {
 
-    private final ApprovalService approvalService;
+    private final GovernanceOperationsUseCase governanceOperationsUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<List<ApprovalRequestResponse>>> listApprovals(
@@ -53,7 +53,8 @@ public class ApprovalsController {
             @RequestParam(required = false) String golemId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<ApprovalRequestResponse> response = approvalService.listApprovals(status, boardId, cardId, golemId)
+            List<ApprovalRequestResponse> response = governanceOperationsUseCase
+                    .listApprovals(status, boardId, cardId, golemId)
                     .stream()
                     .map(this::toResponse)
                     .toList();
@@ -66,7 +67,7 @@ public class ApprovalsController {
             @PathVariable String approvalId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(toResponse(approvalService.getApproval(approvalId)));
+            return ResponseEntity.ok(toResponse(governanceOperationsUseCase.getApproval(approvalId)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -77,7 +78,7 @@ public class ApprovalsController {
             @RequestBody(required = false) ApprovalDecisionRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            ApprovalRequest approval = approvalService.approve(
+            ApprovalRequest approval = governanceOperationsUseCase.approve(
                     approvalId,
                     actor.getSubjectId(),
                     actor.getName(),
@@ -93,7 +94,7 @@ public class ApprovalsController {
             @RequestBody(required = false) ApprovalDecisionRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            ApprovalRequest approval = approvalService.reject(
+            ApprovalRequest approval = governanceOperationsUseCase.reject(
                     approvalId,
                     actor.getSubjectId(),
                     actor.getName(),
@@ -105,6 +106,7 @@ public class ApprovalsController {
     private ApprovalRequestResponse toResponse(ApprovalRequest approval) {
         return new ApprovalRequestResponse(
                 approval.getId(),
+                approval.getSubjectType() != null ? approval.getSubjectType().name() : null,
                 approval.getCommandId(),
                 approval.getRunId(),
                 approval.getThreadId(),
@@ -123,6 +125,7 @@ public class ApprovalsController {
                 approval.getDecidedAt(),
                 approval.getDecidedByActorId(),
                 approval.getDecidedByActorName(),
-                approval.getDecisionComment());
+                approval.getDecisionComment(),
+                approval.getPromotionContext());
     }
 }

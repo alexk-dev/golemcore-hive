@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { formatTimestamp, readErrorMessage } from '../../lib/format';
 import type {
   InspectionMessage,
@@ -11,8 +12,8 @@ import type { FeedbackState } from './inspectionPageUtils';
 
 function feedbackClasses(tone: FeedbackState['tone']) {
   return tone === 'success'
-    ? 'border-emerald-200 bg-emerald-100 text-emerald-900'
-    : 'border-rose-200 bg-rose-100 text-rose-900';
+    ? 'border-emerald-200 bg-emerald-900/40 text-emerald-300'
+    : 'border-rose-200 bg-rose-900/40 text-rose-300';
 }
 
 export function InspectionFeedbackBanner({ feedback }: { feedback: FeedbackState | null }) {
@@ -23,6 +24,28 @@ export function InspectionFeedbackBanner({ feedback }: { feedback: FeedbackState
   return (
     <section className={`border p-3 text-sm font-medium ${feedbackClasses(feedback.tone)}`}>
       {feedback.message}
+    </section>
+  );
+}
+
+export function InspectionReadonlySection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="panel p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-bold text-foreground">{title}</h2>
+          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <div className="mt-4">{children}</div>
     </section>
   );
 }
@@ -65,7 +88,7 @@ export function InspectionPageHeader({
               value={channelFilter}
               onChange={(event) => onChannelFilterChange(event.target.value)}
               disabled={!isOnline}
-              className="border border-border bg-white px-3 py-2 text-sm font-medium text-foreground outline-none transition focus:border-primary disabled:opacity-60"
+              className="border border-border bg-panel px-3 py-2 text-sm font-medium text-foreground outline-none transition focus:border-primary disabled:opacity-60"
             >
               {channelOptions.map((value) => (
                 <option key={value || 'all'} value={value}>
@@ -97,7 +120,7 @@ function MessageCard({ message }: { message: InspectionMessage }) {
           ? 'border border-sky-200 bg-sky-50 p-3'
           : message.role === 'assistant'
             ? 'border border-emerald-200 bg-emerald-50 p-3'
-            : 'border border-border bg-white p-3'
+            : 'border border-border bg-panel p-3'
       }
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -117,7 +140,7 @@ function MessageCard({ message }: { message: InspectionMessage }) {
           {tags.map((tag) => (
             <span
               key={`${message.id}:${tag}`}
-              className="inline-flex items-center border border-border bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+              className="inline-flex items-center border border-border bg-panel px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
             >
               {tag}
             </span>
@@ -132,7 +155,7 @@ function MessageCard({ message }: { message: InspectionMessage }) {
           <p className="text-xs font-semibold text-muted-foreground">Attachments</p>
           <div className="mt-2 grid gap-2">
             {message.attachments.map((attachment, index) => (
-              <div key={`${message.id}:attachment:${index}`} className="border border-border/70 bg-white/80 px-3 py-2 text-xs">
+              <div key={`${message.id}:attachment:${index}`} className="border border-border/70 bg-panel/80 px-3 py-2 text-xs">
                 <p className="font-semibold text-foreground">{attachment.name || attachment.type || 'Attachment'}</p>
                 <p className="text-muted-foreground">
                   {attachment.mimeType || 'n/a'}
@@ -163,7 +186,7 @@ function SessionListItem({
       className={
         selected
           ? 'border border-primary/40 bg-primary/5 p-3 text-left'
-          : 'border border-border/70 bg-white/70 p-3 text-left transition hover:bg-white'
+          : 'border border-border/70 bg-muted/70 p-3 text-left transition hover:bg-muted'
       }
     >
       <div className="flex items-start justify-between gap-3">
@@ -208,7 +231,7 @@ export function InspectionSessionsSidebar({
 
       <div className="mt-3">
         {isLoading ? <p className="text-sm text-muted-foreground">Loading sessions...</p> : null}
-        {error ? <p className="text-sm text-rose-900">{readErrorMessage(error)}</p> : null}
+        {error ? <p className="text-sm text-rose-300">{readErrorMessage(error)}</p> : null}
         {sessions.length === 0 && !isLoading ? (
           <p className="text-sm text-muted-foreground">No sessions reported by this golem for the selected channel.</p>
         ) : null}
@@ -249,7 +272,7 @@ export function InspectionMessagesPanel({
 
       <div className="mt-4 grid gap-3">
         {isLoading ? <p className="text-sm text-muted-foreground">Loading messages...</p> : null}
-        {error ? <p className="text-sm text-rose-900">{readErrorMessage(error)}</p> : null}
+        {error ? <p className="text-sm text-rose-300">{readErrorMessage(error)}</p> : null}
         {messages.length === 0 && !isLoading ? (
           <p className="text-sm text-muted-foreground">No messages stored for this session.</p>
         ) : null}
@@ -313,14 +336,14 @@ export function InspectionSessionHeader({
               min={1}
               value={keepLast}
               onChange={(event) => onKeepLastChange(Number(event.target.value))}
-              className="border border-border bg-white px-3 py-1.5 text-sm font-medium text-foreground outline-none transition focus:border-primary"
+              className="border border-border bg-panel px-3 py-1.5 text-sm font-medium text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             />
           </label>
           <button
             type="button"
             onClick={onCompact}
             disabled={isMutating}
-            className="border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+            className="border border-border bg-panel px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
           >
             Compact
           </button>
@@ -328,7 +351,7 @@ export function InspectionSessionHeader({
             type="button"
             onClick={onClear}
             disabled={isMutating}
-            className="border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+            className="border border-border bg-panel px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
           >
             Clear
           </button>
@@ -337,7 +360,7 @@ export function InspectionSessionHeader({
               type="button"
               onClick={onExportTrace}
               disabled={isExportingTrace}
-              className="border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+              className="border border-border bg-panel px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
             >
               {isExportingTrace ? 'Exporting...' : 'Export trace'}
             </button>
@@ -346,7 +369,7 @@ export function InspectionSessionHeader({
             type="button"
             onClick={onDelete}
             disabled={isMutating}
-            className="border border-rose-300 bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-900 disabled:opacity-60"
+            className="border border-rose-700 bg-rose-900/40 px-3 py-2 text-xs font-semibold text-rose-300 disabled:opacity-60"
           >
             Delete
           </button>

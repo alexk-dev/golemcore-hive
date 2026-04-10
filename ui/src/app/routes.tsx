@@ -13,10 +13,11 @@ import { AuditPage } from '../features/audit/AuditPage';
 import { BudgetsPage } from '../features/budgets/BudgetsPage';
 import { SystemSettingsPage } from '../features/settings/SystemSettingsPage';
 import { InspectionPage } from '../features/inspection/InspectionPage';
+import { PolicyGroupsPage } from '../features/policies/PolicyGroupsPage';
 import { HomePage } from '../features/dashboard/HomePage';
+import { ObjectivesPage } from '../features/objectives/ObjectivesPage';
 import { ServicesPage } from '../features/services/ServicesPage';
 import { TeamsPage } from '../features/teams/TeamsPage';
-import { ObjectivesPage } from '../features/objectives/ObjectivesPage';
 
 function LegacyBoardQueueRedirect() {
   const { boardId = '' } = useParams();
@@ -66,6 +67,14 @@ export const routes = createBrowserRouter([
           {
             path: '/boards',
             element: <Navigate to="/services" replace />,
+          },
+          {
+            path: '/policies',
+            element: <PolicyGroupsPage />,
+          },
+          {
+            path: '/policies/:groupId',
+            element: <PolicyGroupsPage />,
           },
           {
             path: '/approvals',

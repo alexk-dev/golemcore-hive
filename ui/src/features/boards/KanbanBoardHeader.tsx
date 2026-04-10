@@ -27,16 +27,16 @@ export function KanbanBoardHeader({
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to="/services" className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground">
+          <Link to="/services" className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground">
             All services
           </Link>
-          <Link to={`/services/${serviceId}/settings`} className="border border-border bg-white/80 px-3 py-1.5 text-sm font-semibold text-foreground">
+          <Link to={`/services/${serviceId}/settings`} className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground">
             Settings
           </Link>
           <button
             type="button"
             onClick={onNewCard}
-            className="bg-foreground px-3 py-1.5 text-sm font-semibold text-white"
+            className="bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground"
           >
             New card
           </button>

@@ -13,7 +13,7 @@ vi.mock('../../lib/api/authApi', () => ({
 }));
 
 describe('LoginPage', () => {
-  it('renders the bootstrap login form', async () => {
+  it('renders the login form without prefilled credentials', async () => {
     const queryClient = new QueryClient();
 
     render(
@@ -27,7 +27,7 @@ describe('LoginPage', () => {
     );
 
     expect(await screen.findByRole('heading', { name: /sign in/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/username/i)).toHaveValue('admin');
-    expect(screen.getByLabelText(/password/i)).toHaveValue('change-me-now');
+    expect(screen.getByLabelText(/username/i)).toHaveValue('');
+    expect(screen.getByLabelText(/password/i)).toHaveValue('');
   });
 });

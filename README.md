@@ -18,7 +18,61 @@ Self-hosted orchestration and control plane for `golemcore-bot` runtimes.
 - board flows, board teams, cards, card-bound threads, and command dispatch
 - lifecycle signal ingestion from golems
 - approval gates for destructive or high-cost commands
+- approval gates for `SelfEvolving` promotion decisions
 - audit history, budget snapshots, notification events, and production guardrails
+- readonly per-golem `SelfEvolving` inspection fed by connected bot projections
+
+## SelfEvolving inspection
+
+When a connected `golemcore-bot` has `SelfEvolving` enabled, Hive exposes readonly per-golem inspection for:
+
+- projected runs and judge verdict summaries
+- candidate queue and promotion states
+- lineage nodes
+- artifact workspace catalog, lineage rail, diff, evidence, and impact tabs mirrored from the bot
+- tactic search status, readonly result ranking, selected tactic details, and `Why this tactic` score breakdown
+- benchmark campaigns tied to the selected artifact stream
+- promotion approvals
+
+`golemcore-bot` stays the primary working screen. Hive keeps these views inside the existing inspection surface instead of creating a second golem dashboard and mirrors the bot workspace as readonly state.
+When tactic embeddings are disabled or unavailable, Hive mirrors the degraded `BM25-only` state instead of masking it.
+
+Artifact identity and compare rules:
+
+- `artifactStreamId` is the canonical identity across bot and Hive
+- `artifactKey` and aliases are display metadata only
+- per-golem workspace projections are mirrored verbatim from the bot
+- Hive derives only the fleet-level same-stream compare read model
+- bounded rollout diffs are mirrored when available, while arbitrary revision compare may fall back to on-demand content diff from mirrored normalized revisions
+
+Hive also exposes fleet-level artifact search and same-stream compare across golems, while keeping approval actions inside the existing governance flow.
+
+Relevant APIs:
+
+- `GET /api/v1/self-evolving/golems/{golemId}/runs`
+- `GET /api/v1/self-evolving/golems/{golemId}/runs/{runId}`
+- `GET /api/v1/self-evolving/golems/{golemId}/candidates`
+- `GET /api/v1/self-evolving/golems/{golemId}/lineage`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/lineage`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/diff`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/transition-diff`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/evidence`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/compare-evidence`
+- `GET /api/v1/self-evolving/golems/{golemId}/artifacts/{artifactStreamId}/transition-evidence`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/search`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/search-status`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/{tacticId}`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/{tacticId}/explanation`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/{tacticId}/lineage`
+- `GET /api/v1/self-evolving/golems/{golemId}/tactics/{tacticId}/evidence`
+- `GET /api/v1/self-evolving/artifacts/search`
+- `GET /api/v1/self-evolving/artifacts/compare`
+- `GET /api/v1/approvals?golemId={golemId}`
+
+Promotion approvals are generalized through the normal approvals system with `subjectType=SELF_EVOLVING_PROMOTION`.
 
 ## Local development
 
@@ -42,12 +96,15 @@ npm run dev
 
 The Vite dev server proxies `/api` and `/ws` to the backend on `http://localhost:8080`.
 
-Default bootstrap operator:
+Bootstrap operator provisioning is disabled by default.
 
-- username: `admin`
-- password: `change-me-now`
+To enable a local bootstrap operator, configure all three properties explicitly:
 
-Override bootstrap credentials in `src/main/resources/application.yml` or environment-backed Spring properties before using the app outside local development.
+- `hive.bootstrap.admin.enabled=true`
+- `hive.bootstrap.admin.username=<username>`
+- `hive.bootstrap.admin.password=<password>`
+
+You can set them in `src/main/resources/application.yml` or via environment-backed Spring properties.
 
 ## Storage layout
 

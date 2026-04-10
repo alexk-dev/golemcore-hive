@@ -99,12 +99,12 @@ export function HomePage() {
                 <input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                  className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
                 />
               </label>
               <label className="grid gap-1.5">
                 <span className="text-sm font-semibold text-foreground">Updated</span>
-                <div className="border border-border bg-muted/40 px-4 py-2.5 text-sm text-muted-foreground">
+                <div className="border border-border bg-muted/50 px-4 py-2.5 text-sm text-muted-foreground">
                   {organization?.updatedAt ? new Date(organization.updatedAt).toLocaleString() : 'Initializing'}
                 </div>
               </label>
@@ -115,39 +115,22 @@ export function HomePage() {
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 rows={3}
-                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               />
             </label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="submit"
-                disabled={updateOrganizationMutation.isPending || !name.trim()}
-                className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-              >
-                {updateOrganizationMutation.isPending ? 'Saving...' : 'Save organization'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={updateOrganizationMutation.isPending || !name.trim()}
+              className="bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+            >
+              {updateOrganizationMutation.isPending ? 'Saving...' : 'Save organization'}
+            </button>
           </form>
 
           <div className="grid gap-3">
-            <QuickLinkCard
-              title="Objectives"
-              value={activeObjectives}
-              detail={`${objectives.length} total`}
-              to="/objectives"
-            />
-            <QuickLinkCard
-              title="Teams"
-              value={teams.length}
-              detail={`${golems.length} registered golems`}
-              to="/teams"
-            />
-            <QuickLinkCard
-              title="Services"
-              value={services.length}
-              detail={`${totalCards} cards in queues`}
-              to="/services"
-            />
+            <QuickLinkCard title="Objectives" value={activeObjectives} detail={`${objectives.length} total`} to="/objectives" />
+            <QuickLinkCard title="Teams" value={teams.length} detail={`${golems.length} registered golems`} to="/teams" />
+            <QuickLinkCard title="Services" value={services.length} detail={`${totalCards} cards in queues`} to="/services" />
           </div>
         </div>
       </section>
@@ -171,7 +154,7 @@ export function HomePage() {
               <Link
                 key={service.id}
                 to={`/services/${service.id}`}
-                className="flex items-center justify-between gap-3 border border-border/70 bg-white/70 p-3 transition hover:bg-white"
+                className="flex items-center justify-between gap-3 border border-border/70 bg-muted/70 p-3 transition hover:bg-muted"
               >
                 <div>
                   <p className="text-sm font-semibold text-foreground">{service.name}</p>
@@ -181,7 +164,7 @@ export function HomePage() {
                 </div>
               </Link>
             )) : (
-              <p className="text-sm text-muted-foreground">No services yet.</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">No services yet.</p>
             )}
           </div>
         </section>
@@ -196,7 +179,7 @@ export function HomePage() {
               <Link
                 key={objective.id}
                 to="/objectives"
-                className="border border-border/70 bg-white/70 p-3 transition hover:bg-white"
+                className="border border-border/70 bg-muted/70 p-3 transition hover:bg-muted"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="pill">{objective.status}</span>
@@ -210,7 +193,7 @@ export function HomePage() {
                 </p>
               </Link>
             )) : (
-              <p className="text-sm text-muted-foreground">No objectives yet.</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">No objectives yet.</p>
             )}
           </div>
         </section>
@@ -227,7 +210,7 @@ export function HomePage() {
               <Link
                 key={team.id}
                 to="/teams"
-                className="border border-border/70 bg-white/70 p-3 transition hover:bg-white"
+                className="border border-border/70 bg-muted/70 p-3 transition hover:bg-muted"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="pill">{team.slug}</span>
@@ -238,7 +221,7 @@ export function HomePage() {
                 <p className="mt-2 text-sm font-semibold text-foreground">{team.name}</p>
               </Link>
             )) : (
-              <p className="text-sm text-muted-foreground">No teams yet.</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">No teams yet.</p>
             )}
           </div>
         </section>
@@ -250,7 +233,7 @@ export function HomePage() {
           </div>
           <div className="mt-3 grid gap-2">
             {recentAudit.length ? recentAudit.slice(0, 6).map((event) => (
-              <div key={event.id} className="border border-border/70 bg-white/70 p-3">
+              <div key={event.id} className="border border-border/70 bg-muted/70 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <span className="pill">{event.eventType}</span>
                   <span className="text-xs text-muted-foreground">
@@ -260,7 +243,7 @@ export function HomePage() {
                 <p className="mt-1 text-sm text-foreground">{event.summary || 'No summary'}</p>
               </div>
             )) : (
-              <p className="text-sm text-muted-foreground">No audit events yet.</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">No audit events yet.</p>
             )}
           </div>
         </section>
@@ -271,7 +254,7 @@ export function HomePage() {
 
 function MetricCard({ label, value, to }: { label: string; value: number | string; to: string }) {
   return (
-    <Link to={to} className="panel p-4 transition hover:shadow-md">
+    <Link to={to} className="panel p-4 transition hover:border-primary/30 hover:shadow-md">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{value}</p>
     </Link>
@@ -280,7 +263,7 @@ function MetricCard({ label, value, to }: { label: string; value: number | strin
 
 function QuickLinkCard({ title, value, detail, to }: { title: string; value: number | string; detail: string; to: string }) {
   return (
-    <Link to={to} className="border border-border/70 bg-white/70 p-4 transition hover:bg-white">
+    <Link to={to} className="border border-border/70 bg-muted/70 p-4 transition hover:bg-muted">
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">{title}</p>
       <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{value}</p>
       <p className="mt-1 text-xs text-muted-foreground">{detail}</p>

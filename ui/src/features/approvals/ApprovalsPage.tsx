@@ -3,8 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDeferredValue, useRef, useState } from 'react';
 import { ApprovalDecisionDialog } from './ApprovalDecisionDialog';
 import { approveApproval, listApprovals, rejectApproval, type ApprovalRequest } from '../../lib/api/approvalsApi';
+import { listGolems } from '../../lib/api/golemsApi';
+import { formatGolemDisplayName } from '../../lib/format';
 
-const ROW_HEIGHT = 32;
+const ROW_HEIGHT = 56;
 
 export function ApprovalsPage() {
   const queryClient = useQueryClient();
@@ -17,6 +19,10 @@ export function ApprovalsPage() {
   const approvalsQuery = useQuery({
     queryKey: ['approvals', deferredStatus],
     queryFn: () => listApprovals({ status: deferredStatus }),
+  });
+  const golemsQuery = useQuery({
+    queryKey: ['golems', 'approvals'],
+    queryFn: () => listGolems(),
   });
 
   const decisionMutation = useMutation({
@@ -48,7 +54,7 @@ export function ApprovalsPage() {
             onClick={() => setStatus(option)}
             className={[
               'px-3 py-1 text-xs font-semibold transition',
-              status === option ? 'bg-foreground text-white' : 'border border-border bg-white/80 text-foreground',
+              status === option ? 'bg-primary text-primary-foreground' : 'border border-border bg-panel/80 text-foreground',
             ].join(' ')}
           >
             {option}
@@ -58,31 +64,44 @@ export function ApprovalsPage() {
 
       {approvals.length ? (
         <div className="border border-border/70">
-          <div className="flex items-center gap-3 border-b border-border/50 bg-white/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-            <span className="w-20 shrink-0">Risk</span>
-            <span className="w-20 shrink-0">Status</span>
-            <span className="min-w-0 flex-1">Command</span>
-            <span className="w-24 shrink-0">Card</span>
-            <span className="w-24 shrink-0">Golem</span>
-            <span className="w-20 shrink-0 text-right">Cost</span>
+          <div className="flex items-center gap-3 border-b border-border/50 bg-muted/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+            <span className="w-36 shrink-0">Type</span>
+            <span className="hidden w-20 shrink-0 sm:inline">Status</span>
+            <span className="min-w-0 flex-1">Subject</span>
+            <span className="hidden w-28 shrink-0 lg:inline">Scope</span>
+            <span className="hidden w-24 shrink-0 md:inline">Golem</span>
+            <span className="hidden w-20 shrink-0 text-right md:inline">Cost</span>
             <span className="w-24 shrink-0 text-right">Actions</span>
           </div>
           <div ref={parentRef} className="max-h-[70vh] overflow-auto">
             <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
               {virtualizer.getVirtualItems().map((virtualRow) => {
                 const approval = approvals[virtualRow.index];
+                const summary = buildApprovalSummary(approval);
+                const detail = buildApprovalDetail(approval);
+                const scope = approval.subjectType === 'SELF_EVOLVING_PROMOTION'
+                  ? approval.promotionContext?.candidateId ?? 'Promotion'
+                  : approval.cardId ?? 'Command';
                 return (
                   <div
                     key={approval.id}
-                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-white/80"
+                    className="absolute left-0 flex w-full items-center gap-3 px-3 text-sm hover:bg-muted/60"
                     style={{ height: ROW_HEIGHT, top: virtualRow.start }}
                   >
-                    <span className="w-20 shrink-0 text-xs font-medium text-foreground">{approval.riskLevel}</span>
-                    <span className="w-20 shrink-0 text-xs text-muted-foreground">{approval.status}</span>
-                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">{approval.commandBody}</span>
-                    <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">{approval.cardId}</span>
-                    <span className="w-24 shrink-0 truncate text-xs text-muted-foreground">{approval.golemId}</span>
-                    <span className="w-20 shrink-0 text-right tabular-nums text-xs text-muted-foreground">{approval.estimatedCostMicros}</span>
+                    <span className="w-36 shrink-0 text-xs font-medium text-foreground">{approval.subjectType}</span>
+                    <span className="hidden w-20 shrink-0 text-xs text-muted-foreground sm:inline">{approval.status}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-foreground">{summary}</span>
+                      {detail ? <span className="block truncate text-xs text-muted-foreground">{detail}</span> : null}
+                    </span>
+                    <span className="hidden w-28 shrink-0 truncate text-xs text-muted-foreground lg:inline">{scope}</span>
+                    <span
+                      className="hidden w-24 shrink-0 truncate text-xs text-muted-foreground md:inline"
+                      title={approval.golemId}
+                    >
+                      {formatGolemDisplayName(approval.golemId, golemsQuery.data ?? [])}
+                    </span>
+                    <span className="hidden w-20 shrink-0 text-right tabular-nums text-xs text-muted-foreground md:inline">{approval.estimatedCostMicros}</span>
                     <span className="flex w-24 shrink-0 justify-end gap-1">
                       {approval.status === 'PENDING' ? (
                         <>
@@ -92,7 +111,7 @@ export function ApprovalsPage() {
                               setSelectedApproval(approval);
                               setDialogMode('approve');
                             }}
-                            className="bg-accent px-2 py-0.5 text-xs font-semibold text-white"
+                            className="bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground"
                           >
                             Approve
                           </button>
@@ -102,7 +121,7 @@ export function ApprovalsPage() {
                               setSelectedApproval(approval);
                               setDialogMode('reject');
                             }}
-                            className="bg-primary px-2 py-0.5 text-xs font-semibold text-white"
+                            className="bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground"
                           >
                             Reject
                           </button>
@@ -116,7 +135,9 @@ export function ApprovalsPage() {
           </div>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">No approval requests match this filter.</p>
+        <div className="soft-card px-5 py-8 text-center">
+          <p className="text-sm text-muted-foreground">No approval requests match this filter.</p>
+        </div>
       )}
 
       <ApprovalDecisionDialog
@@ -136,4 +157,18 @@ export function ApprovalsPage() {
       />
     </div>
   );
+}
+
+function buildApprovalSummary(approval: ApprovalRequest) {
+  if (approval.subjectType === 'SELF_EVOLVING_PROMOTION' && approval.promotionContext) {
+    return `${approval.promotionContext.artifactType ?? 'artifact'} • ${approval.promotionContext.goal ?? 'promotion'}`;
+  }
+  return approval.commandBody || 'Command approval';
+}
+
+function buildApprovalDetail(approval: ApprovalRequest) {
+  if (approval.subjectType === 'SELF_EVOLVING_PROMOTION' && approval.promotionContext) {
+    return approval.promotionContext.expectedImpact;
+  }
+  return approval.reason;
 }

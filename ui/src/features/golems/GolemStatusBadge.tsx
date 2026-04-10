@@ -1,10 +1,10 @@
 const dotColor: Record<string, string> = {
   ONLINE: 'bg-emerald-500',
-  DEGRADED: 'bg-amber-500',
-  OFFLINE: 'bg-slate-400',
+  DEGRADED: 'bg-amber-600',
+  OFFLINE: 'bg-slate-500',
   PAUSED: 'bg-sky-500',
-  REVOKED: 'bg-rose-500',
-  PENDING_ENROLLMENT: 'bg-orange-400',
+  REVOKED: 'bg-rose-600',
+  PENDING_ENROLLMENT: 'bg-orange-500',
 };
 
 interface GolemStatusBadgeProps {

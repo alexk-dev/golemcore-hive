@@ -32,8 +32,8 @@ import me.golemcore.hive.adapter.inbound.web.dto.boards.UpdateBoardFlowRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.boards.UpdateBoardRequest;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.Board;
-import me.golemcore.hive.domain.service.BoardService;
-import me.golemcore.hive.domain.service.CardService;
+import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
+import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,15 +52,15 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class ServicesController extends BoardMappingSupport {
 
-    private final BoardService boardService;
-    private final CardService cardService;
+    private final BoardWorkflowUseCase boardWorkflowUseCase;
+    private final CardWorkflowUseCase cardWorkflowUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<List<BoardSummaryResponse>>> listServices(Principal principal) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<BoardSummaryResponse> response = boardService.listBoards().stream()
-                    .map(board -> toBoardSummaryResponse(board, cardService.listCards(board.getId(), false)))
+            List<BoardSummaryResponse> response = boardWorkflowUseCase.listBoards().stream()
+                    .map(board -> toBoardSummaryResponse(board, cardWorkflowUseCase.listCards(board.getId(), false)))
                     .toList();
             return ResponseEntity.ok(response);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -72,13 +72,13 @@ public class ServicesController extends BoardMappingSupport {
             @Valid @RequestBody CreateBoardRequest request) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Board board = boardService.createBoard(
+            Board board = boardWorkflowUseCase.createBoard(
                     request.name(),
                     request.description(),
                     request.templateKey(),
                     parseAssignmentPolicy(request.defaultAssignmentPolicy()));
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(toBoardDetailResponse(board, cardService.listCards(board.getId(), false)));
+                    .body(toBoardDetailResponse(board, cardWorkflowUseCase.listCards(board.getId(), false)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -86,8 +86,8 @@ public class ServicesController extends BoardMappingSupport {
     public Mono<ResponseEntity<BoardDetailResponse>> getService(Principal principal, @PathVariable String serviceId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Board board = boardService.getBoard(serviceId);
-            return ResponseEntity.ok(toBoardDetailResponse(board, cardService.listCards(serviceId, false)));
+            Board board = boardWorkflowUseCase.getBoard(serviceId);
+            return ResponseEntity.ok(toBoardDetailResponse(board, cardWorkflowUseCase.listCards(serviceId, false)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -98,12 +98,12 @@ public class ServicesController extends BoardMappingSupport {
             @RequestBody UpdateBoardRequest request) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Board board = boardService.updateBoard(
+            Board board = boardWorkflowUseCase.updateBoard(
                     serviceId,
                     request != null ? request.name() : null,
                     request != null ? request.description() : null,
                     request != null ? parseAssignmentPolicy(request.defaultAssignmentPolicy()) : null);
-            return ResponseEntity.ok(toBoardDetailResponse(board, cardService.listCards(serviceId, false)));
+            return ResponseEntity.ok(toBoardDetailResponse(board, cardWorkflowUseCase.listCards(serviceId, false)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -114,13 +114,13 @@ public class ServicesController extends BoardMappingSupport {
             @Valid @RequestBody UpdateBoardFlowRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Board board = boardService.updateBoardFlow(
+            Board board = boardWorkflowUseCase.updateBoardFlow(
                     serviceId,
                     toBoardFlowDefinition(request.flow()),
                     request.columnRemap(),
                     actor.getSubjectId(),
                     actor.getName());
-            return ResponseEntity.ok(toBoardDetailResponse(board, cardService.listCards(serviceId, false)));
+            return ResponseEntity.ok(toBoardDetailResponse(board, cardWorkflowUseCase.listCards(serviceId, false)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -132,7 +132,8 @@ public class ServicesController extends BoardMappingSupport {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             return ResponseEntity.ok(
-                    toRemapPreviewResponse(boardService.previewFlowRemap(serviceId, toBoardFlowDefinition(request))));
+                    toRemapPreviewResponse(
+                            boardWorkflowUseCase.previewFlowRemap(serviceId, toBoardFlowDefinition(request))));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -143,8 +144,8 @@ public class ServicesController extends BoardMappingSupport {
             @RequestBody BoardTeamPayload request) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requirePrivilegedOperator(principal);
-            Board board = boardService.updateBoardTeam(serviceId, toBoardTeam(request));
-            return ResponseEntity.ok(toBoardDetailResponse(board, cardService.listCards(serviceId, false)));
+            Board board = boardWorkflowUseCase.updateBoardTeam(serviceId, toBoardTeam(request));
+            return ResponseEntity.ok(toBoardDetailResponse(board, cardWorkflowUseCase.listCards(serviceId, false)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }

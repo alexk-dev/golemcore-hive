@@ -42,5 +42,8 @@ public class ControlCommandEnvelope {
     private String runId;
     private String body;
     private InspectionRequestBody inspection;
+    private String policyGroupId;
+    private Integer targetVersion;
+    private String checksum;
     private Instant createdAt;
 }

@@ -2,7 +2,7 @@
 target/
 build/
 .gradle/
-out/
+/out/
 *.class
 
 # Node / React
@@ -22,6 +22,7 @@ coverage/
 .idea/
 .vscode/
 .DS_Store
+.worktrees/
 
 # Logs
 *.log

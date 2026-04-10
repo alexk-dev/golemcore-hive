@@ -31,12 +31,6 @@ hive:
       secure: false
       same-site: Lax
       path: /api/v1/auth
-  bootstrap:
-    admin:
-      enabled: true
-      username: admin
-      password: change-me-now
-      display-name: Hive Admin
   fleet:
     enrollment-token-ttl-minutes: 30
     heartbeat-interval-seconds: 30

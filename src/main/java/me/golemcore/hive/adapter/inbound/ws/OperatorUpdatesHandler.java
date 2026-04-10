@@ -18,14 +18,18 @@
 
 package me.golemcore.hive.adapter.inbound.ws;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.security.JwtTokenProvider;
 import me.golemcore.hive.adapter.inbound.web.security.SubjectType;
-import me.golemcore.hive.domain.service.OperatorUpdatesService;
+import me.golemcore.hive.domain.model.OperatorUpdate;
+import me.golemcore.hive.execution.application.port.in.OperatorUpdateStreamUseCase;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -33,7 +37,8 @@ import reactor.core.publisher.Mono;
 public class OperatorUpdatesHandler implements WebSocketHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final OperatorUpdatesService operatorUpdatesService;
+    private final OperatorUpdateStreamUseCase operatorUpdateStreamUseCase;
+    private final ObjectMapper objectMapper;
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
@@ -45,7 +50,8 @@ public class OperatorUpdatesHandler implements WebSocketHandler {
             return session.close();
         }
 
-        Mono<Void> output = session.send(operatorUpdatesService.updates().map(session::textMessage));
+        Flux<String> serializedUpdates = Flux.from(operatorUpdateStreamUseCase.updates()).map(this::serializeUpdate);
+        Mono<Void> output = session.send(serializedUpdates.map(session::textMessage));
         Mono<Void> input = session.receive().then();
         return Mono.when(input, output);
     }
@@ -65,5 +71,13 @@ public class OperatorUpdatesHandler implements WebSocketHandler {
             return authorizationHeader.substring("Bearer ".length());
         }
         return null;
+    }
+
+    private String serializeUpdate(OperatorUpdate update) {
+        try {
+            return objectMapper.writeValueAsString(update);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Failed to serialize operator update", exception);
+        }
     }
 }

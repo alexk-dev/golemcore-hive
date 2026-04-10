@@ -121,10 +121,10 @@ export function BoardEditorPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold tracking-tight text-foreground">{boardQuery.data.name} settings</h2>
         <div className="flex flex-wrap gap-2">
-          <Link to="/services" className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground">
+          <Link to="/services" className="border border-border bg-panel/80 px-4 py-2 text-sm font-semibold text-foreground">
             All services
           </Link>
-          <Link to={`/services/${serviceId}`} className="bg-foreground px-4 py-2 text-sm font-semibold text-white">
+          <Link to={`/services/${serviceId}`} className="bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
             Open queue
           </Link>
         </div>
@@ -156,7 +156,7 @@ export function BoardEditorPage() {
               <input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               />
             </label>
             <label className="grid gap-1.5">
@@ -164,7 +164,7 @@ export function BoardEditorPage() {
               <select
                 value={defaultAssignmentPolicy}
                 onChange={(event) => setDefaultAssignmentPolicy(event.target.value)}
-                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
               >
                 <option value="MANUAL">MANUAL</option>
                 <option value="SUGGESTED">SUGGESTED</option>
@@ -178,13 +178,13 @@ export function BoardEditorPage() {
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}
-              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             />
           </label>
           <button
             type="submit"
             disabled={updateBoardMutation.isPending}
-            className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
           >
             Save metadata
           </button>

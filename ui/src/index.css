@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,19 +6,19 @@
 
 @layer base {
   :root {
-    --background: 40 36% 96%;
-    --foreground: 210 28% 16%;
-    --muted: 42 28% 90%;
-    --muted-foreground: 213 12% 40%;
-    --panel: 0 0% 100%;
-    --panel-foreground: 210 28% 16%;
-    --primary: 17 83% 46%;
-    --primary-foreground: 42 100% 98%;
-    --accent: 159 55% 33%;
-    --accent-foreground: 39 100% 97%;
-    --border: 35 27% 84%;
-    --ring: 17 83% 46%;
-    font-family: 'Space Grotesk', sans-serif;
+    --background: 225 15% 10%;
+    --foreground: 210 20% 90%;
+    --muted: 220 12% 18%;
+    --muted-foreground: 215 12% 55%;
+    --panel: 224 14% 13%;
+    --panel-foreground: 210 20% 90%;
+    --primary: 22 90% 55%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 160 50% 45%;
+    --accent-foreground: 0 0% 100%;
+    --border: 220 10% 22%;
+    --ring: 22 90% 55%;
+    font-family: 'Inter', sans-serif;
     color: hsl(var(--foreground));
     background: hsl(var(--background));
     font-synthesis: none;
@@ -40,18 +40,28 @@
   body {
     @apply m-0 min-w-[320px] text-foreground;
   }
+
+  ::selection {
+    background: rgba(234, 120, 40, 0.25);
+    color: hsl(210 20% 95%);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground) / 0.6);
+  }
 }
 
 @layer components {
   .panel {
-    @apply border border-border/80 bg-white/90;
+    @apply border border-border/50 bg-panel;
   }
 
   .soft-card {
-    @apply border border-border/50 bg-white/70;
+    @apply border border-border/40 bg-muted/50;
   }
 
   .pill {
-    @apply inline-flex items-center border border-border/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground;
+    @apply inline-flex items-center border border-border/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
   }
 }

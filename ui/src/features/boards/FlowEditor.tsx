@@ -90,7 +90,7 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
           <button
             type="button"
             onClick={() => void handlePreview()}
-            className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+            className="border border-border bg-panel/80 px-4 py-2 text-sm font-semibold text-foreground"
           >
             Preview remap
           </button>
@@ -98,7 +98,7 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
             type="button"
             disabled={isPending}
             onClick={() => void onSave({ flow, columnRemap: remap })}
-            className="bg-foreground px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            className="bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
           >
             Save flow
           </button>
@@ -111,7 +111,7 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
           <input
             value={flow.name}
             onChange={(event) => setFlow((current) => ({ ...current, name: event.target.value }))}
-            className="border border-border bg-white px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+            className="border border-border bg-panel px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             placeholder="Engineering"
           />
         </label>

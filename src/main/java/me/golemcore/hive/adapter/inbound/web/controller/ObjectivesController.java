@@ -28,7 +28,7 @@ import me.golemcore.hive.adapter.inbound.web.dto.organization.UpdateObjectiveReq
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.Objective;
 import me.golemcore.hive.domain.model.ObjectiveStatus;
-import me.golemcore.hive.domain.service.ObjectiveService;
+import me.golemcore.hive.workflow.application.port.in.ObjectiveWorkflowUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,14 +46,14 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class ObjectivesController {
 
-    private final ObjectiveService objectiveService;
+    private final ObjectiveWorkflowUseCase objectiveWorkflowUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<List<ObjectiveResponse>>> listObjectives(Principal principal) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
             return ResponseEntity.ok(
-                    objectiveService.listObjectives().stream().map(this::toObjectiveResponse).toList());
+                    objectiveWorkflowUseCase.listObjectives().stream().map(this::toObjectiveResponse).toList());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -61,7 +61,7 @@ public class ObjectivesController {
     public Mono<ResponseEntity<ObjectiveResponse>> getObjective(Principal principal, @PathVariable String objectiveId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(toObjectiveResponse(objectiveService.getObjective(objectiveId)));
+            return ResponseEntity.ok(toObjectiveResponse(objectiveWorkflowUseCase.getObjective(objectiveId)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -71,7 +71,7 @@ public class ObjectivesController {
             @Valid @RequestBody CreateObjectiveRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Objective objective = objectiveService.createObjective(
+            Objective objective = objectiveWorkflowUseCase.createObjective(
                     request.name(),
                     request.description(),
                     parseStatus(request.status()),
@@ -92,7 +92,7 @@ public class ObjectivesController {
             @RequestBody UpdateObjectiveRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Objective objective = objectiveService.updateObjective(
+            Objective objective = objectiveWorkflowUseCase.updateObjective(
                     objectiveId,
                     request != null ? request.name() : null,
                     request != null ? request.description() : null,

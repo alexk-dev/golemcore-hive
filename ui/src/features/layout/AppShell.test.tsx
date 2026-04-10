@@ -19,23 +19,25 @@ describe('AppShell', () => {
   it('renders grouped navigation sections', () => {
     renderShell('/services');
 
-    expect(screen.getByText('Hive')).toBeInTheDocument();
-    expect(screen.getByText('Operate')).toBeInTheDocument();
-    expect(screen.getByText('Fleet')).toBeInTheDocument();
-    expect(screen.getByText('Observe')).toBeInTheDocument();
-    expect(screen.getByText('Organization')).toBeInTheDocument();
-    expect(screen.getByText('Objectives')).toBeInTheDocument();
-    expect(screen.getByText('Services')).toBeInTheDocument();
-    expect(screen.getByText('Teams')).toBeInTheDocument();
-    expect(screen.getByText('Golems')).toBeInTheDocument();
-    expect(screen.getByText('Roles')).toBeInTheDocument();
+    // Desktop + mobile sidebars both render navigation, so use getAllByText
+    expect(screen.getAllByText('Hive').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Operate').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Fleet').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Observe').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Organization').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Objectives').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Services').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Teams').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Policies').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Golems').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Roles').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders child route content', () => {
     renderShell('/services/service_1');
 
     expect(screen.getByText('Board page')).toBeInTheDocument();
-    expect(screen.getByText('Hive')).toBeInTheDocument();
+    expect(screen.getAllByText('Hive').length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -49,6 +51,7 @@ function renderShell(initialEntry: string) {
           <Route path="/services" element={<div>Services page</div>} />
           <Route path="/teams" element={<div>Teams page</div>} />
           <Route path="/services/:serviceId" element={<div>Board page</div>} />
+          <Route path="/policies" element={<div>Policies page</div>} />
         </Route>
       </Routes>
     </MemoryRouter>,

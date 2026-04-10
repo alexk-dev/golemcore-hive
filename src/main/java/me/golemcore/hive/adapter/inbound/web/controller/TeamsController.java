@@ -27,7 +27,7 @@ import me.golemcore.hive.adapter.inbound.web.dto.organization.TeamResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.organization.UpdateTeamRequest;
 import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.domain.model.Team;
-import me.golemcore.hive.domain.service.TeamService;
+import me.golemcore.hive.workflow.application.port.in.TeamWorkflowUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,13 +45,13 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class TeamsController {
 
-    private final TeamService teamService;
+    private final TeamWorkflowUseCase teamWorkflowUseCase;
 
     @GetMapping
     public Mono<ResponseEntity<List<TeamResponse>>> listTeams(Principal principal) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(teamService.listTeams().stream().map(this::toTeamResponse).toList());
+            return ResponseEntity.ok(teamWorkflowUseCase.listTeams().stream().map(this::toTeamResponse).toList());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -59,7 +59,7 @@ public class TeamsController {
     public Mono<ResponseEntity<TeamResponse>> getTeam(Principal principal, @PathVariable String teamId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(toTeamResponse(teamService.getTeam(teamId)));
+            return ResponseEntity.ok(toTeamResponse(teamWorkflowUseCase.getTeam(teamId)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -69,7 +69,7 @@ public class TeamsController {
             @Valid @RequestBody CreateTeamRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Team team = teamService.createTeam(
+            Team team = teamWorkflowUseCase.createTeam(
                     request.name(),
                     request.description(),
                     request.golemIds(),
@@ -87,7 +87,7 @@ public class TeamsController {
             @RequestBody UpdateTeamRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            Team team = teamService.updateTeam(
+            Team team = teamWorkflowUseCase.updateTeam(
                     teamId,
                     request != null ? request.name() : null,
                     request != null ? request.description() : null,

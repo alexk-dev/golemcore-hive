@@ -54,4 +54,7 @@ public class RunProjection {
     private Instant cancelRequestedAt;
     private String cancelRequestedByActorId;
     private String cancelRequestedByActorName;
+    private String selfEvolvingRunId;
+    private String selfEvolvingOutcomeStatus;
+    private String selfEvolvingPromotionRecommendation;
 }

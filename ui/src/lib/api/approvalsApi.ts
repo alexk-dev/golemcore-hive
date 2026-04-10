@@ -2,18 +2,19 @@ import { apiRequest } from './httpClient';
 
 export interface ApprovalRequest {
   id: string;
-  commandId: string;
-  runId: string;
-  threadId: string;
-  boardId: string;
-  cardId: string;
+  subjectType: string;
+  commandId: string | null;
+  runId: string | null;
+  threadId: string | null;
+  boardId: string | null;
+  cardId: string | null;
   golemId: string;
   requestedByActorId: string;
   requestedByActorName: string;
-  riskLevel: string;
+  riskLevel: string | null;
   reason: string | null;
   estimatedCostMicros: number;
-  commandBody: string;
+  commandBody: string | null;
   status: string;
   requestedAt: string;
   updatedAt: string;
@@ -21,6 +22,16 @@ export interface ApprovalRequest {
   decidedByActorId: string | null;
   decidedByActorName: string | null;
   decisionComment: string | null;
+  promotionContext: SelfEvolvingPromotionApprovalContext | null;
+}
+
+export interface SelfEvolvingPromotionApprovalContext {
+  candidateId: string;
+  goal: string | null;
+  artifactType: string | null;
+  riskLevel: string | null;
+  expectedImpact: string | null;
+  sourceRunIds: string[];
 }
 
 interface ApprovalFilter {

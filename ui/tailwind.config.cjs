@@ -18,7 +18,7 @@ module.exports = {
         ring: 'hsl(var(--ring))',
       },
       boxShadow: {
-        glow: '0 22px 50px rgba(200, 82, 28, 0.18)',
+        glow: '0 22px 50px rgba(234, 120, 40, 0.15)',
       },
     },
   },

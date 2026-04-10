@@ -102,19 +102,24 @@ export function CardDetailsDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-foreground/20 backdrop-blur-sm">
-      <div className="h-full w-full max-w-[880px] overflow-auto border-l border-border/70 bg-[rgba(255,251,244,0.98)] px-5 py-5 shadow-[0_20px_70px_rgba(26,20,15,0.14)] md:px-6">
-        <CardDetailsHeader card={card} onClose={onClose} />
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
+      <div className="h-full w-full overflow-auto border-l border-border/70 bg-panel px-4 py-5 shadow-[0_20px_70px_rgba(26,20,15,0.14)] md:max-w-[880px] md:px-6">
+        <CardDetailsHeader card={card} allGolems={allGolems} onClose={onClose} />
 
         {controlError ? (
-          <div className="mt-3 border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm text-rose-900">
+          <div className="mt-3 border border-rose-700 bg-rose-950/40 px-4 py-2.5 text-sm text-rose-300">
             {controlError}
           </div>
         ) : null}
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_300px]">
           <div className="grid gap-4">
-            <CardDispatchPanel card={card} isDispatchPending={isDispatchPending} onSubmit={onDispatchCommand} />
+            <CardDispatchPanel
+              card={card}
+              allGolems={allGolems}
+              isDispatchPending={isDispatchPending}
+              onSubmit={onDispatchCommand}
+            />
 
             <CardEditorPanel
               serviceId={card.serviceId}
@@ -147,7 +152,11 @@ export function CardDetailsDrawer({
           </div>
 
           <div className="grid gap-4">
-            <ExecutionControlPanel controlState={card.controlState} isCancelPending={isCancelPending} onCancelRun={onCancelRun} />
+            <ExecutionControlPanel
+              controlState={card.controlState}
+              isCancelPending={isCancelPending}
+              onCancelRun={onCancelRun}
+            />
             <AssigneeRoutingPanel
               assigneeOptions={assigneeOptions}
               allGolems={allGolems}

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import type { CardAssigneeOptions, CardDetail } from '../../lib/api/cardsApi';
+import type { GolemSummary } from '../../lib/api/golemsApi';
 import { CardDetailsDrawer } from './CardDetailsDrawer';
 
 function createCard(overrides: Partial<CardDetail> = {}): CardDetail {
@@ -40,6 +41,22 @@ function createAssigneeOptions(): CardAssigneeOptions {
   };
 }
 
+function createGolems(): GolemSummary[] {
+  return [
+    {
+      id: 'golem_123',
+      displayName: 'Atlas Display',
+      hostLabel: 'host-123',
+      runtimeVersion: 'bot-1.0.0',
+      state: 'ONLINE',
+      lastHeartbeatAt: null,
+      lastSeenAt: null,
+      missedHeartbeatCount: 0,
+      roleSlugs: ['developer'],
+    },
+  ];
+}
+
 describe('CardDetailsDrawer', () => {
   it('shows an inline dispatch composer for assigned cards', () => {
     render(
@@ -48,7 +65,7 @@ describe('CardDetailsDrawer', () => {
           open
           card={createCard()}
           assigneeOptions={createAssigneeOptions()}
-          allGolems={[]}
+          allGolems={createGolems()}
           teams={[]}
           objectives={[]}
           isPending={false}
@@ -68,6 +85,8 @@ describe('CardDetailsDrawer', () => {
     expect(screen.getByRole('heading', { name: /dispatch/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /dispatch/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/prompt/i)).toHaveDisplayValue('Start with the saved card prompt before sending manual follow-ups.');
+    expect(screen.getByText('Assigned to Atlas Display')).toBeInTheDocument();
+    expect(screen.getByText('Atlas Display')).toBeInTheDocument();
   });
 
   it('does not crash when a legacy card comes back with a null prompt', () => {
@@ -77,7 +96,7 @@ describe('CardDetailsDrawer', () => {
           open
           card={createCard({ prompt: null as unknown as string })}
           assigneeOptions={createAssigneeOptions()}
-          allGolems={[]}
+          allGolems={createGolems()}
           teams={[]}
           objectives={[]}
           isPending={false}

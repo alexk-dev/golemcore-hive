@@ -31,9 +31,9 @@ import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.ThreadMessage;
 import me.golemcore.hive.domain.model.ThreadRecord;
-import me.golemcore.hive.domain.service.CardService;
-import me.golemcore.hive.domain.service.GolemRegistryService;
-import me.golemcore.hive.domain.service.ThreadService;
+import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
+import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
+import me.golemcore.hive.workflow.application.port.in.ThreadWorkflowUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,18 +49,18 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class ThreadsController {
 
-    private final ThreadService threadService;
-    private final CardService cardService;
-    private final GolemRegistryService golemRegistryService;
+    private final ThreadWorkflowUseCase threadWorkflowUseCase;
+    private final CardWorkflowUseCase cardWorkflowUseCase;
+    private final GolemDirectoryUseCase golemDirectoryUseCase;
 
     @GetMapping("/cards/{cardId}/thread")
     public Mono<ResponseEntity<CardThreadResponse>> getCardThread(Principal principal, @PathVariable String cardId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            Card card = cardService.getCard(cardId);
-            ThreadRecord thread = threadService.getThreadByCardId(cardId);
+            Card card = cardWorkflowUseCase.getCard(cardId);
+            ThreadRecord thread = threadWorkflowUseCase.getThreadByCardId(cardId);
             Golem targetGolem = card.getAssigneeGolemId() != null
-                    ? golemRegistryService.findGolem(card.getAssigneeGolemId()).orElse(null)
+                    ? golemDirectoryUseCase.findGolem(card.getAssigneeGolemId()).orElse(null)
                     : null;
             return ResponseEntity.ok(toCardThreadResponse(card, thread, targetGolem));
         }).subscribeOn(Schedulers.boundedElastic());
@@ -71,7 +71,7 @@ public class ThreadsController {
             @PathVariable String threadId) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<ThreadMessageResponse> response = threadService.listMessages(threadId).stream()
+            List<ThreadMessageResponse> response = threadWorkflowUseCase.listMessages(threadId).stream()
                     .map(this::toThreadMessageResponse)
                     .toList();
             return ResponseEntity.ok(response);
@@ -85,7 +85,10 @@ public class ThreadsController {
             @Valid @RequestBody PostThreadMessageRequest request) {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
-            ThreadMessage message = threadService.postOperatorMessage(threadId, request.body(), actor.getSubjectId(),
+            ThreadMessage message = threadWorkflowUseCase.postOperatorMessage(
+                    threadId,
+                    request.body(),
+                    actor.getSubjectId(),
                     actor.getName());
             return ResponseEntity.ok(toThreadMessageResponse(message));
         }).subscribeOn(Schedulers.boundedElastic());

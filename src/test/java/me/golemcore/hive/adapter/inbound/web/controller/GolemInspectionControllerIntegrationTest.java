@@ -26,9 +26,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import me.golemcore.hive.infrastructure.control.InMemoryGolemControlChannelGateway;
 import me.golemcore.hive.domain.model.AuditEvent;
-import me.golemcore.hive.domain.service.AuditService;
-import me.golemcore.hive.domain.service.GolemControlChannelService;
+import me.golemcore.hive.governance.application.port.in.AuditLogUseCase;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,6 +69,7 @@ class GolemInspectionControllerIntegrationTest {
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("hive.storage.base-path", () -> tempDir.toString());
         registry.add("hive.security.cookie.secure", () -> false);
+        registry.add("hive.bootstrap.admin.enabled", () -> true);
         registry.add("hive.bootstrap.admin.username", () -> "admin");
         registry.add("hive.bootstrap.admin.password", () -> "change-me-now");
         registry.add("hive.bootstrap.admin.display-name", () -> "Hive Admin");
@@ -80,7 +81,8 @@ class GolemInspectionControllerIntegrationTest {
         RegisteredGolem golem = registerOnlineGolem("Atlas Inspect", "host-inspect");
         BlockingQueue<String> controlMessages = new LinkedBlockingQueue<>();
         Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
-        GolemControlChannelService controlChannelService = applicationContext.getBean(GolemControlChannelService.class);
+        InMemoryGolemControlChannelGateway controlChannelService = applicationContext.getBean(
+                InMemoryGolemControlChannelGateway.class);
         Disposable subscription = controlChannelService.register(golem.golemId(), sink).subscribe(controlMessages::add);
         try {
             CompletableFuture<EntityExchangeResult<String>> inspectionFuture = CompletableFuture
@@ -140,7 +142,7 @@ class GolemInspectionControllerIntegrationTest {
             JsonNode payload = objectMapper.readTree(inspectionResult.getResponseBody());
             Assertions.assertEquals("web:conv-1", payload.get(0).get("id").asText());
 
-            List<AuditEvent> auditEvents = applicationContext.getBean(AuditService.class)
+            List<AuditEvent> auditEvents = applicationContext.getBean(AuditLogUseCase.class)
                     .listEvents(null, golem.golemId(), null, null, null, null, "golem.inspection.requested");
             Assertions.assertEquals(1, auditEvents.size());
         } finally {

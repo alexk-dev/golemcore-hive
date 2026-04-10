@@ -27,14 +27,15 @@ import me.golemcore.hive.adapter.inbound.web.dto.golems.ActionReasonRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.EnrollmentTokenCreateRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.EnrollmentTokenCreatedResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.EnrollmentTokenResponse;
-import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.EnrollmentToken;
-import me.golemcore.hive.domain.service.EnrollmentService;
+import me.golemcore.hive.fleet.application.ActorContext;
+import me.golemcore.hive.fleet.application.CreatedEnrollmentToken;
+import me.golemcore.hive.fleet.application.EnrollmentTokenExpirationPreset;
+import me.golemcore.hive.fleet.application.port.in.GolemEnrollmentUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,7 +51,7 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 public class EnrollmentController {
 
-    private final EnrollmentService enrollmentService;
+    private final GolemEnrollmentUseCase golemEnrollmentUseCase;
     private final HiveProperties properties;
 
     @PostMapping
@@ -59,16 +60,16 @@ public class EnrollmentController {
             ServerHttpRequest request,
             @Valid @RequestBody(required = false) EnrollmentTokenCreateRequest requestBody) {
         return Mono.fromCallable(() -> {
-            AuthenticatedActor actor = requireOperatorActor(principal);
-            EnrollmentService.CreatedEnrollmentToken created = enrollmentService.createEnrollmentToken(
+            ActorContext actor = toActorContext(ControllerActorSupport.requireOperatorActor(principal));
+            CreatedEnrollmentToken created = golemEnrollmentUseCase.createEnrollmentToken(
                     actor,
                     requestBody != null ? requestBody.note() : null,
-                    requestBody != null ? requestBody.expiresInMinutes() : null);
-            EnrollmentToken token = created.getToken();
+                    resolveExpirationPreset(requestBody));
+            EnrollmentToken token = created.token();
             return ResponseEntity.status(HttpStatus.CREATED).body(new EnrollmentTokenCreatedResponse(
                     token.getId(),
-                    created.getRevealedToken(),
-                    created.getRevealedToken() + ":" + resolveJoinBaseUrl(request),
+                    created.revealedToken(),
+                    created.revealedToken() + ":" + resolveJoinBaseUrl(request),
                     token.getTokenPreview(),
                     token.getNote(),
                     token.getCreatedAt(),
@@ -79,8 +80,8 @@ public class EnrollmentController {
     @GetMapping
     public Mono<ResponseEntity<List<EnrollmentTokenResponse>>> listEnrollmentTokens(Principal principal) {
         return Mono.fromCallable(() -> {
-            requireOperatorActor(principal);
-            List<EnrollmentTokenResponse> tokens = enrollmentService.listEnrollmentTokens().stream()
+            ControllerActorSupport.requireOperatorActor(principal);
+            List<EnrollmentTokenResponse> tokens = golemEnrollmentUseCase.listEnrollmentTokens().stream()
                     .map(this::toResponse)
                     .toList();
             return ResponseEntity.ok(tokens);
@@ -93,8 +94,8 @@ public class EnrollmentController {
             @PathVariable String tokenId,
             @RequestBody(required = false) ActionReasonRequest request) {
         return Mono.fromCallable(() -> {
-            requireOperatorActor(principal);
-            EnrollmentToken token = enrollmentService.revokeEnrollmentToken(tokenId,
+            ControllerActorSupport.requireOperatorActor(principal);
+            EnrollmentToken token = golemEnrollmentUseCase.revokeEnrollmentToken(tokenId,
                     request != null ? request.reason() : null);
             return ResponseEntity.ok(toResponse(token));
         }).subscribeOn(Schedulers.boundedElastic());
@@ -114,6 +115,31 @@ public class EnrollmentController {
                 token.getLastRegisteredGolemId(),
                 token.getRevokeReason(),
                 token.isRevoked());
+    }
+
+    private EnrollmentTokenExpirationPreset resolveExpirationPreset(EnrollmentTokenCreateRequest requestBody) {
+        if (requestBody == null) {
+            return null;
+        }
+        try {
+            EnrollmentTokenExpirationPreset explicitPreset = parseExpirationPreset(requestBody.expirationPreset());
+            if (explicitPreset != null) {
+                return explicitPreset;
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported enrollment token expiration preset");
+        }
+        if (requestBody.expiresInMinutes() != null) {
+            return EnrollmentTokenExpirationPreset.ONE_HOUR;
+        }
+        return null;
+    }
+
+    private EnrollmentTokenExpirationPreset parseExpirationPreset(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return EnrollmentTokenExpirationPreset.valueOf(value.trim().toUpperCase());
     }
 
     private String resolveJoinBaseUrl(ServerHttpRequest request) {
@@ -146,22 +172,7 @@ public class EnrollmentController {
         return value;
     }
 
-    private AuthenticatedActor requireOperatorActor(Principal principal) {
-        AuthenticatedActor actor = extractActor(principal);
-        if (actor == null || !actor.isOperator()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Operator token required");
-        }
-        return actor;
-    }
-
-    private AuthenticatedActor extractActor(Principal principal) {
-        if (principal instanceof AuthenticatedActor actor) {
-            return actor;
-        }
-        if (principal instanceof Authentication authentication
-                && authentication.getPrincipal() instanceof AuthenticatedActor actor) {
-            return actor;
-        }
-        return null;
+    private ActorContext toActorContext(me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor actor) {
+        return new ActorContext(actor.getSubjectId(), actor.getName());
     }
 }

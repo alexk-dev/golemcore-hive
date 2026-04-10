@@ -26,7 +26,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.golemcore.hive.config.HiveProperties;
-import me.golemcore.hive.port.outbound.StoragePort;
+import me.golemcore.hive.infrastructure.storage.StoragePort;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 

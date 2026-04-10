@@ -3,27 +3,30 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardColumn } from '../../lib/api/boardsApi';
 import type { CardSummary } from '../../lib/api/cardsApi';
-import { formatControlLabel } from '../../lib/format';
+import type { GolemSummary } from '../../lib/api/golemsApi';
+import { formatControlLabel, formatGolemDisplayName } from '../../lib/format';
 
 interface KanbanColumnProps {
   column: BoardColumn;
   cards: CardSummary[];
+  allGolems: GolemSummary[];
   onOpenCard: (cardId: string) => void;
 }
 
 interface SortableCardProps {
   card: CardSummary;
+  allGolems: GolemSummary[];
   onOpenCard: (cardId: string) => void;
 }
 
-function SortableCard({ card, onOpenCard }: SortableCardProps) {
+function SortableCard({ card, allGolems, onOpenCard }: SortableCardProps) {
   const { attributes, isDragging, isOver, listeners, setNodeRef, transform, transition } = useSortable({ id: card.id });
   const controlTone = card.controlState?.cancelRequestedPending
-    ? 'bg-rose-100 text-rose-900'
+    ? 'bg-rose-900/40 text-rose-300'
     : card.controlState?.runStatus === 'BLOCKED'
-      ? 'bg-amber-100 text-amber-900'
+      ? 'bg-amber-900/40 text-amber-300'
       : card.controlState?.runStatus === 'RUNNING'
-        ? 'bg-primary/10 text-foreground'
+        ? 'bg-cyan-900/40 text-cyan-300'
         : 'bg-muted text-muted-foreground';
 
   return (
@@ -38,7 +41,7 @@ function SortableCard({ card, onOpenCard }: SortableCardProps) {
         transition,
       }}
       className={[
-        'relative border border-border/70 bg-white/95 px-2 py-1.5 text-left transition hover:bg-white',
+        'relative border border-border/70 bg-panel/95 px-2 py-1.5 text-left transition hover:bg-muted',
         isDragging ? 'opacity-50' : 'opacity-100',
         isOver ? 'ring-1 ring-primary/30' : '',
       ].join(' ')}
@@ -52,15 +55,15 @@ function SortableCard({ card, onOpenCard }: SortableCardProps) {
           </span>
         ) : null}
       </div>
-      <p className="truncate text-xs text-muted-foreground">{card.assigneeGolemId || 'Unassigned'}</p>
+      <p className="truncate text-xs text-muted-foreground">{formatGolemDisplayName(card.assigneeGolemId, allGolems)}</p>
       {card.controlState?.cancelRequestedPending && card.controlState.cancelRequestedByActorName ? (
-        <p className="text-xs text-rose-900">stop by {card.controlState.cancelRequestedByActorName}</p>
+        <p className="text-xs text-rose-300">stop by {card.controlState.cancelRequestedByActorName}</p>
       ) : null}
     </button>
   );
 }
 
-export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
+export function KanbanColumn({ column, cards, allGolems, onOpenCard }: KanbanColumnProps) {
   const { over } = useDndContext();
   const laneDrop = useDroppable({ id: `column:${column.id}` });
   const endDrop = useDroppable({ id: `column:${column.id}:end` });
@@ -75,9 +78,9 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
     <section
       className={[
         'flex min-h-[200px] flex-col border p-2 transition',
-        hasCards ? 'min-w-[240px]' : 'min-w-[200px]',
-        isPrimaryLane ? 'border-border bg-white/88' : 'border-border/70 bg-white/55',
-        isLaneActive ? 'border-primary/40 bg-primary/5' : '',
+        hasCards ? 'md:min-w-[240px]' : 'md:min-w-[200px]',
+        isPrimaryLane ? 'border-border bg-panel/90' : 'border-border/70 bg-muted/55',
+        isLaneActive ? 'border-primary/60 bg-primary/10' : '',
       ].join(' ')}
     >
       <div className="flex items-center justify-between gap-2 px-1">
@@ -93,12 +96,12 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
         ref={laneDrop.setNodeRef}
         className={[
           'mt-1 flex flex-1 flex-col gap-1 border border-dashed p-0.5 transition',
-          isLaneActive ? 'border-primary/35 bg-primary/5' : 'border-transparent',
+          isLaneActive ? 'border-primary/50 bg-primary/10' : 'border-transparent',
         ].join(' ')}
       >
         <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
-            <SortableCard key={card.id} card={card} onOpenCard={onOpenCard} />
+            <SortableCard key={card.id} card={card} allGolems={allGolems} onOpenCard={onOpenCard} />
           ))}
         </SortableContext>
         {hasCards ? (
@@ -106,13 +109,13 @@ export function KanbanColumn({ column, cards, onOpenCard }: KanbanColumnProps) {
             ref={endDrop.setNodeRef}
             className={[
               'flex min-h-6 items-center justify-center border border-dashed px-2 py-1 text-xs transition',
-              endDrop.isOver ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-white/60 text-muted-foreground',
+              endDrop.isOver ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border/60 bg-muted/60 text-muted-foreground',
             ].join(' ')}
           >
             Drop to end
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-center border border-dashed border-border/70 bg-white/45 px-3 py-4 text-xs text-muted-foreground">
+          <div className="flex flex-1 items-center justify-center border border-dashed border-border/70 bg-muted/45 px-3 py-4 text-xs text-muted-foreground">
             Drop here
           </div>
         )}

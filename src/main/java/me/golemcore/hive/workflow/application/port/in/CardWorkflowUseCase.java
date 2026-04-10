@@ -26,18 +26,20 @@ import me.golemcore.hive.domain.model.CardTransitionOrigin;
 
 public interface CardWorkflowUseCase {
 
-    List<Card> listCards(String boardId, boolean includeArchived);
+    List<Card> listCards(String serviceId, boolean includeArchived);
 
     Optional<Card> findCard(String cardId);
 
     Card getCard(String cardId);
 
     Card createCard(
-            String boardId,
+            String serviceId,
             String title,
             String description,
             String prompt,
             String columnId,
+            String teamId,
+            String objectiveId,
             String assigneeGolemId,
             CardAssignmentPolicy assignmentPolicy,
             boolean autoAssign,
@@ -49,6 +51,8 @@ public interface CardWorkflowUseCase {
             String title,
             String description,
             String prompt,
+            String teamId,
+            String objectiveId,
             CardAssignmentPolicy assignmentPolicy);
 
     Card moveCard(

@@ -23,9 +23,15 @@ import me.golemcore.hive.workflow.application.service.AssignmentWorkflowApplicat
 import me.golemcore.hive.workflow.application.service.BoardWorkflowApplicationService;
 import me.golemcore.hive.workflow.application.service.CardWorkflowApplicationService;
 import me.golemcore.hive.workflow.application.service.FlowRemapApplicationService;
+import me.golemcore.hive.workflow.application.service.ObjectiveService;
+import me.golemcore.hive.workflow.application.service.OrganizationService;
+import me.golemcore.hive.workflow.application.service.TeamService;
 import me.golemcore.hive.workflow.application.service.ThreadWorkflowApplicationService;
 import me.golemcore.hive.workflow.application.port.out.BoardRepository;
 import me.golemcore.hive.workflow.application.port.out.CardRepository;
+import me.golemcore.hive.workflow.application.port.out.ObjectiveRepository;
+import me.golemcore.hive.workflow.application.port.out.OrganizationRepository;
+import me.golemcore.hive.workflow.application.port.out.TeamRepository;
 import me.golemcore.hive.workflow.application.port.out.ThreadRepository;
 import me.golemcore.hive.workflow.application.port.out.WorkflowAssignmentPort;
 import me.golemcore.hive.workflow.application.port.out.WorkflowAuditPort;
@@ -55,12 +61,47 @@ public class WorkflowApplicationConfiguration {
     }
 
     @Bean
+    public OrganizationService organizationService(
+            OrganizationRepository organizationRepository,
+            WorkflowAuditPort workflowAuditPort) {
+        return new OrganizationService(organizationRepository, workflowAuditPort);
+    }
+
+    @Bean
+    public TeamService teamService(
+            TeamRepository teamRepository,
+            GolemDirectoryUseCase golemDirectoryUseCase,
+            BoardWorkflowApplicationService boardWorkflowApplicationService,
+            WorkflowAuditPort workflowAuditPort) {
+        return new TeamService(
+                teamRepository,
+                golemDirectoryUseCase,
+                boardWorkflowApplicationService,
+                workflowAuditPort);
+    }
+
+    @Bean
+    public ObjectiveService objectiveService(
+            ObjectiveRepository objectiveRepository,
+            TeamService teamService,
+            BoardWorkflowApplicationService boardWorkflowApplicationService,
+            WorkflowAuditPort workflowAuditPort) {
+        return new ObjectiveService(
+                objectiveRepository,
+                teamService,
+                boardWorkflowApplicationService,
+                workflowAuditPort);
+    }
+
+    @Bean
     public CardWorkflowApplicationService cardWorkflowApplicationService(
             CardRepository cardRepository,
             ThreadRepository threadRepository,
             BoardWorkflowApplicationService boardWorkflowApplicationService,
             WorkflowAssignmentPort workflowAssignmentPort,
             GolemDirectoryUseCase golemDirectoryUseCase,
+            TeamService teamService,
+            ObjectiveService objectiveService,
             WorkflowAuditPort workflowAuditPort) {
         return new CardWorkflowApplicationService(
                 cardRepository,
@@ -68,6 +109,8 @@ public class WorkflowApplicationConfiguration {
                 boardWorkflowApplicationService,
                 workflowAssignmentPort,
                 golemDirectoryUseCase,
+                teamService,
+                objectiveService,
                 workflowAuditPort);
     }
 

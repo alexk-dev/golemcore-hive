@@ -39,6 +39,8 @@ describe('CardComposerDialog', () => {
         open
         board={createBoard()}
         allGolems={[]}
+        teams={[]}
+        objectives={[]}
         assigneeOptions={null}
         isPending={false}
         onClose={vi.fn()}

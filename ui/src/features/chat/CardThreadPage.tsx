@@ -205,7 +205,7 @@ function useCardThreadData(cardId: string) {
 function CardThreadHeader({
   title,
   columnId,
-  boardId,
+  serviceId,
   liveState,
   targetGolem,
   controllableRun,
@@ -217,7 +217,7 @@ function CardThreadHeader({
 }: {
   title: string;
   columnId: string;
-  boardId: string;
+  serviceId: string;
   liveState: string;
   targetGolem: { displayName: string; state: string } | null;
   controllableRun: { id: string; cancelRequestedByActorName?: string | null } | null;
@@ -253,8 +253,8 @@ function CardThreadHeader({
               {isCancelPending ? 'Sending stop...' : cancelRequestedPending ? 'Stop requested' : cancelActionLabel}
             </button>
           ) : null}
-          <Link to={`/boards/${boardId}`} className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground">
-            Back to board
+          <Link to={`/services/${serviceId}`} className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground">
+            Back to service
           </Link>
         </div>
       </div>
@@ -296,7 +296,7 @@ export function CardThreadPage() {
       <CardThreadHeader
         title={data.cardQuery.data.title}
         columnId={data.cardQuery.data.columnId}
-        boardId={data.cardQuery.data.boardId}
+        serviceId={data.cardQuery.data.serviceId || data.cardQuery.data.boardId}
         liveState={liveState}
         targetGolem={targetGolem}
         controllableRun={data.latestControllableRun}

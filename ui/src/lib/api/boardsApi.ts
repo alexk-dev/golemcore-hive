@@ -79,6 +79,7 @@ export interface AssignmentSuggestion {
 }
 
 export interface BoardTeamResolved {
+  serviceId: string;
   boardId: string;
   candidates: AssignmentSuggestion[];
 }

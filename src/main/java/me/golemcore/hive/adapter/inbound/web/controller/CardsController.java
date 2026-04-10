@@ -59,11 +59,16 @@ public class CardsController extends BoardMappingSupport {
     @GetMapping
     public Mono<ResponseEntity<List<CardSummaryResponse>>> listCards(
             Principal principal,
+            @RequestParam(required = false) String serviceId,
             @RequestParam(required = false) String boardId,
             @RequestParam(defaultValue = "false") boolean includeArchived) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            List<Card> cards = cardWorkflowUseCase.listCards(boardId, includeArchived);
+            String resolvedServiceId = null;
+            if ((serviceId != null && !serviceId.isBlank()) || (boardId != null && !boardId.isBlank())) {
+                resolvedServiceId = resolveServiceId(serviceId, boardId);
+            }
+            List<Card> cards = cardWorkflowUseCase.listCards(resolvedServiceId, includeArchived);
             Map<String, CardControlStateSnapshot> controlStates = executionOperationsUseCase
                     .listActiveCardControlStates(cards);
             List<CardSummaryResponse> response = cards.stream()
@@ -80,11 +85,13 @@ public class CardsController extends BoardMappingSupport {
         return Mono.fromCallable(() -> {
             AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
             Card card = cardWorkflowUseCase.createCard(
-                    request.boardId(),
+                    resolveServiceId(request.serviceId(), request.boardId()),
                     request.title(),
                     request.description(),
                     request.prompt(),
                     request.columnId(),
+                    request.teamId(),
+                    request.objectiveId(),
                     request.assigneeGolemId(),
                     parseAssignmentPolicy(request.assignmentPolicy()),
                     request.autoAssign(),
@@ -115,6 +122,8 @@ public class CardsController extends BoardMappingSupport {
                     request != null ? request.title() : null,
                     request != null ? request.description() : null,
                     request != null ? request.prompt() : null,
+                    request != null ? request.teamId() : null,
+                    request != null ? request.objectiveId() : null,
                     request != null ? parseAssignmentPolicy(request.assignmentPolicy()) : null);
             return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());

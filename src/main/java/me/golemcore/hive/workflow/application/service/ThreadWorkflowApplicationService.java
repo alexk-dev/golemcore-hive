@@ -176,6 +176,10 @@ public class ThreadWorkflowApplicationService implements ThreadWorkflowUseCase {
     @Override
     public void syncThreadWithCard(Card card) {
         ThreadRecord thread = getOrCreateThreadForCard(card);
+        thread.setServiceId(card.getServiceId());
+        thread.setBoardId(card.getBoardId());
+        thread.setTeamId(card.getTeamId());
+        thread.setObjectiveId(card.getObjectiveId());
         thread.setTitle(card.getTitle());
         thread.setAssignedGolemId(card.getAssigneeGolemId());
         thread.setUpdatedAt(card.getUpdatedAt() != null ? card.getUpdatedAt() : Instant.now());
@@ -196,6 +200,22 @@ public class ThreadWorkflowApplicationService implements ThreadWorkflowUseCase {
         if (existing.isPresent()) {
             ThreadRecord thread = existing.get();
             boolean changed = false;
+            if (!java.util.Objects.equals(thread.getServiceId(), card.getServiceId())) {
+                thread.setServiceId(card.getServiceId());
+                changed = true;
+            }
+            if (!java.util.Objects.equals(thread.getBoardId(), card.getBoardId())) {
+                thread.setBoardId(card.getBoardId());
+                changed = true;
+            }
+            if (!java.util.Objects.equals(thread.getTeamId(), card.getTeamId())) {
+                thread.setTeamId(card.getTeamId());
+                changed = true;
+            }
+            if (!java.util.Objects.equals(thread.getObjectiveId(), card.getObjectiveId())) {
+                thread.setObjectiveId(card.getObjectiveId());
+                changed = true;
+            }
             if (!java.util.Objects.equals(thread.getTitle(), card.getTitle())) {
                 thread.setTitle(card.getTitle());
                 changed = true;
@@ -214,7 +234,10 @@ public class ThreadWorkflowApplicationService implements ThreadWorkflowUseCase {
         Instant now = card.getCreatedAt() != null ? card.getCreatedAt() : Instant.now();
         ThreadRecord thread = ThreadRecord.builder()
                 .id(card.getThreadId())
+                .serviceId(card.getServiceId())
                 .boardId(card.getBoardId())
+                .teamId(card.getTeamId())
+                .objectiveId(card.getObjectiveId())
                 .cardId(card.getId())
                 .title(card.getTitle())
                 .assignedGolemId(card.getAssigneeGolemId())

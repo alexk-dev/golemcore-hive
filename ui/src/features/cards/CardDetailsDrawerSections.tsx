@@ -1,6 +1,8 @@
 import type { CardAssigneeOptions, CardControlState, CardDetail } from '../../lib/api/cardsApi';
 import type { CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import type { GolemSummary } from '../../lib/api/golemsApi';
+import type { ObjectiveDetail } from '../../lib/api/objectivesApi';
+import type { TeamDetail } from '../../lib/api/teamsApi';
 import { formatControlLabel, formatGolemDisplayName } from '../../lib/format';
 import { AssignmentPolicyBadge } from './AssignmentPolicyBadge';
 import { AssigneePicker } from './AssigneePicker';
@@ -36,28 +38,46 @@ export function CardDispatchPanel({
 }
 
 export function CardEditorPanel({
+  serviceId,
+  teams,
+  objectives,
   title,
   description,
   prompt,
+  teamId,
+  objectiveId,
   assignmentPolicy,
   isPending,
   onTitleChange,
   onDescriptionChange,
   onPromptChange,
+  onTeamChange,
+  onObjectiveChange,
   onAssignmentPolicyChange,
   onSubmit,
 }: {
+  serviceId: string;
+  teams: TeamDetail[];
+  objectives: ObjectiveDetail[];
   title: string;
   description: string;
   prompt: string;
+  teamId: string;
+  objectiveId: string;
   assignmentPolicy: string;
   isPending: boolean;
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onPromptChange: (value: string) => void;
+  onTeamChange: (value: string) => void;
+  onObjectiveChange: (value: string) => void;
   onAssignmentPolicyChange: (value: string) => void;
   onSubmit: () => Promise<void>;
 }) {
+  const serviceTeams = teams.filter((candidate) => candidate.ownedServiceIds.includes(serviceId));
+  const visibleTeams = serviceTeams.length ? serviceTeams : teams;
+  const serviceObjectives = objectives.filter((candidate) => candidate.serviceIds.includes(serviceId));
+
   return (
     <form
       className="panel grid gap-3 p-4"
@@ -102,6 +122,48 @@ export function CardEditorPanel({
           className="border border-border bg-panel/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
         />
       </label>
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="grid gap-1.5">
+          <span className="text-sm font-semibold text-foreground">Team</span>
+          <select
+            value={teamId}
+            onChange={(event) => onTeamChange(event.target.value)}
+            className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
+          >
+            <option value="">No team</option>
+            {visibleTeams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-1.5">
+          <span className="text-sm font-semibold text-foreground">Objective</span>
+          <select
+            value={objectiveId}
+            onChange={(event) => {
+              const nextObjectiveId = event.target.value;
+              onObjectiveChange(nextObjectiveId);
+              if (!nextObjectiveId || teamId) {
+                return;
+              }
+              const nextObjective = serviceObjectives.find((candidate) => candidate.id === nextObjectiveId);
+              if (nextObjective?.ownerTeamId) {
+                onTeamChange(nextObjective.ownerTeamId);
+              }
+            }}
+            className="border border-border bg-panel/90 px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
+          >
+            <option value="">No objective</option>
+            {serviceObjectives.map((objective) => (
+              <option key={objective.id} value={objective.id}>
+                {objective.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <div className="flex items-center justify-between gap-3">
         <select
           value={assignmentPolicy}
@@ -176,7 +238,12 @@ export function AssigneeRoutingPanel({
 }) {
   return (
     <section className="panel p-4">
-      <p className="text-sm font-semibold text-foreground">Assignee</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-foreground">Assignee</p>
+        <span className="text-xs text-muted-foreground">
+          {card.teamId || 'No team'} · {card.objectiveId || 'No objective'}
+        </span>
+      </div>
       <div className="mt-2">
         <AssigneePicker
           options={assigneeOptions}

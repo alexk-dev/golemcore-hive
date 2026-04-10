@@ -18,7 +18,10 @@ describe('KanbanColumn', () => {
           cards={[
             {
               id: 'card_1',
+              serviceId: 'board_1',
               boardId: 'board_1',
+              teamId: null,
+              objectiveId: null,
               threadId: 'thread_1',
               title: 'Write forecast summary',
               columnId: 'in_progress',

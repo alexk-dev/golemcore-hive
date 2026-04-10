@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 export function KanbanBoardHeader({
-  boardId,
+  serviceId,
   boardName,
   templateKey,
   columnCount,
@@ -9,7 +9,7 @@ export function KanbanBoardHeader({
   activeCards,
   onNewCard,
 }: {
-  boardId: string;
+  serviceId: string;
   boardName: string;
   templateKey: string;
   columnCount: number;
@@ -23,14 +23,14 @@ export function KanbanBoardHeader({
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-bold tracking-tight text-foreground">{boardName}</h2>
           <span className="text-xs text-muted-foreground">
-            {templateKey} · {columnCount} cols · {totalCards} cards · {activeCards} active
+            {templateKey} archetype · {columnCount} cols · {totalCards} cards · {activeCards} active
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to="/boards" className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground">
-            All boards
+          <Link to="/services" className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground">
+            All services
           </Link>
-          <Link to={`/boards/${boardId}/settings`} className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground">
+          <Link to={`/services/${serviceId}/settings`} className="border border-border bg-panel/80 px-3 py-1.5 text-sm font-semibold text-foreground">
             Settings
           </Link>
           <button

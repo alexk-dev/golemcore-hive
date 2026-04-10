@@ -1,10 +1,9 @@
-import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { Navigate, createBrowserRouter, useParams } from 'react-router-dom';
 import { RequireAuth } from './RequireAuth';
 import { LoginPage } from '../features/auth/LoginPage';
 import { AppShell } from '../features/layout/AppShell';
 import { GolemsPage } from '../features/golems/GolemsPage';
 import { GolemRolesPage } from '../features/golems/GolemRolesPage';
-import { BoardsPage } from '../features/boards/BoardsPage';
 import { KanbanBoardPage } from '../features/boards/KanbanBoardPage';
 import { BoardEditorPage } from '../features/boards/BoardEditorPage';
 import { CardThreadPage } from '../features/chat/CardThreadPage';
@@ -15,6 +14,20 @@ import { BudgetsPage } from '../features/budgets/BudgetsPage';
 import { SystemSettingsPage } from '../features/settings/SystemSettingsPage';
 import { InspectionPage } from '../features/inspection/InspectionPage';
 import { PolicyGroupsPage } from '../features/policies/PolicyGroupsPage';
+import { HomePage } from '../features/dashboard/HomePage';
+import { ObjectivesPage } from '../features/objectives/ObjectivesPage';
+import { ServicesPage } from '../features/services/ServicesPage';
+import { TeamsPage } from '../features/teams/TeamsPage';
+
+function LegacyBoardQueueRedirect() {
+  const { boardId = '' } = useParams();
+  return <Navigate to={`/services/${boardId}`} replace />;
+}
+
+function LegacyBoardSettingsRedirect() {
+  const { boardId = '' } = useParams();
+  return <Navigate to={`/services/${boardId}/settings`} replace />;
+}
 
 export const routes = createBrowserRouter([
   {
@@ -29,7 +42,19 @@ export const routes = createBrowserRouter([
         children: [
           {
             path: '/',
-            element: <Navigate to="/boards" replace />,
+            element: <HomePage />,
+          },
+          {
+            path: '/services',
+            element: <ServicesPage />,
+          },
+          {
+            path: '/teams',
+            element: <TeamsPage />,
+          },
+          {
+            path: '/objectives',
+            element: <ObjectivesPage />,
           },
           {
             path: '/fleet',
@@ -41,7 +66,7 @@ export const routes = createBrowserRouter([
           },
           {
             path: '/boards',
-            element: <BoardsPage />,
+            element: <Navigate to="/services" replace />,
           },
           {
             path: '/policies',
@@ -68,12 +93,20 @@ export const routes = createBrowserRouter([
             element: <SystemSettingsPage />,
           },
           {
-            path: '/boards/:boardId',
+            path: '/services/:serviceId',
             element: <KanbanBoardPage />,
           },
           {
-            path: '/boards/:boardId/settings',
+            path: '/services/:serviceId/settings',
             element: <BoardEditorPage />,
+          },
+          {
+            path: '/boards/:boardId',
+            element: <LegacyBoardQueueRedirect />,
+          },
+          {
+            path: '/boards/:boardId/settings',
+            element: <LegacyBoardSettingsRedirect />,
           },
           {
             path: '/cards/:cardId/thread',

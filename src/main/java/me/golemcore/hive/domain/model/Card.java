@@ -36,7 +36,10 @@ public class Card {
     private int schemaVersion = 1;
 
     private String id;
+    private String serviceId;
     private String boardId;
+    private String teamId;
+    private String objectiveId;
     private String threadId;
     private String title;
     private String description;

@@ -20,4 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 
 import java.util.List;
 
-public record CardAssigneeOptionsResponse(String cardId,String boardId,List<AssignmentSuggestionResponse>teamCandidates,List<AssignmentSuggestionResponse>allCandidates){}
+public record CardAssigneeOptionsResponse(String cardId,String serviceId,String boardId,List<AssignmentSuggestionResponse>teamCandidates,List<AssignmentSuggestionResponse>allCandidates){}

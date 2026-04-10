@@ -84,7 +84,10 @@ abstract class BoardMappingSupport {
     protected CardSummaryResponse toCardSummaryResponse(Card card, CardControlStateSnapshot controlState) {
         return new CardSummaryResponse(
                 card.getId(),
+                card.getServiceId(),
                 card.getBoardId(),
+                card.getTeamId(),
+                card.getObjectiveId(),
                 card.getThreadId(),
                 card.getTitle(),
                 card.getColumnId(),
@@ -98,7 +101,10 @@ abstract class BoardMappingSupport {
     protected CardDetailResponse toCardDetailResponse(Card card, CardControlStateSnapshot controlState) {
         return new CardDetailResponse(
                 card.getId(),
+                card.getServiceId(),
                 card.getBoardId(),
+                card.getTeamId(),
+                card.getObjectiveId(),
                 card.getThreadId(),
                 card.getTitle(),
                 card.getDescription(),
@@ -152,6 +158,16 @@ abstract class BoardMappingSupport {
         return value != null && !value.isBlank()
                 ? CardAssignmentPolicy.valueOf(value.toUpperCase(java.util.Locale.ROOT))
                 : null;
+    }
+
+    protected String resolveServiceId(String serviceId, String boardId) {
+        if (serviceId != null && !serviceId.isBlank()) {
+            return serviceId;
+        }
+        if (boardId != null && !boardId.isBlank()) {
+            return boardId;
+        }
+        throw new IllegalArgumentException("serviceId is required");
     }
 
     protected RemapPreviewResponse toRemapPreviewResponse(FlowRemapPreview preview) {

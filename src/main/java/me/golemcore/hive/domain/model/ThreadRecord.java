@@ -34,7 +34,10 @@ public class ThreadRecord {
     private int schemaVersion = 1;
 
     private String id;
+    private String serviceId;
     private String boardId;
+    private String teamId;
+    private String objectiveId;
     private String cardId;
     private String title;
     private String assignedGolemId;

@@ -50,6 +50,22 @@ public class AssignmentsController extends BoardMappingSupport {
             Board board = boardWorkflowUseCase.getBoard(boardId);
             return ResponseEntity.ok(new BoardTeamResolvedResponse(
                     boardId,
+                    boardId,
+                    assignmentWorkflowUseCase.getTeamCandidates(board).stream()
+                            .map(this::toAssignmentSuggestionResponse)
+                            .toList()));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping("/api/v1/services/{serviceId}/team")
+    public Mono<ResponseEntity<BoardTeamResolvedResponse>> getServiceTeam(Principal principal,
+            @PathVariable String serviceId) {
+        return Mono.fromCallable(() -> {
+            ControllerActorSupport.requireOperatorActor(principal);
+            Board board = boardWorkflowUseCase.getBoard(serviceId);
+            return ResponseEntity.ok(new BoardTeamResolvedResponse(
+                    serviceId,
+                    serviceId,
                     assignmentWorkflowUseCase.getTeamCandidates(board).stream()
                             .map(this::toAssignmentSuggestionResponse)
                             .toList()));
@@ -65,6 +81,7 @@ public class AssignmentsController extends BoardMappingSupport {
             Board board = boardWorkflowUseCase.getBoard(card.getBoardId());
             return ResponseEntity.ok(new CardAssigneeOptionsResponse(
                     cardId,
+                    board.getId(),
                     board.getId(),
                     assignmentWorkflowUseCase.getTeamCandidates(board).stream()
                             .map(this::toAssignmentSuggestionResponse)

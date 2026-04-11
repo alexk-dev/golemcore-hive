@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { createService, listServices } from '../../lib/api/servicesApi';
+import { readErrorMessage } from '../../lib/format';
 
 const archetypeOptions = [
   { key: 'engineering', label: 'Engineering' },
@@ -16,6 +17,7 @@ export function ServicesPage() {
   const [description, setDescription] = useState('');
   const [templateKey, setTemplateKey] = useState('engineering');
   const [defaultAssignmentPolicy, setDefaultAssignmentPolicy] = useState('MANUAL');
+  const [formError, setFormError] = useState<string | null>(null);
 
   const servicesQuery = useQuery({
     queryKey: ['services'],
@@ -24,21 +26,31 @@ export function ServicesPage() {
 
   const createServiceMutation = useMutation({
     mutationFn: createService,
+    onMutate: () => {
+      setFormError(null);
+    },
     onSuccess: async () => {
       setName('');
       setDescription('');
       await queryClient.invalidateQueries({ queryKey: ['services'] });
     },
+    onError: (error) => {
+      setFormError(readErrorMessage(error));
+    },
   });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await createServiceMutation.mutateAsync({
-      name,
-      description,
-      templateKey,
-      defaultAssignmentPolicy,
-    });
+    try {
+      await createServiceMutation.mutateAsync({
+        name,
+        description,
+        templateKey,
+        defaultAssignmentPolicy,
+      });
+    } catch {
+      // The mutation renders the error and preserves the draft.
+    }
   }
 
   return (
@@ -99,6 +111,7 @@ export function ServicesPage() {
           onSubmit={(event) => void handleSubmit(event)}
         >
           <h3 className="text-lg font-bold tracking-tight text-foreground">Create service</h3>
+          {formError ? <p role="alert" className="text-sm text-rose-300">{formError}</p> : null}
           <label className="grid gap-1.5">
             <span className="text-sm font-semibold text-foreground">Name</span>
             <input

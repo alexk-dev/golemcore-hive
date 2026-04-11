@@ -28,10 +28,21 @@ export function ApprovalsPage() {
   const decisionMutation = useMutation({
     mutationFn: async ({ approvalId, mode, comment }: { approvalId: string; mode: 'approve' | 'reject'; comment: string }) =>
       mode === 'approve' ? approveApproval(approvalId, comment) : rejectApproval(approvalId, comment),
-    onSuccess: async () => {
+    onSuccess: async (approval) => {
       setSelectedApproval(null);
       setDialogMode(null);
-      await queryClient.invalidateQueries({ queryKey: ['approvals'] });
+      const tasks = [queryClient.invalidateQueries({ queryKey: ['approvals'] })];
+      if (approval.threadId) {
+        tasks.push(queryClient.invalidateQueries({ queryKey: ['thread-messages', approval.threadId] }));
+        tasks.push(queryClient.invalidateQueries({ queryKey: ['thread-commands', approval.threadId] }));
+        tasks.push(queryClient.invalidateQueries({ queryKey: ['thread-runs', approval.threadId] }));
+        tasks.push(queryClient.invalidateQueries({ queryKey: ['thread-signals', approval.threadId] }));
+      }
+      if (approval.cardId) {
+        tasks.push(queryClient.invalidateQueries({ queryKey: ['card', approval.cardId] }));
+        tasks.push(queryClient.invalidateQueries({ queryKey: ['card-thread', approval.cardId] }));
+      }
+      await Promise.all(tasks);
     },
   });
 

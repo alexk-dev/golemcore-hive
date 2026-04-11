@@ -3,7 +3,7 @@ import { apiRequest } from './httpClient';
 export interface CommandRecord {
   id: string;
   threadId: string;
-  cardId: string;
+  cardId: string | null;
   golemId: string;
   runId: string;
   body: string;
@@ -27,7 +27,7 @@ export interface CommandRecord {
 export interface RunProjection {
   id: string;
   threadId: string;
-  cardId: string;
+  cardId: string | null;
   commandId: string | null;
   golemId: string | null;
   approvalRequestId: string | null;

@@ -1,4 +1,5 @@
-import { closestCorners, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { closestCorners, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -228,7 +229,10 @@ export function KanbanBoardPage() {
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [controlError, setControlError] = useState<string | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
   const autoScroll = useKanbanAutoScroll();
   const data = useKanbanBoardData({
     serviceId,

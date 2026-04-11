@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { createObjective, listObjectives, type ObjectiveDetail } from '../../lib/api/objectivesApi';
 import { listServices, type ServiceSummary } from '../../lib/api/servicesApi';
 import { listTeams, type TeamDetail } from '../../lib/api/teamsApi';
+import { readErrorMessage } from '../../lib/format';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'AT_RISK', 'ON_HOLD', 'COMPLETED'];
 
@@ -15,6 +16,7 @@ export function ObjectivesPage() {
   const [targetDate, setTargetDate] = useState('');
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const objectivesQuery = useQuery({
     queryKey: ['objectives'],
@@ -31,6 +33,9 @@ export function ObjectivesPage() {
 
   const createObjectiveMutation = useMutation({
     mutationFn: createObjective,
+    onMutate: () => {
+      setFormError(null);
+    },
     onSuccess: async () => {
       setName('');
       setDescription('');
@@ -41,6 +46,9 @@ export function ObjectivesPage() {
       setSelectedTeamIds([]);
       await queryClient.invalidateQueries({ queryKey: ['objectives'] });
     },
+    onError: (error) => {
+      setFormError(readErrorMessage(error));
+    },
   });
 
   const teamNameById = new Map((teamsQuery.data ?? []).map((team) => [team.id, team.name]));
@@ -48,15 +56,19 @@ export function ObjectivesPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await createObjectiveMutation.mutateAsync({
-      name,
-      description,
-      status,
-      ownerTeamId,
-      serviceIds: selectedServiceIds,
-      participatingTeamIds: selectedTeamIds,
-      targetDate: targetDate || null,
-    });
+    try {
+      await createObjectiveMutation.mutateAsync({
+        name,
+        description,
+        status,
+        ownerTeamId,
+        serviceIds: selectedServiceIds,
+        participatingTeamIds: selectedTeamIds,
+        targetDate: targetDate || null,
+      });
+    } catch {
+      // The mutation renders the error and preserves the draft.
+    }
   }
 
   function toggleSelection(current: string[], value: string) {
@@ -81,6 +93,7 @@ export function ObjectivesPage() {
         teams={teamsQuery.data ?? []}
         services={servicesQuery.data ?? []}
         isPending={createObjectiveMutation.isPending}
+        formError={formError}
         onNameChange={setName}
         onDescriptionChange={setDescription}
         onStatusChange={setStatus}
@@ -158,6 +171,7 @@ function CreateObjectiveForm({
   teams,
   services,
   isPending,
+  formError,
   onNameChange,
   onDescriptionChange,
   onStatusChange,
@@ -178,6 +192,7 @@ function CreateObjectiveForm({
   teams: TeamDetail[];
   services: ServiceSummary[];
   isPending: boolean;
+  formError: string | null;
   onNameChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onStatusChange: (value: string) => void;
@@ -194,6 +209,7 @@ function CreateObjectiveForm({
   return (
     <form className="panel grid h-fit gap-4 px-5 py-5 xl:sticky xl:top-24" onSubmit={onSubmit}>
       <h3 className="text-lg font-bold tracking-tight text-foreground">Create objective</h3>
+      {formError ? <p role="alert" className="text-sm text-rose-300">{formError}</p> : null}
       <label className="grid gap-1.5">
         <span className="text-sm font-semibold text-foreground">Name</span>
         <input

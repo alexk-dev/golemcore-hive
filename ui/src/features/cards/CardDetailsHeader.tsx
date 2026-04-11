@@ -23,7 +23,7 @@ export function CardDetailsHeader({
           </span>
           <span className="text-xs text-muted-foreground">{card.columnId}</span>
         </div>
-        <h2 className="mt-2 text-2xl font-bold tracking-tight text-foreground">{card.title}</h2>
+        <h2 id="card-details-title" className="mt-2 text-2xl font-bold tracking-tight text-foreground">{card.title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {card.assigneeGolemId ? `Assigned to ${formatGolemDisplayName(card.assigneeGolemId, allGolems)}` : 'Unassigned'}
         </p>

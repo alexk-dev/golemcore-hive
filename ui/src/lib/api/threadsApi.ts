@@ -27,7 +27,7 @@ export interface CardThread {
 export interface ThreadMessage {
   id: string;
   threadId: string;
-  cardId: string;
+  cardId: string | null;
   commandId: string | null;
   runId: string | null;
   signalId: string | null;

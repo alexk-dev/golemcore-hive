@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { listGolems } from '../../lib/api/golemsApi';
 import { listServices } from '../../lib/api/servicesApi';
 import { createTeam, listTeams } from '../../lib/api/teamsApi';
+import { readErrorMessage } from '../../lib/format';
 
 export function TeamsPage() {
   const queryClient = useQueryClient();
@@ -10,6 +11,7 @@ export function TeamsPage() {
   const [description, setDescription] = useState('');
   const [selectedGolemIds, setSelectedGolemIds] = useState<string[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const teamsQuery = useQuery({
     queryKey: ['teams'],
@@ -26,12 +28,18 @@ export function TeamsPage() {
 
   const createTeamMutation = useMutation({
     mutationFn: createTeam,
+    onMutate: () => {
+      setFormError(null);
+    },
     onSuccess: async () => {
       setName('');
       setDescription('');
       setSelectedGolemIds([]);
       setSelectedServiceIds([]);
       await queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+    onError: (error) => {
+      setFormError(readErrorMessage(error));
     },
   });
 
@@ -40,12 +48,16 @@ export function TeamsPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await createTeamMutation.mutateAsync({
-      name,
-      description,
-      golemIds: selectedGolemIds,
-      ownedServiceIds: selectedServiceIds,
-    });
+    try {
+      await createTeamMutation.mutateAsync({
+        name,
+        description,
+        golemIds: selectedGolemIds,
+        ownedServiceIds: selectedServiceIds,
+      });
+    } catch {
+      // The mutation renders the error and preserves the draft.
+    }
   }
 
   function toggleSelection(current: string[], value: string) {
@@ -91,6 +103,7 @@ export function TeamsPage() {
 
       <form className="panel grid h-fit gap-4 px-5 py-5 xl:sticky xl:top-24" onSubmit={(event) => void handleSubmit(event)}>
         <h3 className="text-lg font-bold tracking-tight text-foreground">Create team</h3>
+        {formError ? <p role="alert" className="text-sm text-rose-300">{formError}</p> : null}
         <label className="grid gap-1.5">
           <span className="text-sm font-semibold text-foreground">Name</span>
           <input

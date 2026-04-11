@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type FormEvent, type MutableRefObject, type SetStateAction } from 'react';
 import type { CardDetail, CardKind } from '../../lib/api/cardsApi';
 import type { GolemSummary } from '../../lib/api/golemsApi';
 import type { TeamDetail } from '../../lib/api/teamsApi';
 import { createDecompositionPlan } from '../../lib/api/decompositionPlansApi';
+import { readErrorMessage } from '../../lib/format';
+import { useDialogFocus } from '../../lib/useDialogFocus';
 
 interface DecompositionPlanDialogProps {
   open: boolean;
@@ -29,7 +31,30 @@ function createClientItemId(index: number) {
   return `item_${index + 1}`;
 }
 
+function appendPlanItem(
+  setItems: Dispatch<SetStateAction<PlanItemDraft[]>>,
+  nextItemIndexRef: MutableRefObject<number>,
+) {
+  const clientItemId = createClientItemId(nextItemIndexRef.current);
+  nextItemIndexRef.current += 1;
+  setItems((current) => [
+    ...current,
+    {
+      clientItemId,
+      kind: 'TASK',
+      title: '',
+      description: '',
+      prompt: '',
+      acceptanceCriteria: '',
+      reviewerGolemId: '',
+      reviewerTeamId: '',
+      requiredReviewCount: '1',
+    },
+  ]);
+}
+
 export function DecompositionPlanDialog({ open, sourceCard, allGolems, teams, onClose, onSubmitted }: DecompositionPlanDialogProps) {
+  const nextItemIndexRef = useRef(1);
   const [epicCardId, setEpicCardId] = useState('');
   const [rationale, setRationale] = useState('');
   const [items, setItems] = useState<PlanItemDraft[]>([
@@ -46,13 +71,17 @@ export function DecompositionPlanDialog({ open, sourceCard, allGolems, teams, on
     },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { dialogRef, onDialogKeyDown } = useDialogFocus<HTMLDivElement>({ open, onClose });
 
   useEffect(() => {
     if (!open || !sourceCard) {
       return;
     }
+    nextItemIndexRef.current = 1;
     setEpicCardId(sourceCard.kind === 'EPIC' ? sourceCard.id : sourceCard.epicCardId ?? '');
     setRationale('');
+    setSubmitError(null);
     setItems([
       {
         clientItemId: createClientItemId(0),
@@ -82,14 +111,32 @@ export function DecompositionPlanDialog({ open, sourceCard, allGolems, teams, on
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const normalizedItems = items
-      .filter((item) => item.title.trim())
+    const filledItems = items.filter(
+      (item) =>
+        item.title.trim() ||
+        item.prompt.trim() ||
+        item.description.trim() ||
+        item.acceptanceCriteria.trim() ||
+        item.reviewerGolemId.trim() ||
+        item.reviewerTeamId.trim(),
+    );
+    if (!filledItems.length) {
+      setSubmitError('Add at least one plan item.');
+      return;
+    }
+    const invalidItem = filledItems.find((item) => !item.title.trim() || !item.prompt.trim());
+    if (invalidItem) {
+      const itemNumber = items.findIndex((item) => item.clientItemId === invalidItem.clientItemId) + 1;
+      setSubmitError(`Item ${itemNumber || 1} needs both title and prompt.`);
+      return;
+    }
+    const normalizedItems = filledItems
       .map((item, index) => ({
         clientItemId: item.clientItemId || createClientItemId(index),
         kind: item.kind,
         title: item.title.trim(),
         description: item.description.trim() || null,
-        prompt: item.prompt.trim() || null,
+        prompt: item.prompt.trim(),
         acceptanceCriteria: item.acceptanceCriteria
           .split('\n')
           .map((line) => line.trim())
@@ -103,12 +150,9 @@ export function DecompositionPlanDialog({ open, sourceCard, allGolems, teams, on
               }
             : null,
       }));
-    if (!normalizedItems.length) {
-      return;
-    }
-
     setIsSubmitting(true);
     try {
+      setSubmitError(null);
       await createDecompositionPlan(activeSourceCard.id, {
         epicCardId: epicCardId.trim() || null,
         rationale: rationale.trim() || null,
@@ -116,6 +160,8 @@ export function DecompositionPlanDialog({ open, sourceCard, allGolems, teams, on
       });
       onSubmitted?.();
       onClose();
+    } catch (error) {
+      setSubmitError(readErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -123,10 +169,18 @@ export function DecompositionPlanDialog({ open, sourceCard, allGolems, teams, on
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-sm">
-      <div className="panel max-h-[92vh] w-full max-w-3xl overflow-auto p-4 sm:p-5">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="decomposition-plan-title"
+        tabIndex={-1}
+        onKeyDown={onDialogKeyDown}
+        className="panel max-h-[92vh] w-full max-w-3xl overflow-auto p-4 sm:p-5"
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold tracking-tight text-foreground">Decomposition plan</h3>
+            <h3 id="decomposition-plan-title" className="text-lg font-bold tracking-tight text-foreground">Decomposition plan</h3>
             <p className="mt-1 text-sm text-muted-foreground">{sourceLabel}</p>
           </div>
           <button
@@ -176,27 +230,14 @@ export function DecompositionPlanDialog({ open, sourceCard, allGolems, teams, on
             ))}
             <button
               type="button"
-              onClick={() =>
-                setItems((current) => [
-                  ...current,
-                  {
-                    clientItemId: createClientItemId(current.length),
-                    kind: 'TASK',
-                    title: '',
-                    description: '',
-                    prompt: '',
-                    acceptanceCriteria: '',
-                    reviewerGolemId: '',
-                    reviewerTeamId: '',
-                    requiredReviewCount: '1',
-                  },
-                ])
-              }
+              onClick={() => appendPlanItem(setItems, nextItemIndexRef)}
               className="border border-dashed border-border bg-muted/40 px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-muted/60"
             >
               Add item
             </button>
           </div>
+
+          {submitError ? <p role="alert" className="text-sm text-rose-300">{submitError}</p> : null}
 
           <div className="flex items-center justify-end gap-2">
             <button

@@ -3,6 +3,7 @@ type RefreshHandler = () => Promise<string | null>;
 
 let accessTokenProvider: AccessTokenProvider = () => null;
 let refreshHandler: RefreshHandler = () => Promise.resolve(null);
+let refreshPromise: Promise<string | null> | null = null;
 
 export class HttpError extends Error {
   readonly status: number;
@@ -25,13 +26,25 @@ export interface BinaryResponse {
   contentType: string | null;
 }
 
-async function executeRequest(input: string, init: RequestInit = {}, allowRefresh = true): Promise<Response> {
+async function refreshAccessToken() {
+  refreshPromise ??= refreshHandler().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
+async function executeRequest(
+  input: string,
+  init: RequestInit = {},
+  allowRefresh = true,
+  accessTokenOverride?: string | null,
+): Promise<Response> {
   const headers = new Headers(init.headers);
   if (!headers.has('Accept')) {
     headers.set('Accept', 'application/json');
   }
 
-  const accessToken = accessTokenProvider();
+  const accessToken = accessTokenOverride ?? accessTokenProvider();
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
   }
@@ -46,9 +59,9 @@ async function executeRequest(input: string, init: RequestInit = {}, allowRefres
   });
 
   if (response.status === 401 && allowRefresh) {
-    const refreshedToken = await refreshHandler();
+    const refreshedToken = await refreshAccessToken();
     if (refreshedToken) {
-      return executeRequest(input, init, false);
+      return executeRequest(input, init, false, refreshedToken);
     }
   }
 

@@ -21,16 +21,20 @@ export function CommandForm({ disabled, isPending, placeholder, onSubmit }: Comm
     if (!body.trim()) {
       return;
     }
-    await onSubmit({
-      body: body.trim(),
-      approvalRiskLevel: approvalRiskLevel !== 'NONE' ? approvalRiskLevel : null,
-      estimatedCostMicros: estimatedCostMicros ? Number(estimatedCostMicros) : 0,
-      approvalReason: approvalReason.trim() || undefined,
-    });
-    setBody('');
-    setApprovalRiskLevel('NONE');
-    setEstimatedCostMicros('');
-    setApprovalReason('');
+    try {
+      await onSubmit({
+        body: body.trim(),
+        approvalRiskLevel: approvalRiskLevel !== 'NONE' ? approvalRiskLevel : null,
+        estimatedCostMicros: estimatedCostMicros ? Number(estimatedCostMicros) : 0,
+        approvalReason: approvalReason.trim() || undefined,
+      });
+      setBody('');
+      setApprovalRiskLevel('NONE');
+      setEstimatedCostMicros('');
+      setApprovalReason('');
+    } catch {
+      // The caller owns visible error rendering and keeps the draft intact.
+    }
   }
 
   const isDisabled = disabled || isPending;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { configureHttpClient } from '../../lib/api/httpClient';
 import {
   fetchCurrentOperator,
@@ -15,41 +15,47 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const accessTokenRef = useRef<string | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<Operator | null>(null);
 
-  async function refreshSession(): Promise<string | null> {
+  const setSessionAccessToken = useCallback((token: string | null) => {
+    accessTokenRef.current = token;
+    setAccessToken(token);
+  }, []);
+
+  const refreshSession = useCallback(async (): Promise<string | null> => {
     const refreshed = await refreshRequest();
     if (!refreshed) {
-      setAccessToken(null);
+      setSessionAccessToken(null);
       setUser(null);
       setStatus('unauthenticated');
       return null;
     }
 
-    setAccessToken(refreshed.accessToken);
+    setSessionAccessToken(refreshed.accessToken);
     setUser(refreshed.operator);
     setStatus('authenticated');
     return refreshed.accessToken;
-  }
+  }, [setSessionAccessToken]);
 
-  async function login(username: string, password: string) {
+  const login = useCallback(async (username: string, password: string) => {
     const response = await loginRequest(username, password);
-    setAccessToken(response.accessToken);
+    setSessionAccessToken(response.accessToken);
     setUser(response.operator);
     setStatus('authenticated');
-  }
+  }, [setSessionAccessToken]);
 
-  async function logout() {
+  const logout = useCallback(async () => {
     await logoutRequest();
-    setAccessToken(null);
+    setSessionAccessToken(null);
     setUser(null);
     setStatus('unauthenticated');
-  }
+  }, [setSessionAccessToken]);
 
   useEffect(() => {
-    configureHttpClient(() => accessToken, refreshSession);
-  }, [accessToken]);
+    configureHttpClient(() => accessTokenRef.current, refreshSession);
+  }, [refreshSession]);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,7 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (cancelled) {
           return;
         }
-        setAccessToken(null);
+        setSessionAccessToken(null);
         setUser(null);
         setStatus('unauthenticated');
       }
@@ -81,7 +87,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshSession, setSessionAccessToken]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -92,7 +98,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout,
       refreshSession,
     }),
-    [accessToken, status, user],
+    [accessToken, login, logout, refreshSession, status, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

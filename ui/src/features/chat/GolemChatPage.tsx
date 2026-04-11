@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   createGolemDmCommand,
@@ -18,10 +18,14 @@ const PAGE_SIZE = 50;
 
 function useGolemDmRealtime({
   accessToken,
+  golemId,
   threadId,
+  refreshSession,
 }: {
   accessToken: string | null;
+  golemId: string;
   threadId: string | undefined;
+  refreshSession: () => Promise<string | null>;
 }) {
   const queryClient = useQueryClient();
   const [liveState, setLiveState] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
@@ -36,16 +40,35 @@ function useGolemDmRealtime({
     let cancelled = false;
     let reconnectTimer: number | null = null;
 
+    let socketAccessToken = accessToken;
+
     const refreshData = (update: OperatorUpdateEvent) => {
       if (update.threadId !== threadId) {
         return;
       }
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: ['golem-dm-messages', threadId] }),
-        queryClient.invalidateQueries({ queryKey: ['golem-dm-runs'] }),
-        queryClient.invalidateQueries({ queryKey: ['golem-dm-thread'] }),
+        queryClient.invalidateQueries({ queryKey: ['golem-dm-runs', golemId] }),
+        queryClient.invalidateQueries({ queryKey: ['golem-dm-thread', golemId] }),
         queryClient.invalidateQueries({ queryKey: ['dm-threads'] }),
       ]);
+    };
+
+    const scheduleReconnect = () => {
+      reconnectTimer = window.setTimeout(() => {
+        void (async () => {
+          if (cancelled) {
+            return;
+          }
+          const refreshedToken = await refreshSession().catch(() => null);
+          if (!refreshedToken || cancelled) {
+            setLiveState('disconnected');
+            return;
+          }
+          socketAccessToken = refreshedToken;
+          connect();
+        })();
+      }, 1500);
     };
 
     const connect = () => {
@@ -53,19 +76,23 @@ function useGolemDmRealtime({
         return;
       }
       setLiveState('connecting');
-      socket = new WebSocket(buildOperatorUpdatesUrl(accessToken));
+      socket = new WebSocket(buildOperatorUpdatesUrl(socketAccessToken));
       socket.onopen = () => {
         setLiveState('connected');
       };
       socket.onmessage = (event) => {
-        refreshData(JSON.parse(event.data) as OperatorUpdateEvent);
+        try {
+          refreshData(JSON.parse(event.data) as OperatorUpdateEvent);
+        } catch {
+          // Ignore malformed realtime frames; the next valid update will refresh the view.
+        }
       };
       socket.onclose = () => {
         if (cancelled) {
           return;
         }
         setLiveState('disconnected');
-        reconnectTimer = window.setTimeout(connect, 1500);
+        scheduleReconnect();
       };
       socket.onerror = () => {
         socket?.close();
@@ -81,7 +108,7 @@ function useGolemDmRealtime({
       }
       socket?.close();
     };
-  }, [accessToken, queryClient, threadId]);
+  }, [accessToken, golemId, queryClient, refreshSession, threadId]);
 
   return liveState;
 }
@@ -95,7 +122,7 @@ export function GolemChatPage() {
         <DmSidebar />
       </div>
       {golemId ? (
-        <DmChatPane golemId={golemId} />
+        <DmChatPane key={golemId} golemId={golemId} />
       ) : (
         <div className="hidden flex-1 items-center justify-center sm:flex">
           <p className="text-sm text-muted-foreground">Select a golem to start chatting</p>
@@ -106,7 +133,7 @@ export function GolemChatPage() {
 }
 
 function DmChatPane({ golemId }: { golemId: string }) {
-  const { accessToken } = useAuth();
+  const { accessToken, refreshSession } = useAuth();
   const queryClient = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -143,7 +170,9 @@ function DmChatPane({ golemId }: { golemId: string }) {
 
   const liveState = useGolemDmRealtime({
     accessToken,
+    golemId,
     threadId,
+    refreshSession,
   });
 
   const sendCommandMutation = useMutation({
@@ -161,6 +190,10 @@ function DmChatPane({ golemId }: { golemId: string }) {
       setActionError(readErrorMessage(error));
     },
   });
+  const { fetchNextPage } = messagesQuery;
+  const loadOlderMessages = useCallback(async () => {
+    await fetchNextPage();
+  }, [fetchNextPage]);
 
   if (!threadQuery.data) {
     return (
@@ -171,7 +204,7 @@ function DmChatPane({ golemId }: { golemId: string }) {
   }
 
   const thread = threadQuery.data;
-  const allMessages = (messagesQuery.data?.pages ?? []).flatMap((page) => page.messages);
+  const allMessages = [...(messagesQuery.data?.pages ?? [])].reverse().flatMap((page) => page.messages);
   const activeRun = (runsQuery.data ?? []).find(
     (run) => run.status === 'QUEUED' || run.status === 'STARTED' || run.status === 'RUNNING',
   );
@@ -189,9 +222,7 @@ function DmChatPane({ golemId }: { golemId: string }) {
         messages={allMessages}
         hasMore={messagesQuery.hasNextPage}
         isFetchingMore={messagesQuery.isFetchingNextPage}
-        onLoadMore={() => {
-          void messagesQuery.fetchNextPage();
-        }}
+        onLoadMore={loadOlderMessages}
       />
 
       <DmComposer
@@ -215,15 +246,25 @@ function DmMessageList({
   messages: ThreadMessage[];
   hasMore: boolean;
   isFetchingMore: boolean;
-  onLoadMore: () => void;
+  onLoadMore: () => Promise<void> | void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const pendingOlderLoadRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
   const prevCountRef = useRef(0);
   const isInitialLoadRef = useRef(true);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!scrollRef.current) {
+      return;
+    }
+    const pendingOlderLoad = pendingOlderLoadRef.current;
+    const countChanged = messages.length !== prevCountRef.current;
+    if (pendingOlderLoad && countChanged) {
+      scrollRef.current.scrollTop = pendingOlderLoad.scrollTop + (scrollRef.current.scrollHeight - pendingOlderLoad.scrollHeight);
+      pendingOlderLoadRef.current = null;
+      prevCountRef.current = messages.length;
       return;
     }
     const isNewMessage = messages.length > prevCountRef.current && !isFetchingMore;
@@ -234,27 +275,45 @@ function DmMessageList({
     prevCountRef.current = messages.length;
   }, [messages.length, isFetchingMore]);
 
+  const handleLoadMore = useCallback(() => {
+    if (isFetchingMore) {
+      return;
+    }
+    if (scrollRef.current) {
+      pendingOlderLoadRef.current = {
+        scrollHeight: scrollRef.current.scrollHeight,
+        scrollTop: scrollRef.current.scrollTop,
+      };
+    }
+    Promise.resolve(onLoadMore()).catch(() => {
+      pendingOlderLoadRef.current = null;
+    });
+  }, [isFetchingMore, onLoadMore]);
+
+  useEffect(() => () => {
+    observerRef.current?.disconnect();
+  }, []);
+
   const loadMoreRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (sentinelRef.current) {
-        sentinelRef.current = null;
-      }
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+      sentinelRef.current = node;
       if (!node) {
         return;
       }
-      sentinelRef.current = node;
       const observer = new IntersectionObserver(
         (entries) => {
           if (entries[0].isIntersecting && hasMore && !isFetchingMore) {
-            onLoadMore();
+            handleLoadMore();
           }
         },
         { root: scrollRef.current, threshold: 0.1 },
       );
       observer.observe(node);
-      return () => observer.disconnect();
+      observerRef.current = observer;
     },
-    [hasMore, isFetchingMore, onLoadMore],
+    [handleLoadMore, hasMore, isFetchingMore],
   );
 
   return (
@@ -266,7 +325,7 @@ function DmMessageList({
           ) : (
             <button
               type="button"
-              onClick={onLoadMore}
+              onClick={handleLoadMore}
               className="text-xs font-semibold text-primary hover:underline"
             >
               Load older messages
@@ -326,8 +385,12 @@ function DmComposer({
     if (!body.trim()) {
       return;
     }
-    await onSubmit(body.trim());
-    setBody('');
+    try {
+      await onSubmit(body.trim());
+      setBody('');
+    } catch {
+      // The mutation owner renders the error state.
+    }
   }
 
   const isOffline = golemState === 'OFFLINE' || golemState === 'REVOKED';

@@ -33,6 +33,66 @@ describe('getMoveInput', () => {
       },
     });
   });
+
+  it('moves a card before another card in the same column', () => {
+    const move = getMoveInput(
+      [
+        createCard({ id: 'card_1', columnId: 'ready', position: 0 }),
+        createCard({ id: 'card_2', columnId: 'ready', position: 1 }),
+        createCard({ id: 'card_3', columnId: 'ready', position: 2 }),
+      ],
+      {
+        active: { id: 'card_1' },
+        over: { id: 'card_3' },
+      } as never,
+    );
+
+    expect(move).toEqual({
+      cardId: 'card_1',
+      input: {
+        targetColumnId: 'ready',
+        targetIndex: 1,
+        summary: 'Card moved from kanban board',
+      },
+    });
+  });
+
+  it('moves a card before another card in a different column', () => {
+    const move = getMoveInput(createCards(), {
+      active: { id: 'card_1' },
+      over: { id: 'card_3' },
+    } as never);
+
+    expect(move).toEqual({
+      cardId: 'card_1',
+      input: {
+        targetColumnId: 'done',
+        targetIndex: 1,
+        summary: 'Card moved from kanban board',
+      },
+    });
+  });
+
+  it('ignores no-op and unknown-card drops', () => {
+    expect(
+      getMoveInput(createCards(), {
+        active: { id: 'card_1' },
+        over: { id: 'card_1' },
+      } as never),
+    ).toBeNull();
+    expect(
+      getMoveInput(createCards(), {
+        active: { id: 'missing' },
+        over: { id: 'card_1' },
+      } as never),
+    ).toBeNull();
+    expect(
+      getMoveInput(createCards(), {
+        active: { id: 'card_1' },
+        over: { id: 'missing' },
+      } as never),
+    ).toBeNull();
+  });
 });
 
 function createCards() {

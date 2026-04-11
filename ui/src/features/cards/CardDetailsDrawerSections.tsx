@@ -50,6 +50,7 @@ export function CardEditorPanel({
   objectiveId,
   assignmentPolicy,
   isPending,
+  error,
   onTitleChange,
   onDescriptionChange,
   onPromptChange,
@@ -68,6 +69,7 @@ export function CardEditorPanel({
   objectiveId: string;
   assignmentPolicy: string;
   isPending: boolean;
+  error: string | null;
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onPromptChange: (value: string) => void;
@@ -77,6 +79,7 @@ export function CardEditorPanel({
   onSubmit: () => Promise<void>;
 }) {
   const serviceTeams = teams.filter((candidate) => candidate.ownedServiceIds.includes(serviceId));
+  const serviceTeamIds = new Set(serviceTeams.map((candidate) => candidate.id));
   const visibleTeams = serviceTeams.length ? serviceTeams : teams;
   const serviceObjectives = objectives.filter((candidate) => candidate.serviceIds.includes(serviceId));
 
@@ -98,6 +101,7 @@ export function CardEditorPanel({
           Save
         </button>
       </div>
+      {error ? <p role="alert" className="text-sm text-rose-300">{error}</p> : null}
       <label className="grid gap-1.5">
         <span className="text-sm font-semibold text-foreground">Title</span>
         <input
@@ -151,7 +155,7 @@ export function CardEditorPanel({
                 return;
               }
               const nextObjective = serviceObjectives.find((candidate) => candidate.id === nextObjectiveId);
-              if (nextObjective?.ownerTeamId) {
+              if (nextObjective?.ownerTeamId && serviceTeamIds.has(nextObjective.ownerTeamId)) {
                 onTeamChange(nextObjective.ownerTeamId);
               }
             }}

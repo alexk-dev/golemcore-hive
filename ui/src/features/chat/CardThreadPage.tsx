@@ -25,10 +25,12 @@ function useCardThreadRealtime({
   accessToken,
   cardId,
   threadId,
+  refreshSession,
 }: {
   accessToken: string | null;
   cardId: string;
   threadId: string | undefined;
+  refreshSession: () => Promise<string | null>;
 }) {
   const queryClient = useQueryClient();
   const [liveState, setLiveState] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
@@ -42,6 +44,8 @@ function useCardThreadRealtime({
     let socket: WebSocket | null = null;
     let cancelled = false;
     let reconnectTimer: number | null = null;
+
+    let socketAccessToken = accessToken;
 
     const refreshThreadData = (update: OperatorUpdateEvent) => {
       if (update.threadId !== threadId && update.cardId !== cardId) {
@@ -57,24 +61,45 @@ function useCardThreadRealtime({
       ]);
     };
 
+    const scheduleReconnect = () => {
+      reconnectTimer = window.setTimeout(() => {
+        void (async () => {
+          if (cancelled) {
+            return;
+          }
+          const refreshedToken = await refreshSession().catch(() => null);
+          if (!refreshedToken || cancelled) {
+            setLiveState('disconnected');
+            return;
+          }
+          socketAccessToken = refreshedToken;
+          connect();
+        })();
+      }, 1500);
+    };
+
     const connect = () => {
       if (cancelled) {
         return;
       }
       setLiveState('connecting');
-      socket = new WebSocket(buildOperatorUpdatesUrl(accessToken));
+      socket = new WebSocket(buildOperatorUpdatesUrl(socketAccessToken));
       socket.onopen = () => {
         setLiveState('connected');
       };
       socket.onmessage = (event) => {
-        refreshThreadData(JSON.parse(event.data) as OperatorUpdateEvent);
+        try {
+          refreshThreadData(JSON.parse(event.data) as OperatorUpdateEvent);
+        } catch {
+          // Ignore malformed realtime frames; the next valid update will refresh the view.
+        }
       };
       socket.onclose = () => {
         if (cancelled) {
           return;
         }
         setLiveState('disconnected');
-        reconnectTimer = window.setTimeout(connect, 1500);
+        scheduleReconnect();
       };
       socket.onerror = () => {
         socket?.close();
@@ -90,7 +115,7 @@ function useCardThreadRealtime({
       }
       socket?.close();
     };
-  }, [accessToken, cardId, queryClient, threadId]);
+  }, [accessToken, cardId, queryClient, refreshSession, threadId]);
 
   return liveState;
 }
@@ -143,9 +168,14 @@ function useCardThreadData(cardId: string) {
   const createCommandMutation = useMutation({
     mutationFn: ({ threadId, input }: { threadId: string; input: CreateThreadCommandInput }) =>
       createThreadCommand(threadId, input),
-    onSuccess: async () => {
+    onMutate: () => {
       setActionError(null);
+    },
+    onSuccess: async () => {
       await invalidateThreadQueries();
+    },
+    onError: (error) => {
+      setActionError(readErrorMessage(error));
     },
   });
   const cancelRunMutation = useMutation({
@@ -270,12 +300,13 @@ function CardThreadHeader({
 
 export function CardThreadPage() {
   const { cardId = '' } = useParams();
-  const { accessToken } = useAuth();
+  const { accessToken, refreshSession } = useAuth();
   const data = useCardThreadData(cardId);
   const liveState = useCardThreadRealtime({
     accessToken,
     cardId,
     threadId: data.threadQuery.data?.threadId,
+    refreshSession,
   });
 
   if (!data.cardQuery.data || !data.threadQuery.data) {

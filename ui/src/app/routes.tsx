@@ -1,5 +1,6 @@
-import { Navigate, createBrowserRouter, useParams } from 'react-router-dom';
+import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { RequireAuth } from './RequireAuth';
+import { LegacyBoardQueueRedirect, LegacyBoardSettingsRedirect } from './LegacyBoardRedirects';
 import { LoginPage } from '../features/auth/LoginPage';
 import { AppShell } from '../features/layout/AppShell';
 import { GolemsPage } from '../features/golems/GolemsPage';
@@ -18,16 +19,6 @@ import { HomePage } from '../features/dashboard/HomePage';
 import { ObjectivesPage } from '../features/objectives/ObjectivesPage';
 import { ServicesPage } from '../features/services/ServicesPage';
 import { TeamsPage } from '../features/teams/TeamsPage';
-
-function LegacyBoardQueueRedirect() {
-  const { boardId = '' } = useParams();
-  return <Navigate to={`/services/${boardId}`} replace />;
-}
-
-function LegacyBoardSettingsRedirect() {
-  const { boardId = '' } = useParams();
-  return <Navigate to={`/services/${boardId}/settings`} replace />;
-}
 
 export const routes = createBrowserRouter([
   {

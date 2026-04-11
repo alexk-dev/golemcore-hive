@@ -4,6 +4,8 @@ import type { CreateThreadCommandInput } from '../../lib/api/commandsApi';
 import type { GolemSummary } from '../../lib/api/golemsApi';
 import type { ObjectiveDetail } from '../../lib/api/objectivesApi';
 import type { TeamDetail } from '../../lib/api/teamsApi';
+import { readErrorMessage } from '../../lib/format';
+import { useDialogFocus } from '../../lib/useDialogFocus';
 import { DecompositionPlanDialog } from '../decomposition/DecompositionPlanDialog';
 import {
   AssigneeRoutingPanel,
@@ -43,7 +45,7 @@ interface CardDetailsDrawerProps {
   controlError: string | null;
 }
 
-function useCardDetailsDrafts(card: CardDetail | null) {
+function useCardDetailsDrafts(card: CardDetail | null, open: boolean) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [prompt, setPrompt] = useState('');
@@ -53,7 +55,17 @@ function useCardDetailsDrafts(card: CardDetail | null) {
   const [hydratedCardId, setHydratedCardId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!card || hydratedCardId === card.id) {
+    if (!open || !card) {
+      setTitle('');
+      setDescription('');
+      setPrompt('');
+      setTeamId('');
+      setObjectiveId('');
+      setAssignmentPolicy('MANUAL');
+      setHydratedCardId(null);
+      return;
+    }
+    if (hydratedCardId === card.id) {
       return;
     }
     setTitle(card.title ?? '');
@@ -63,7 +75,7 @@ function useCardDetailsDrafts(card: CardDetail | null) {
     setObjectiveId(card.objectiveId ?? '');
     setAssignmentPolicy(card.assignmentPolicy || 'MANUAL');
     setHydratedCardId(card.id);
-  }, [card, hydratedCardId]);
+  }, [card, hydratedCardId, open]);
 
   return {
     title,
@@ -100,8 +112,14 @@ export function CardDetailsDrawer({
   isCancelPending,
   controlError,
 }: CardDetailsDrawerProps) {
-  const drafts = useCardDetailsDrafts(card);
+  const drafts = useCardDetailsDrafts(card, open);
   const [decompositionDialogOpen, setDecompositionDialogOpen] = useState(false);
+  const [editorError, setEditorError] = useState<string | null>(null);
+  const { dialogRef, onDialogKeyDown } = useDialogFocus<HTMLDivElement>({ open, onClose });
+
+  useEffect(() => {
+    setEditorError(null);
+  }, [card?.id, open]);
 
   if (!open || !card) {
     return null;
@@ -109,7 +127,15 @@ export function CardDetailsDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
-      <div className="h-full w-full overflow-auto border-l border-border/70 bg-panel px-4 py-5 shadow-[0_20px_70px_rgba(26,20,15,0.14)] md:max-w-[880px] md:px-6">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="card-details-title"
+        tabIndex={-1}
+        onKeyDown={onDialogKeyDown}
+        className="h-full w-full overflow-auto border-l border-border/70 bg-panel px-4 py-5 shadow-[0_20px_70px_rgba(26,20,15,0.14)] md:max-w-[880px] md:px-6"
+      >
         <CardDetailsHeader card={card} allGolems={allGolems} onClose={onClose} />
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -148,6 +174,7 @@ export function CardDetailsDrawer({
               objectiveId={drafts.objectiveId}
               assignmentPolicy={drafts.assignmentPolicy}
               isPending={isPending}
+              error={editorError}
               onTitleChange={drafts.setTitle}
               onDescriptionChange={drafts.setDescription}
               onPromptChange={drafts.setPrompt}
@@ -155,14 +182,19 @@ export function CardDetailsDrawer({
               onObjectiveChange={drafts.setObjectiveId}
               onAssignmentPolicyChange={drafts.setAssignmentPolicy}
               onSubmit={async () => {
-                await onUpdate({
-                  title: drafts.title,
-                  description: drafts.description,
-                  prompt: drafts.prompt,
-                  teamId: drafts.teamId,
-                  objectiveId: drafts.objectiveId,
-                  assignmentPolicy: drafts.assignmentPolicy,
-                });
+                try {
+                  setEditorError(null);
+                  await onUpdate({
+                    title: drafts.title,
+                    description: drafts.description,
+                    prompt: drafts.prompt,
+                    teamId: drafts.teamId,
+                    objectiveId: drafts.objectiveId,
+                    assignmentPolicy: drafts.assignmentPolicy,
+                  });
+                } catch (error) {
+                  setEditorError(readErrorMessage(error));
+                }
               }}
             />
             <CardWorkGraphPanel card={card} />

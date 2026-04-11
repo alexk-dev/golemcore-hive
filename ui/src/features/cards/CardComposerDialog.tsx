@@ -4,6 +4,8 @@ import type { CardAssigneeOptions } from '../../lib/api/cardsApi';
 import type { GolemSummary } from '../../lib/api/golemsApi';
 import type { ObjectiveDetail } from '../../lib/api/objectivesApi';
 import type { TeamDetail } from '../../lib/api/teamsApi';
+import { readErrorMessage } from '../../lib/format';
+import { useDialogFocus } from '../../lib/useDialogFocus';
 import { AssignmentPolicyBadge } from './AssignmentPolicyBadge';
 import { AssigneePicker } from './AssigneePicker';
 
@@ -49,6 +51,8 @@ export function CardComposerDialog({
   const [assigneeGolemId, setAssigneeGolemId] = useState<string | null>(null);
   const [assignmentPolicy, setAssignmentPolicy] = useState('MANUAL');
   const [autoAssign, setAutoAssign] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const { dialogRef, onDialogKeyDown } = useDialogFocus<HTMLDivElement>({ open, onClose });
 
   useEffect(() => {
     if (!open || !board) {
@@ -63,6 +67,7 @@ export function CardComposerDialog({
     setAssigneeGolemId(null);
     setAssignmentPolicy(board.defaultAssignmentPolicy);
     setAutoAssign(false);
+    setActionError(null);
   }, [board, open]);
 
   if (!open || !board) {
@@ -70,29 +75,43 @@ export function CardComposerDialog({
   }
 
   const serviceTeams = teams.filter((candidate) => candidate.ownedServiceIds.includes(board.id));
+  const serviceTeamIds = new Set(serviceTeams.map((candidate) => candidate.id));
   const visibleTeams = serviceTeams.length ? serviceTeams : teams;
   const serviceObjectives = objectives.filter((candidate) => candidate.serviceIds.includes(board.id));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await onSubmit({
-      title,
-      prompt,
-      description,
-      columnId,
-      teamId,
-      objectiveId,
-      assigneeGolemId,
-      assignmentPolicy,
-      autoAssign,
-    });
+    try {
+      setActionError(null);
+      await onSubmit({
+        title,
+        prompt,
+        description,
+        columnId,
+        teamId,
+        objectiveId,
+        assigneeGolemId,
+        assignmentPolicy,
+        autoAssign,
+      });
+    } catch (error) {
+      setActionError(readErrorMessage(error));
+    }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm">
-      <div className="panel max-h-[90vh] w-full max-w-4xl overflow-auto p-4 sm:p-5">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="card-composer-title"
+        tabIndex={-1}
+        onKeyDown={onDialogKeyDown}
+        className="panel max-h-[90vh] w-full max-w-4xl overflow-auto p-4 sm:p-5"
+      >
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold tracking-tight text-foreground">New card in {board.name}</h2>
+          <h2 id="card-composer-title" className="text-lg font-bold tracking-tight text-foreground">New card in {board.name}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -118,6 +137,7 @@ export function CardComposerDialog({
               assignmentPolicy={assignmentPolicy}
               teamId={teamId}
               objectiveId={objectiveId}
+              serviceTeamIds={serviceTeamIds}
               visibleTeams={visibleTeams}
               serviceObjectives={serviceObjectives}
               onColumnIdChange={setColumnId}
@@ -126,6 +146,7 @@ export function CardComposerDialog({
               onObjectiveIdChange={setObjectiveId}
             />
             <ComposerAutoAssignment policy={assignmentPolicy} autoAssign={autoAssign} onAutoAssignChange={setAutoAssign} />
+            {actionError ? <p role="alert" className="text-sm text-rose-300">{actionError}</p> : null}
             <button
               type="submit"
               disabled={isPending || !title.trim() || !prompt.trim()}
@@ -209,6 +230,7 @@ function ComposerRoutingFields({
   assignmentPolicy,
   teamId,
   objectiveId,
+  serviceTeamIds,
   visibleTeams,
   serviceObjectives,
   onColumnIdChange,
@@ -221,6 +243,7 @@ function ComposerRoutingFields({
   assignmentPolicy: string;
   teamId: string;
   objectiveId: string;
+  serviceTeamIds: Set<string>;
   visibleTeams: TeamDetail[];
   serviceObjectives: ObjectiveDetail[];
   onColumnIdChange: (value: string) => void;
@@ -234,7 +257,7 @@ function ComposerRoutingFields({
       return;
     }
     const nextObjective = serviceObjectives.find((candidate) => candidate.id === nextObjectiveId);
-    if (nextObjective?.ownerTeamId) {
+    if (nextObjective?.ownerTeamId && serviceTeamIds.has(nextObjective.ownerTeamId)) {
       onTeamIdChange(nextObjective.ownerTeamId);
     }
   }

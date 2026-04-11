@@ -262,11 +262,11 @@ public class ApprovalWorkflowApplicationService implements ApprovalWorkflowUseCa
         }
         Instant now = Instant.now();
         finalizeApprovalDecision(approval, ApprovalStatus.APPROVED, actorId, actorName, comment, now);
-        publishApprovalUpdate("approval.approved", approval);
         boolean synchronizedDecision = synchronizeDecisionState(approval, actorId, actorName, comment, now);
         if (synchronizedDecision) {
             triggerApprovedDispatch(approval, actorId, actorName, comment);
         }
+        publishApprovalUpdate("approval.approved", approval);
 
         auditLogUseCase.record(AuditEvent.builder()
                 .eventType("approval.approved")
@@ -298,8 +298,8 @@ public class ApprovalWorkflowApplicationService implements ApprovalWorkflowUseCa
         }
         Instant now = Instant.now();
         finalizeApprovalDecision(approval, ApprovalStatus.REJECTED, actorId, actorName, comment, now);
-        publishApprovalUpdate("approval.rejected", approval);
         synchronizeDecisionState(approval, actorId, actorName, comment, now);
+        publishApprovalUpdate("approval.rejected", approval);
 
         auditLogUseCase.record(AuditEvent.builder()
                 .eventType("approval.rejected")

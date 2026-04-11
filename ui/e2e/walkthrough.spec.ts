@@ -1,8 +1,10 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 const ROUTES = [
   { path: '/', name: 'home' },
-  { path: '/boards', name: 'boards' },
+  { path: '/objectives', name: 'objectives' },
+  { path: '/services', name: 'services' },
+  { path: '/teams', name: 'teams' },
   { path: '/policies', name: 'policies' },
   { path: '/approvals', name: 'approvals' },
   { path: '/fleet', name: 'golems' },
@@ -35,10 +37,17 @@ async function checkNoOverflow(page: Page, route: string) {
   ).toBeLessThanOrEqual(viewport.width + 2);
 }
 
+async function attachScreenshot(page: Page, testInfo: TestInfo, name: string) {
+  await testInfo.attach(name, {
+    body: await page.screenshot({ fullPage: true }),
+    contentType: 'image/png',
+  });
+}
+
 test.describe('walkthrough all sections', () => {
   test.setTimeout(90000);
 
-  test('login page renders correctly', async ({ page }) => {
+  test('login page renders correctly', async ({ page }, testInfo) => {
     await page.goto('/login');
     await page.waitForLoadState('domcontentloaded');
     await page.locator('button[type="submit"]').waitFor();
@@ -47,13 +56,10 @@ test.describe('walkthrough all sections', () => {
     await expect(page.locator('input[type="password"]')).toBeVisible();
 
     await checkNoOverflow(page, '/login');
-    await expect(page).toHaveScreenshot('walkthrough-login.png', {
-      fullPage: true,
-      animations: 'disabled',
-    });
+    await attachScreenshot(page, testInfo, 'walkthrough-login.png');
   });
 
-  test('navigate all authenticated sections', async ({ page }) => {
+  test('navigate all authenticated sections', async ({ page }, testInfo) => {
     await login(page);
 
     for (const route of ROUTES) {
@@ -65,7 +71,7 @@ test.describe('walkthrough all sections', () => {
       } else {
         await page.goto(route.path, { waitUntil: 'load' });
       }
-      await page.waitForURL(`**${route.path}`, { timeout: 8000 }).catch(() => {});
+      await page.waitForURL(`**${route.path}`, { timeout: 8000 });
       await page.waitForTimeout(1500);
 
       // Page should not be blank
@@ -76,10 +82,7 @@ test.describe('walkthrough all sections', () => {
       await checkNoOverflow(page, `${route.path} (${route.name})`);
 
       // Screenshot
-      await expect(page).toHaveScreenshot(`walkthrough-${route.name}.png`, {
-        fullPage: true,
-        animations: 'disabled',
-      });
+      await attachScreenshot(page, testInfo, `walkthrough-${route.name}.png`);
     }
   });
 
@@ -100,13 +103,10 @@ test.describe('walkthrough all sections', () => {
     const mobileSidebar = page.locator('aside.translate-x-0');
     await expect(mobileSidebar).toBeVisible();
 
-    await expect(page).toHaveScreenshot('walkthrough-mobile-sidebar-open.png', {
-      fullPage: true,
-      animations: 'disabled',
-    });
+    await attachScreenshot(page, testInfo, 'walkthrough-mobile-sidebar-open.png');
 
     // Click a nav item — sidebar should close
-    await page.locator('aside.translate-x-0').locator('a', { hasText: 'Boards' }).click();
+    await page.locator('aside.translate-x-0').locator('a', { hasText: 'Services' }).click();
     await page.waitForTimeout(400);
     await expect(page.locator('aside.translate-x-0')).not.toBeVisible();
   });

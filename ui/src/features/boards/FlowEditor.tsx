@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { BoardDetail, BoardFlow } from '../../lib/api/boardsApi';
 import { previewServiceFlow } from '../../lib/api/servicesApi';
+import { readErrorMessage } from '../../lib/format';
 import { FlowColumnsEditor, FlowPreviewPanel, FlowSignalMappingsEditor, FlowTransitionsEditor } from './FlowEditorSections';
 
 interface FlowEditorProps {
@@ -24,12 +25,14 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
   const [remap, setRemap] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<{ removedColumnIds: string[]; affectedCardCounts: Record<string, number> } | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setFlow(board.flow);
     setRemap({});
     setPreview(null);
     setPreviewError(null);
+    setSaveError(null);
   }, [board]);
 
   async function handlePreview() {
@@ -39,6 +42,15 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
       setPreviewError(null);
     } catch (error) {
       setPreviewError(error instanceof Error ? error.message : 'Failed to preview flow remap');
+    }
+  }
+
+  async function handleSave() {
+    try {
+      setSaveError(null);
+      await onSave({ flow, columnRemap: remap });
+    } catch (error) {
+      setSaveError(readErrorMessage(error));
     }
   }
 
@@ -97,13 +109,14 @@ export function FlowEditor({ board, isPending, onSave }: FlowEditorProps) {
           <button
             type="button"
             disabled={isPending}
-            onClick={() => void onSave({ flow, columnRemap: remap })}
+            onClick={() => void handleSave()}
             className="bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
           >
             Save flow
           </button>
         </div>
       </div>
+      {saveError ? <p role="alert" className="mt-3 text-sm text-rose-300">{saveError}</p> : null}
 
       <div className="mt-4 grid gap-5">
         <label className="grid gap-1.5">

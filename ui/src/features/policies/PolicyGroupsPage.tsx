@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { listGolems } from '../../lib/api/golemsApi';
@@ -26,6 +26,23 @@ interface CreatePolicyFormState {
   slug: string;
   name: string;
   description: string;
+}
+
+async function invalidateSelectedPolicyViews(queryClient: QueryClient, selectedGroupId: string | null) {
+  const tasks = [queryClient.invalidateQueries({ queryKey: ['policy-groups'] })];
+  if (selectedGroupId) {
+    tasks.push(queryClient.invalidateQueries({ queryKey: ['policy-group', selectedGroupId] }));
+    tasks.push(queryClient.invalidateQueries({ queryKey: ['policy-group-versions', selectedGroupId] }));
+  }
+  await Promise.all(tasks);
+}
+
+async function invalidateRolloutViews(queryClient: QueryClient, selectedGroupId: string | null) {
+  await Promise.all([
+    invalidateSelectedPolicyViews(queryClient, selectedGroupId),
+    queryClient.invalidateQueries({ queryKey: ['golems'] }),
+    queryClient.invalidateQueries({ queryKey: ['golem'] }),
+  ]);
 }
 
 export function PolicyGroupsPage() {
@@ -64,19 +81,6 @@ export function PolicyGroupsPage() {
     setDraftEditorError(null);
   }, [policyQuery.data?.id, policyQuery.data?.draftSpec]);
 
-  const invalidateSelectedPolicyViews = async () => {
-    const tasks = [queryClient.invalidateQueries({ queryKey: ['policy-groups'] })];
-    if (selectedGroupId) {
-      tasks.push(queryClient.invalidateQueries({ queryKey: ['policy-group', selectedGroupId] }));
-      tasks.push(queryClient.invalidateQueries({ queryKey: ['policy-group-versions', selectedGroupId] }));
-    }
-    await Promise.all(tasks);
-  };
-
-  const invalidateRolloutViews = async () => {
-    await Promise.all([invalidateSelectedPolicyViews(), queryClient.invalidateQueries({ queryKey: ['golems'] })]);
-  };
-
   const createPolicyMutation = useMutation({
     mutationFn: createPolicyGroup,
     onSuccess: async (createdPolicy) => {
@@ -92,7 +96,7 @@ export function PolicyGroupsPage() {
       }
       return updatePolicyGroupDraft(selectedGroupId, draftSpec);
     },
-    onSuccess: invalidateSelectedPolicyViews,
+    onSuccess: () => invalidateSelectedPolicyViews(queryClient, selectedGroupId),
   });
   const publishMutation = useMutation({
     mutationFn: async (changeSummary: string) => {
@@ -102,7 +106,7 @@ export function PolicyGroupsPage() {
       return publishPolicyGroup(selectedGroupId, changeSummary);
     },
     onSuccess: async () => {
-      await invalidateRolloutViews();
+      await invalidateRolloutViews(queryClient, selectedGroupId);
       setPublishSummary('');
     },
   });
@@ -113,7 +117,7 @@ export function PolicyGroupsPage() {
       }
       return rollbackPolicyGroup(selectedGroupId, version, `Rollback to v${version} from Hive UI`);
     },
-    onSuccess: invalidateRolloutViews,
+    onSuccess: () => invalidateRolloutViews(queryClient, selectedGroupId),
   });
   const bindMutation = useMutation({
     mutationFn: async (golemId: string) => {
@@ -123,13 +127,13 @@ export function PolicyGroupsPage() {
       return bindGolemPolicyGroup(golemId, selectedGroupId);
     },
     onSuccess: async () => {
-      await invalidateRolloutViews();
+      await invalidateRolloutViews(queryClient, selectedGroupId);
       setSelectedAttachGolemId('');
     },
   });
   const unbindMutation = useMutation({
     mutationFn: unbindGolemPolicyGroup,
-    onSuccess: invalidateRolloutViews,
+    onSuccess: () => invalidateRolloutViews(queryClient, selectedGroupId),
   });
 
   const selectedPolicy = policyQuery.data ?? null;

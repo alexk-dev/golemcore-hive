@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import me.golemcore.hive.domain.model.Card;
+import me.golemcore.hive.domain.model.BudgetSnapshot;
 import me.golemcore.hive.domain.model.DecompositionAssignmentSpec;
 import me.golemcore.hive.domain.model.DecompositionPlan;
 import me.golemcore.hive.domain.model.DecompositionPlanItem;
@@ -40,6 +41,7 @@ public class JacksonConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper.addMixIn(BudgetSnapshot.class, IgnoreUnknownJacksonMixin.class);
         objectMapper.addMixIn(Card.class, CardJacksonMixin.class);
         objectMapper.addMixIn(DecompositionAssignmentSpec.class, IgnoreUnknownJacksonMixin.class);
         objectMapper.addMixIn(DecompositionPlan.class, IgnoreUnknownJacksonMixin.class);

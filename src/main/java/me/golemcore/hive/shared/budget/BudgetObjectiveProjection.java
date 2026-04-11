@@ -18,4 +18,4 @@
 
 package me.golemcore.hive.shared.budget;
 
-public record BudgetGolemProjection(String id,String displayName){}
+public record BudgetObjectiveProjection(String id,String name,String ownerTeamId){}

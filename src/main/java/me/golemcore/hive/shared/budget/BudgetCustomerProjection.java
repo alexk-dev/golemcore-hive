@@ -18,9 +18,4 @@
 
 package me.golemcore.hive.shared.budget;
 
-import java.util.List;
-
-public interface BudgetFleetProjectionPort {
-
-    List<BudgetGolemProjection> listGolems();
-}
+public record BudgetCustomerProjection(String id,String name){}

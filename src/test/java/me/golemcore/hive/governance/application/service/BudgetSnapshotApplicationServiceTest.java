@@ -37,9 +37,17 @@ class BudgetSnapshotApplicationServiceTest {
     void shouldAggregateBudgetSnapshotsFromProjectionData() {
         InMemoryBudgetSnapshotRepository repository = new InMemoryBudgetSnapshotRepository();
         BudgetProjectionSourcePort projectionSourcePort = () -> new BudgetProjectionData(
-                List.of(new BudgetProjectionData.BoardProjection("board-1", "Board 1")),
-                List.of(new BudgetProjectionData.CardProjection("card-1", "board-1", "Card 1")),
-                List.of(new BudgetProjectionData.GolemProjection("golem-1", "Atlas")),
+                List.of(new BudgetProjectionData.CustomerProjection("customer-1", "Customer 1")),
+                List.of(new BudgetProjectionData.ServiceProjection("service-1", "Service 1")),
+                List.of(new BudgetProjectionData.TeamProjection("team-1", "Platform")),
+                List.of(new BudgetProjectionData.ObjectiveProjection("objective-1", "Reduce cycle time", "team-1")),
+                List.of(new BudgetProjectionData.CardProjection(
+                        "card-1",
+                        "service-1",
+                        "board-1",
+                        "team-1",
+                        "objective-1",
+                        "Card 1")),
                 List.of(new BudgetProjectionData.CommandProjection(
                         "cmd-1",
                         "card-1",
@@ -58,6 +66,10 @@ class BudgetSnapshotApplicationServiceTest {
                 projectionSourcePort);
 
         List<BudgetSnapshot> systemSnapshots = budgetSnapshotApplicationService.listSnapshots("SYSTEM", null);
+        List<BudgetSnapshot> customerSnapshots = budgetSnapshotApplicationService.listSnapshots("CUSTOMER", null);
+        List<BudgetSnapshot> serviceSnapshots = budgetSnapshotApplicationService.listSnapshots("SERVICE", null);
+        List<BudgetSnapshot> teamSnapshots = budgetSnapshotApplicationService.listSnapshots("TEAM", null);
+        List<BudgetSnapshot> objectiveSnapshots = budgetSnapshotApplicationService.listSnapshots("OBJECTIVE", null);
         List<BudgetSnapshot> boardSnapshots = budgetSnapshotApplicationService.listSnapshots("BOARD", null);
 
         assertEquals(1, systemSnapshots.size());
@@ -65,18 +77,34 @@ class BudgetSnapshotApplicationServiceTest {
         assertEquals(120_000L, systemSnapshots.getFirst().getActualCostMicros());
         assertEquals(1, systemSnapshots.getFirst().getCommandCount());
         assertEquals(1, systemSnapshots.getFirst().getRunCount());
-        assertEquals(1, boardSnapshots.size());
-        assertEquals(BudgetScopeType.BOARD, boardSnapshots.getFirst().getScopeType());
-        assertEquals("board-1", boardSnapshots.getFirst().getScopeId());
+        assertEquals(1, customerSnapshots.size());
+        assertEquals("customer-1", customerSnapshots.getFirst().getCustomerId());
+        assertEquals(1, serviceSnapshots.size());
+        assertEquals(BudgetScopeType.SERVICE, serviceSnapshots.getFirst().getScopeType());
+        assertEquals("service-1", serviceSnapshots.getFirst().getScopeId());
+        assertEquals("service-1", serviceSnapshots.getFirst().getServiceId());
+        assertEquals(1, teamSnapshots.size());
+        assertEquals("team-1", teamSnapshots.getFirst().getTeamId());
+        assertEquals(1, objectiveSnapshots.size());
+        assertEquals("objective-1", objectiveSnapshots.getFirst().getObjectiveId());
+        assertEquals(0, boardSnapshots.size());
     }
 
     @Test
-    void shouldKeepBoardScopeWhenCardReferencesMissingBoardProjection() {
+    void shouldKeepServiceScopeWhenCardReferencesMissingServiceProjection() {
         InMemoryBudgetSnapshotRepository repository = new InMemoryBudgetSnapshotRepository();
         BudgetProjectionSourcePort projectionSourcePort = () -> new BudgetProjectionData(
                 List.of(),
-                List.of(new BudgetProjectionData.CardProjection("card-1", "board-missing", "Card 1")),
                 List.of(),
+                List.of(),
+                List.of(),
+                List.of(new BudgetProjectionData.CardProjection(
+                        "card-1",
+                        null,
+                        "service-missing",
+                        null,
+                        null,
+                        "Card 1")),
                 List.of(new BudgetProjectionData.CommandProjection(
                         "cmd-1",
                         "card-1",
@@ -88,21 +116,29 @@ class BudgetSnapshotApplicationServiceTest {
                 repository,
                 projectionSourcePort);
 
-        List<BudgetSnapshot> boardSnapshots = budgetSnapshotApplicationService.listSnapshots("BOARD", null);
+        List<BudgetSnapshot> serviceSnapshots = budgetSnapshotApplicationService.listSnapshots("SERVICE", null);
 
-        assertEquals(1, boardSnapshots.size());
-        assertEquals("board-missing", boardSnapshots.getFirst().getScopeId());
-        assertEquals("board-missing", boardSnapshots.getFirst().getScopeLabel());
-        assertEquals(1, boardSnapshots.getFirst().getCommandCount());
+        assertEquals(1, serviceSnapshots.size());
+        assertEquals("service-missing", serviceSnapshots.getFirst().getScopeId());
+        assertEquals("service-missing", serviceSnapshots.getFirst().getScopeLabel());
+        assertEquals(1, serviceSnapshots.getFirst().getCommandCount());
     }
 
     @Test
-    void shouldRetainBoardScopeWhenBoardProjectionIsMissingButCardProjectionExists() {
+    void shouldUseObjectiveOwnerTeamWhenCardTeamIsMissing() {
         InMemoryBudgetSnapshotRepository repository = new InMemoryBudgetSnapshotRepository();
         BudgetProjectionSourcePort projectionSourcePort = () -> new BudgetProjectionData(
                 List.of(),
-                List.of(new BudgetProjectionData.CardProjection("card-1", "board-missing", "Recovered card")),
                 List.of(),
+                List.of(new BudgetProjectionData.TeamProjection("team-owner", "Outcome owners")),
+                List.of(new BudgetProjectionData.ObjectiveProjection("objective-1", "Ship beta", "team-owner")),
+                List.of(new BudgetProjectionData.CardProjection(
+                        "card-1",
+                        "service-1",
+                        "service-1",
+                        null,
+                        "objective-1",
+                        "Recovered card")),
                 List.of(new BudgetProjectionData.CommandProjection(
                         "cmd-1",
                         "card-1",
@@ -114,14 +150,14 @@ class BudgetSnapshotApplicationServiceTest {
                 repository,
                 projectionSourcePort);
 
-        List<BudgetSnapshot> boardSnapshots = budgetSnapshotApplicationService.listSnapshots("BOARD", null);
-        List<BudgetSnapshot> cardSnapshots = budgetSnapshotApplicationService.listSnapshots("CARD", null);
+        List<BudgetSnapshot> teamSnapshots = budgetSnapshotApplicationService.listSnapshots("TEAM", null);
+        List<BudgetSnapshot> objectiveSnapshots = budgetSnapshotApplicationService.listSnapshots("OBJECTIVE", null);
 
-        assertEquals(1, boardSnapshots.size());
-        assertEquals("board-missing", boardSnapshots.getFirst().getScopeId());
-        assertEquals("board-missing", boardSnapshots.getFirst().getScopeLabel());
-        assertEquals(1, cardSnapshots.size());
-        assertEquals("card-1", cardSnapshots.getFirst().getScopeId());
+        assertEquals(1, teamSnapshots.size());
+        assertEquals("team-owner", teamSnapshots.getFirst().getScopeId());
+        assertEquals("Outcome owners", teamSnapshots.getFirst().getScopeLabel());
+        assertEquals(1, objectiveSnapshots.size());
+        assertEquals("objective-1", objectiveSnapshots.getFirst().getScopeId());
     }
 
     @Test
@@ -131,9 +167,17 @@ class BudgetSnapshotApplicationServiceTest {
                 repository,
                 new MutableBudgetProjectionSourcePort(
                         new BudgetProjectionData(
-                                List.of(new BudgetProjectionData.BoardProjection("board-1", "Board 1")),
-                                List.of(new BudgetProjectionData.CardProjection("card-1", "board-1", "Card 1")),
+                                List.of(new BudgetProjectionData.CustomerProjection("customer-1", "Customer 1")),
+                                List.of(new BudgetProjectionData.ServiceProjection("service-1", "Service 1")),
                                 List.of(),
+                                List.of(),
+                                List.of(new BudgetProjectionData.CardProjection(
+                                        "card-1",
+                                        "service-1",
+                                        "service-1",
+                                        null,
+                                        null,
+                                        "Card 1")),
                                 List.of(new BudgetProjectionData.CommandProjection(
                                         "cmd-1",
                                         "card-1",
@@ -146,7 +190,7 @@ class BudgetSnapshotApplicationServiceTest {
         assertEquals(3, repository.findAll().size());
 
         MutableBudgetProjectionSourcePort projectionSourcePort = new MutableBudgetProjectionSourcePort(
-                new BudgetProjectionData(List.of(), List.of(), List.of(), List.of(), List.of()));
+                new BudgetProjectionData(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of()));
         budgetSnapshotApplicationService = new BudgetSnapshotApplicationService(repository, projectionSourcePort);
 
         budgetSnapshotApplicationService.refreshSnapshots();
@@ -185,9 +229,10 @@ class BudgetSnapshotApplicationServiceTest {
                     .scopeType(budgetSnapshot.getScopeType())
                     .scopeId(budgetSnapshot.getScopeId())
                     .scopeLabel(budgetSnapshot.getScopeLabel())
-                    .boardId(budgetSnapshot.getBoardId())
-                    .cardId(budgetSnapshot.getCardId())
-                    .golemId(budgetSnapshot.getGolemId())
+                    .customerId(budgetSnapshot.getCustomerId())
+                    .teamId(budgetSnapshot.getTeamId())
+                    .objectiveId(budgetSnapshot.getObjectiveId())
+                    .serviceId(budgetSnapshot.getServiceId())
                     .commandCount(budgetSnapshot.getCommandCount())
                     .runCount(budgetSnapshot.getRunCount())
                     .inputTokens(budgetSnapshot.getInputTokens())

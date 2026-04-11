@@ -20,4 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.budgets;
 
 import java.time.Instant;
 
-public record BudgetSnapshotResponse(String id,String scopeType,String scopeId,String scopeLabel,String boardId,String cardId,String golemId,long commandCount,long runCount,long inputTokens,long outputTokens,long actualCostMicros,long estimatedPendingCostMicros,Instant updatedAt){}
+public record BudgetSnapshotResponse(String id,String scopeType,String scopeId,String scopeLabel,String customerId,String teamId,String objectiveId,String serviceId,long commandCount,long runCount,long inputTokens,long outputTokens,long actualCostMicros,long estimatedPendingCostMicros,Instant updatedAt){}

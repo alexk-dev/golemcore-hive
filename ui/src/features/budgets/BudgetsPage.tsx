@@ -36,9 +36,10 @@ export function BudgetsPage() {
         >
           <option value="">All scopes</option>
           <option value="SYSTEM">System</option>
-          <option value="BOARD">Board</option>
-          <option value="GOLEM">Golem</option>
-          <option value="CARD">Card</option>
+          <option value="CUSTOMER">Customer</option>
+          <option value="TEAM">Team</option>
+          <option value="OBJECTIVE">Objective</option>
+          <option value="SERVICE">Service</option>
         </select>
         <input
           type="text"

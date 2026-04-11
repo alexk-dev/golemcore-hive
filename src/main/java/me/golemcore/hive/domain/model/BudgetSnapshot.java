@@ -31,15 +31,16 @@ import lombok.NoArgsConstructor;
 public class BudgetSnapshot {
 
     @Builder.Default
-    private int schemaVersion = 1;
+    private int schemaVersion = 2;
 
     private String id;
     private BudgetScopeType scopeType;
     private String scopeId;
     private String scopeLabel;
-    private String boardId;
-    private String cardId;
-    private String golemId;
+    private String customerId;
+    private String teamId;
+    private String objectiveId;
+    private String serviceId;
     private long commandCount;
     private long runCount;
     private long inputTokens;

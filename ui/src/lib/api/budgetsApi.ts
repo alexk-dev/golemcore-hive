@@ -5,9 +5,10 @@ export interface BudgetSnapshot {
   scopeType: string;
   scopeId: string;
   scopeLabel: string;
-  boardId: string | null;
-  cardId: string | null;
-  golemId: string | null;
+  customerId: string | null;
+  teamId: string | null;
+  objectiveId: string | null;
+  serviceId: string | null;
   commandCount: number;
   runCount: number;
   inputTokens: number;

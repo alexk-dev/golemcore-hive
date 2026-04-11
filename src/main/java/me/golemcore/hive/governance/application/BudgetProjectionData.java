@@ -20,13 +20,17 @@ package me.golemcore.hive.governance.application;
 
 import java.util.List;
 
-public record BudgetProjectionData(List<BoardProjection>boards,List<CardProjection>cards,List<GolemProjection>golems,List<CommandProjection>commands,List<RunProjection>runs){
+public record BudgetProjectionData(List<CustomerProjection>customers,List<ServiceProjection>services,List<TeamProjection>teams,List<ObjectiveProjection>objectives,List<CardProjection>cards,List<CommandProjection>commands,List<RunProjection>runs){
 
-public record BoardProjection(String id,String name){}
+public record CustomerProjection(String id,String name){}
 
-public record CardProjection(String id,String boardId,String title){}
+public record ServiceProjection(String id,String name){}
 
-public record GolemProjection(String id,String displayName){}
+public record TeamProjection(String id,String name){}
+
+public record ObjectiveProjection(String id,String name,String ownerTeamId){}
+
+public record CardProjection(String id,String serviceId,String boardId,String teamId,String objectiveId,String title){}
 
 public record CommandProjection(String id,String cardId,String golemId,BudgetCommandProjectionStatus status,long estimatedCostMicros){}
 

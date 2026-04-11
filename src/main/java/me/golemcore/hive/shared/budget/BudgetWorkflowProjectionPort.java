@@ -22,7 +22,13 @@ import java.util.List;
 
 public interface BudgetWorkflowProjectionPort {
 
-    List<BudgetBoardProjection> listBoards();
+    List<BudgetCustomerProjection> listCustomers();
+
+    List<BudgetServiceProjection> listServices();
+
+    List<BudgetTeamProjection> listTeams();
+
+    List<BudgetObjectiveProjection> listObjectives();
 
     List<BudgetCardProjection> listCards();
 }

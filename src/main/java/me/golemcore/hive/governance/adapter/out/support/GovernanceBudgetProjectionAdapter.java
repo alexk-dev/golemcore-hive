@@ -23,7 +23,6 @@ import me.golemcore.hive.governance.application.BudgetCommandProjectionStatus;
 import me.golemcore.hive.governance.application.BudgetProjectionData;
 import me.golemcore.hive.governance.application.port.out.BudgetProjectionSourcePort;
 import me.golemcore.hive.shared.budget.BudgetExecutionProjectionPort;
-import me.golemcore.hive.shared.budget.BudgetFleetProjectionPort;
 import me.golemcore.hive.shared.budget.BudgetWorkflowProjectionPort;
 import org.springframework.stereotype.Component;
 
@@ -32,20 +31,34 @@ import org.springframework.stereotype.Component;
 public class GovernanceBudgetProjectionAdapter implements BudgetProjectionSourcePort {
 
     private final BudgetWorkflowProjectionPort budgetWorkflowProjectionPort;
-    private final BudgetFleetProjectionPort budgetFleetProjectionPort;
     private final BudgetExecutionProjectionPort budgetExecutionProjectionPort;
 
     @Override
     public BudgetProjectionData loadProjectionData() {
         return new BudgetProjectionData(
-                budgetWorkflowProjectionPort.listBoards().stream()
-                        .map(board -> new BudgetProjectionData.BoardProjection(board.id(), board.name()))
+                budgetWorkflowProjectionPort.listCustomers().stream()
+                        .map(customer -> new BudgetProjectionData.CustomerProjection(customer.id(), customer.name()))
+                        .toList(),
+                budgetWorkflowProjectionPort.listServices().stream()
+                        .map(service -> new BudgetProjectionData.ServiceProjection(service.id(), service.name()))
+                        .toList(),
+                budgetWorkflowProjectionPort.listTeams().stream()
+                        .map(team -> new BudgetProjectionData.TeamProjection(team.id(), team.name()))
+                        .toList(),
+                budgetWorkflowProjectionPort.listObjectives().stream()
+                        .map(objective -> new BudgetProjectionData.ObjectiveProjection(
+                                objective.id(),
+                                objective.name(),
+                                objective.ownerTeamId()))
                         .toList(),
                 budgetWorkflowProjectionPort.listCards().stream()
-                        .map(card -> new BudgetProjectionData.CardProjection(card.id(), card.boardId(), card.title()))
-                        .toList(),
-                budgetFleetProjectionPort.listGolems().stream()
-                        .map(golem -> new BudgetProjectionData.GolemProjection(golem.id(), golem.displayName()))
+                        .map(card -> new BudgetProjectionData.CardProjection(
+                                card.id(),
+                                card.serviceId(),
+                                card.boardId(),
+                                card.teamId(),
+                                card.objectiveId(),
+                                card.title()))
                         .toList(),
                 budgetExecutionProjectionPort.listCommands().stream()
                         .map(command -> new BudgetProjectionData.CommandProjection(

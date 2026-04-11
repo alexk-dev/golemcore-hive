@@ -76,9 +76,12 @@ public class BudgetSnapshotApplicationService implements BudgetSnapshotUseCase {
     @Override
     public void refreshSnapshots() {
         BudgetProjectionData projectionData = budgetProjectionSourcePort.loadProjectionData();
-        Map<String, BudgetProjectionData.BoardProjection> boardsById = indexBoardsById(projectionData.boards());
+        BudgetProjectionData.CustomerProjection customer = resolveCustomer(projectionData.customers());
+        Map<String, BudgetProjectionData.ServiceProjection> servicesById = indexServicesById(projectionData.services());
+        Map<String, BudgetProjectionData.TeamProjection> teamsById = indexTeamsById(projectionData.teams());
+        Map<String, BudgetProjectionData.ObjectiveProjection> objectivesById = indexObjectivesById(
+                projectionData.objectives());
         Map<String, BudgetProjectionData.CardProjection> cardsById = indexCardsById(projectionData.cards());
-        Map<String, BudgetProjectionData.GolemProjection> golemsById = indexGolemsById(projectionData.golems());
         Map<String, BudgetProjectionData.CommandProjection> commandsById = indexCommandsById(projectionData.commands());
         Map<String, BudgetProjectionData.RunProjection> runsById = indexRunsById(projectionData.runs());
         Map<String, BudgetAccumulator> accumulators = new LinkedHashMap<>();
@@ -87,46 +90,23 @@ public class BudgetSnapshotApplicationService implements BudgetSnapshotUseCase {
             BudgetProjectionData.CardProjection card = commandProjection.cardId() != null
                     ? cardsById.get(commandProjection.cardId())
                     : null;
-            BudgetProjectionData.GolemProjection golem = commandProjection.golemId() != null
-                    ? golemsById.get(commandProjection.golemId())
-                    : null;
-            addCommand(accumulators, BudgetScopeType.SYSTEM, "system", "System", null, null, null, commandProjection);
-            if (card != null && card.boardId() != null) {
-                BudgetProjectionData.BoardProjection board = boardsById.get(card.boardId());
-                addCommand(accumulators, BudgetScopeType.BOARD, card.boardId(),
-                        board != null ? board.name() : card.boardId(), card.boardId(), null, null,
-                        commandProjection);
-                addCommand(accumulators, BudgetScopeType.CARD, card.id(), card.title(), card.boardId(), card.id(),
-                        null, commandProjection);
-            }
-            if (golem != null) {
-                addCommand(accumulators, BudgetScopeType.GOLEM, golem.id(), golem.displayName(),
-                        card != null ? card.boardId() : null, card != null ? card.id() : null, golem.id(),
-                        commandProjection);
-            }
+            addCommand(accumulators, BudgetScopeType.SYSTEM, "system", "System", null, null, null, null,
+                    commandProjection);
+            addCommand(accumulators, BudgetScopeType.CUSTOMER, customer.id(), customer.name(), customer.id(), null,
+                    null, null, commandProjection);
+            OutcomeContext outcomeContext = resolveOutcomeContext(card, servicesById, teamsById, objectivesById);
+            addOutcomeCommand(accumulators, outcomeContext, commandProjection);
         }
 
         for (BudgetProjectionData.RunProjection runProjection : runsById.values()) {
             BudgetProjectionData.CardProjection card = runProjection.cardId() != null
                     ? cardsById.get(runProjection.cardId())
                     : null;
-            BudgetProjectionData.GolemProjection golem = runProjection.golemId() != null
-                    ? golemsById.get(runProjection.golemId())
-                    : null;
-            addRun(accumulators, BudgetScopeType.SYSTEM, "system", "System", null, null, null, runProjection);
-            if (card != null && card.boardId() != null) {
-                BudgetProjectionData.BoardProjection board = boardsById.get(card.boardId());
-                addRun(accumulators, BudgetScopeType.BOARD, card.boardId(),
-                        board != null ? board.name() : card.boardId(), card.boardId(), null, null,
-                        runProjection);
-                addRun(accumulators, BudgetScopeType.CARD, card.id(), card.title(), card.boardId(), card.id(),
-                        null, runProjection);
-            }
-            if (golem != null) {
-                addRun(accumulators, BudgetScopeType.GOLEM, golem.id(), golem.displayName(),
-                        card != null ? card.boardId() : null, card != null ? card.id() : null, golem.id(),
-                        runProjection);
-            }
+            addRun(accumulators, BudgetScopeType.SYSTEM, "system", "System", null, null, null, null, runProjection);
+            addRun(accumulators, BudgetScopeType.CUSTOMER, customer.id(), customer.name(), customer.id(), null, null,
+                    null, runProjection);
+            OutcomeContext outcomeContext = resolveOutcomeContext(card, servicesById, teamsById, objectivesById);
+            addOutcomeRun(accumulators, outcomeContext, runProjection);
         }
 
         List<BudgetSnapshot> budgetSnapshots = new ArrayList<>();
@@ -141,13 +121,15 @@ public class BudgetSnapshotApplicationService implements BudgetSnapshotUseCase {
             BudgetScopeType scopeType,
             String scopeId,
             String scopeLabel,
-            String boardId,
-            String cardId,
-            String golemId,
+            String customerId,
+            String teamId,
+            String objectiveId,
+            String serviceId,
             BudgetProjectionData.CommandProjection commandProjection) {
         BudgetAccumulator budgetAccumulator = accumulators.computeIfAbsent(
                 key(scopeType, scopeId),
-                ignored -> new BudgetAccumulator(scopeType, scopeId, scopeLabel, boardId, cardId, golemId));
+                ignored -> new BudgetAccumulator(scopeType, scopeId, scopeLabel, customerId, teamId, objectiveId,
+                        serviceId));
         budgetAccumulator.commandCount = budgetAccumulator.commandCount + 1;
         if (commandProjection.status() == BudgetCommandProjectionStatus.PENDING_APPROVAL
                 || commandProjection.status() == BudgetCommandProjectionStatus.QUEUED
@@ -163,13 +145,15 @@ public class BudgetSnapshotApplicationService implements BudgetSnapshotUseCase {
             BudgetScopeType scopeType,
             String scopeId,
             String scopeLabel,
-            String boardId,
-            String cardId,
-            String golemId,
+            String customerId,
+            String teamId,
+            String objectiveId,
+            String serviceId,
             BudgetProjectionData.RunProjection runProjection) {
         BudgetAccumulator budgetAccumulator = accumulators.computeIfAbsent(
                 key(scopeType, scopeId),
-                ignored -> new BudgetAccumulator(scopeType, scopeId, scopeLabel, boardId, cardId, golemId));
+                ignored -> new BudgetAccumulator(scopeType, scopeId, scopeLabel, customerId, teamId, objectiveId,
+                        serviceId));
         budgetAccumulator.runCount = budgetAccumulator.runCount + 1;
         budgetAccumulator.inputTokens = budgetAccumulator.inputTokens + Math.max(runProjection.inputTokens(), 0L);
         budgetAccumulator.outputTokens = budgetAccumulator.outputTokens
@@ -182,44 +166,134 @@ public class BudgetSnapshotApplicationService implements BudgetSnapshotUseCase {
         return scopeType.name() + ":" + scopeId;
     }
 
-    private Map<String, BudgetProjectionData.BoardProjection> indexBoardsById(
-            List<BudgetProjectionData.BoardProjection> boards) {
-        Map<String, BudgetProjectionData.BoardProjection> boardsById = new LinkedHashMap<>();
-        for (BudgetProjectionData.BoardProjection board : boards) {
-            if (board.id() != null && !board.id().isBlank()) {
-                boardsById.put(board.id(), board);
+    private void addOutcomeCommand(
+            Map<String, BudgetAccumulator> accumulators,
+            OutcomeContext outcomeContext,
+            BudgetProjectionData.CommandProjection commandProjection) {
+        if (outcomeContext == null) {
+            return;
+        }
+        if (hasText(outcomeContext.serviceId())) {
+            addCommand(accumulators, BudgetScopeType.SERVICE, outcomeContext.serviceId(),
+                    outcomeContext.serviceLabel(), null, null, null, outcomeContext.serviceId(), commandProjection);
+        }
+        if (hasText(outcomeContext.objectiveId())) {
+            addCommand(accumulators, BudgetScopeType.OBJECTIVE, outcomeContext.objectiveId(),
+                    outcomeContext.objectiveLabel(), null, null, outcomeContext.objectiveId(), null,
+                    commandProjection);
+        }
+        if (hasText(outcomeContext.teamId())) {
+            addCommand(accumulators, BudgetScopeType.TEAM, outcomeContext.teamId(), outcomeContext.teamLabel(), null,
+                    outcomeContext.teamId(), null, null, commandProjection);
+        }
+    }
+
+    private void addOutcomeRun(
+            Map<String, BudgetAccumulator> accumulators,
+            OutcomeContext outcomeContext,
+            BudgetProjectionData.RunProjection runProjection) {
+        if (outcomeContext == null) {
+            return;
+        }
+        if (hasText(outcomeContext.serviceId())) {
+            addRun(accumulators, BudgetScopeType.SERVICE, outcomeContext.serviceId(), outcomeContext.serviceLabel(),
+                    null, null, null, outcomeContext.serviceId(), runProjection);
+        }
+        if (hasText(outcomeContext.objectiveId())) {
+            addRun(accumulators, BudgetScopeType.OBJECTIVE, outcomeContext.objectiveId(),
+                    outcomeContext.objectiveLabel(), null, null, outcomeContext.objectiveId(), null, runProjection);
+        }
+        if (hasText(outcomeContext.teamId())) {
+            addRun(accumulators, BudgetScopeType.TEAM, outcomeContext.teamId(), outcomeContext.teamLabel(), null,
+                    outcomeContext.teamId(), null, null, runProjection);
+        }
+    }
+
+    private OutcomeContext resolveOutcomeContext(
+            BudgetProjectionData.CardProjection card,
+            Map<String, BudgetProjectionData.ServiceProjection> servicesById,
+            Map<String, BudgetProjectionData.TeamProjection> teamsById,
+            Map<String, BudgetProjectionData.ObjectiveProjection> objectivesById) {
+        if (card == null) {
+            return null;
+        }
+        String serviceId = firstNonBlank(card.serviceId(), card.boardId());
+        BudgetProjectionData.ServiceProjection service = serviceId != null ? servicesById.get(serviceId) : null;
+        String objectiveId = normalizeOptionalId(card.objectiveId());
+        BudgetProjectionData.ObjectiveProjection objective = objectiveId != null ? objectivesById.get(objectiveId)
+                : null;
+        String teamId = firstNonBlank(card.teamId(), objective != null ? objective.ownerTeamId() : null);
+        BudgetProjectionData.TeamProjection team = teamId != null ? teamsById.get(teamId) : null;
+        return new OutcomeContext(
+                serviceId,
+                service != null && hasText(service.name()) ? service.name() : serviceId,
+                teamId,
+                team != null && hasText(team.name()) ? team.name() : teamId,
+                objectiveId,
+                objective != null && hasText(objective.name()) ? objective.name() : objectiveId);
+    }
+
+    private BudgetProjectionData.CustomerProjection resolveCustomer(
+            List<BudgetProjectionData.CustomerProjection> customers) {
+        for (BudgetProjectionData.CustomerProjection customer : customers) {
+            if (hasText(customer.id())) {
+                return new BudgetProjectionData.CustomerProjection(
+                        customer.id(),
+                        hasText(customer.name()) ? customer.name() : customer.id());
             }
         }
-        return boardsById;
+        return new BudgetProjectionData.CustomerProjection("customer_default", "Default customer");
+    }
+
+    private Map<String, BudgetProjectionData.ServiceProjection> indexServicesById(
+            List<BudgetProjectionData.ServiceProjection> services) {
+        Map<String, BudgetProjectionData.ServiceProjection> servicesById = new LinkedHashMap<>();
+        for (BudgetProjectionData.ServiceProjection service : services) {
+            if (hasText(service.id())) {
+                servicesById.put(service.id(), service);
+            }
+        }
+        return servicesById;
+    }
+
+    private Map<String, BudgetProjectionData.TeamProjection> indexTeamsById(
+            List<BudgetProjectionData.TeamProjection> teams) {
+        Map<String, BudgetProjectionData.TeamProjection> teamsById = new LinkedHashMap<>();
+        for (BudgetProjectionData.TeamProjection team : teams) {
+            if (hasText(team.id())) {
+                teamsById.put(team.id(), team);
+            }
+        }
+        return teamsById;
+    }
+
+    private Map<String, BudgetProjectionData.ObjectiveProjection> indexObjectivesById(
+            List<BudgetProjectionData.ObjectiveProjection> objectives) {
+        Map<String, BudgetProjectionData.ObjectiveProjection> objectivesById = new LinkedHashMap<>();
+        for (BudgetProjectionData.ObjectiveProjection objective : objectives) {
+            if (hasText(objective.id())) {
+                objectivesById.put(objective.id(), objective);
+            }
+        }
+        return objectivesById;
     }
 
     private Map<String, BudgetProjectionData.CardProjection> indexCardsById(
             List<BudgetProjectionData.CardProjection> cards) {
         Map<String, BudgetProjectionData.CardProjection> cardsById = new LinkedHashMap<>();
         for (BudgetProjectionData.CardProjection card : cards) {
-            if (card.id() != null && !card.id().isBlank()) {
+            if (hasText(card.id())) {
                 cardsById.put(card.id(), card);
             }
         }
         return cardsById;
     }
 
-    private Map<String, BudgetProjectionData.GolemProjection> indexGolemsById(
-            List<BudgetProjectionData.GolemProjection> golems) {
-        Map<String, BudgetProjectionData.GolemProjection> golemsById = new LinkedHashMap<>();
-        for (BudgetProjectionData.GolemProjection golem : golems) {
-            if (golem.id() != null && !golem.id().isBlank()) {
-                golemsById.put(golem.id(), golem);
-            }
-        }
-        return golemsById;
-    }
-
     private Map<String, BudgetProjectionData.CommandProjection> indexCommandsById(
             List<BudgetProjectionData.CommandProjection> commandRecords) {
         Map<String, BudgetProjectionData.CommandProjection> commandsById = new LinkedHashMap<>();
         for (BudgetProjectionData.CommandProjection commandRecord : commandRecords) {
-            if (commandRecord.id() != null && !commandRecord.id().isBlank()) {
+            if (hasText(commandRecord.id())) {
                 commandsById.put(commandRecord.id(), commandRecord);
             }
         }
@@ -230,20 +304,40 @@ public class BudgetSnapshotApplicationService implements BudgetSnapshotUseCase {
             List<BudgetProjectionData.RunProjection> runProjections) {
         Map<String, BudgetProjectionData.RunProjection> runsById = new LinkedHashMap<>();
         for (BudgetProjectionData.RunProjection runProjection : runProjections) {
-            if (runProjection.id() != null && !runProjection.id().isBlank()) {
+            if (hasText(runProjection.id())) {
                 runsById.put(runProjection.id(), runProjection);
             }
         }
         return runsById;
     }
 
+    private String firstNonBlank(String first, String second) {
+        if (hasText(first)) {
+            return first;
+        }
+        return normalizeOptionalId(second);
+    }
+
+    private String normalizeOptionalId(String value) {
+        return hasText(value) ? value : null;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private record OutcomeContext(String serviceId, String serviceLabel, String teamId, String teamLabel,
+            String objectiveId, String objectiveLabel) {
+    }
+
     private static class BudgetAccumulator {
         private final BudgetScopeType scopeType;
         private final String scopeId;
         private final String scopeLabel;
-        private final String boardId;
-        private final String cardId;
-        private final String golemId;
+        private final String customerId;
+        private final String teamId;
+        private final String objectiveId;
+        private final String serviceId;
         private long commandCount;
         private long runCount;
         private long inputTokens;
@@ -255,15 +349,17 @@ public class BudgetSnapshotApplicationService implements BudgetSnapshotUseCase {
                 BudgetScopeType scopeType,
                 String scopeId,
                 String scopeLabel,
-                String boardId,
-                String cardId,
-                String golemId) {
+                String customerId,
+                String teamId,
+                String objectiveId,
+                String serviceId) {
             this.scopeType = scopeType;
             this.scopeId = scopeId;
             this.scopeLabel = scopeLabel;
-            this.boardId = boardId;
-            this.cardId = cardId;
-            this.golemId = golemId;
+            this.customerId = customerId;
+            this.teamId = teamId;
+            this.objectiveId = objectiveId;
+            this.serviceId = serviceId;
         }
 
         private BudgetSnapshot toSnapshot() {
@@ -272,9 +368,10 @@ public class BudgetSnapshotApplicationService implements BudgetSnapshotUseCase {
                     .scopeType(scopeType)
                     .scopeId(scopeId)
                     .scopeLabel(scopeLabel)
-                    .boardId(boardId)
-                    .cardId(cardId)
-                    .golemId(golemId)
+                    .customerId(customerId)
+                    .teamId(teamId)
+                    .objectiveId(objectiveId)
+                    .serviceId(serviceId)
                     .commandCount(commandCount)
                     .runCount(runCount)
                     .inputTokens(inputTokens)

@@ -44,6 +44,8 @@ public interface GolemFleetUseCase extends GolemDirectoryUseCase {
 
     Golem revokeGolem(String golemId, String reason);
 
+    Golem updateDashboardSso(String golemId, boolean enabled, ActorContext actor);
+
     GolemRole createRole(String slug, String name, String description, Set<String> capabilityTags);
 
     GolemRole updateRole(String slug, String name, String description, Set<String> capabilityTags);

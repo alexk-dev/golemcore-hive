@@ -16,20 +16,14 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.domain.model;
+package me.golemcore.hive.auth.application.port.out;
 
-public enum GolemScope {
-    HEARTBEAT("golems:heartbeat"), EVENTS_WRITE("golems:events:write"), CONTROL_CONNECT(
-            "golems:control:connect"), POLICY_READ(
-                    "golems:policy:read"), POLICY_WRITE("golems:policy:write"), DASHBOARD_SSO("golems:dashboard:sso");
+import java.util.Optional;
+import me.golemcore.hive.auth.application.OAuth2AuthorizationCode;
 
-    private final String scopeValue;
+public interface OAuth2AuthorizationCodeRepository {
 
-    GolemScope(String scopeValue) {
-        this.scopeValue = scopeValue;
-    }
+    void save(OAuth2AuthorizationCode authorizationCode);
 
-    public String value() {
-        return scopeValue;
-    }
+    Optional<OAuth2AuthorizationCode> consume(String code);
 }

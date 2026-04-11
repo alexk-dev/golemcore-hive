@@ -26,6 +26,8 @@ public interface OperatorTokenPort {
 
     String issueAccessToken(OperatorAccount operatorAccount);
 
+    String issueAccessTokenForAudience(OperatorAccount operatorAccount, String audience);
+
     String issueRefreshToken(OperatorAccount operatorAccount, String sessionId);
 
     Optional<OperatorRefreshTokenClaims> parseRefreshToken(String refreshToken);

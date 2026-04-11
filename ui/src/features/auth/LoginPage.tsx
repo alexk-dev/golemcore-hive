@@ -1,16 +1,28 @@
-import { useState, type FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../app/providers/useAuth';
 
 export function LoginPage() {
   const { login, status } = useAuth();
+  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const returnTo = new URLSearchParams(location.search).get('returnTo') ?? '/';
+  const shouldReloadReturnTo = returnTo.startsWith('/api/');
+
+  useEffect(() => {
+    if (status === 'authenticated' && shouldReloadReturnTo) {
+      window.location.assign(returnTo);
+    }
+  }, [returnTo, shouldReloadReturnTo, status]);
 
   if (status === 'authenticated') {
-    return <Navigate to="/" replace />;
+    if (shouldReloadReturnTo) {
+      return null;
+    }
+    return <Navigate to={returnTo} replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

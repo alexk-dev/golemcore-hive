@@ -136,6 +136,30 @@ class OperatorAuthApplicationServiceTest {
     }
 
     @Test
+    void shouldIssueSsoTokensForBotAudienceWithoutRefreshToken() {
+        OperatorAccountRepository operatorAccountRepository = mock(OperatorAccountRepository.class);
+        OperatorRefreshSessionRepository refreshSessionRepository = mock(OperatorRefreshSessionRepository.class);
+        PasswordHashPort passwordHashPort = mock(PasswordHashPort.class);
+        OperatorTokenPort operatorTokenPort = mock(OperatorTokenPort.class);
+        OperatorAccount operator = operatorAccount();
+        when(operatorAccountRepository.findById(operator.getId())).thenReturn(Optional.of(operator));
+        when(operatorTokenPort.issueAccessTokenForAudience(operator, "golem_1")).thenReturn("bot-access-token");
+
+        OperatorAuthApplicationService service = new OperatorAuthApplicationService(
+                operatorAccountRepository,
+                refreshSessionRepository,
+                passwordHashPort,
+                operatorTokenPort);
+
+        Optional<OperatorAuthResult> result = service.issueSsoTokens(operator.getId(), "golem_1");
+
+        assertTrue(result.isPresent());
+        assertEquals("bot-access-token", result.get().accessToken());
+        assertTrue(result.get().refreshToken() == null);
+        verify(refreshSessionRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void shouldDeleteRefreshSessionOnLogout() {
         OperatorAccountRepository operatorAccountRepository = mock(OperatorAccountRepository.class);
         OperatorRefreshSessionRepository refreshSessionRepository = mock(OperatorRefreshSessionRepository.class);

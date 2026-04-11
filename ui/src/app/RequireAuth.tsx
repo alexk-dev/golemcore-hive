@@ -1,8 +1,9 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from './providers/useAuth';
 
 export function RequireAuth() {
   const { status } = useAuth();
+  const location = useLocation();
 
   if (status === 'loading') {
     return (
@@ -19,7 +20,9 @@ export function RequireAuth() {
   }
 
   if (status === 'unauthenticated') {
-    return <Navigate to="/login" replace />;
+    const requestedPath = `${location.pathname}${location.search}`;
+    const loginPath = `/login?returnTo=${encodeURIComponent(requestedPath)}`;
+    return <Navigate to={loginPath} replace />;
   }
 
   return <Outlet />;

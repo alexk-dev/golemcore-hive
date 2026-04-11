@@ -74,6 +74,10 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh",
                                 "/api/v1/auth/logout")
                         .permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/oauth2/.well-known",
+                                "/api/v1/oauth2/authorize")
+                        .permitAll()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/oauth2/token").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/golems/register").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/golems/*/auth:rotate").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/system/health").permitAll()

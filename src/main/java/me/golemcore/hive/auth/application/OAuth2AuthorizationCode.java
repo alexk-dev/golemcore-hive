@@ -16,20 +16,9 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.domain.model;
+package me.golemcore.hive.auth.application;
 
-public enum GolemScope {
-    HEARTBEAT("golems:heartbeat"), EVENTS_WRITE("golems:events:write"), CONTROL_CONNECT(
-            "golems:control:connect"), POLICY_READ(
-                    "golems:policy:read"), POLICY_WRITE("golems:policy:write"), DASHBOARD_SSO("golems:dashboard:sso");
+import java.time.Instant;
 
-    private final String scopeValue;
-
-    GolemScope(String scopeValue) {
-        this.scopeValue = scopeValue;
-    }
-
-    public String value() {
-        return scopeValue;
-    }
-}
+public record OAuth2AuthorizationCode(String code, String golemId, String operatorId, String redirectUri, String codeChallenge,
+        Instant expiresAt){}

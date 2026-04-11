@@ -142,7 +142,8 @@ class FleetControllerIntegrationTest {
                           "queueDepth":1,
                           "healthSummary":"ready",
                           "uptimeSeconds":120,
-                          "capabilitySnapshotHash":"abc123"
+                          "capabilitySnapshotHash":"abc123",
+                          "dashboardBaseUrl":"https://bot.example.test/dashboard"
                         }
                         """)
                 .exchange()
@@ -170,7 +171,21 @@ class FleetControllerIntegrationTest {
                 .expectBody()
                 .jsonPath("$.displayName").isEqualTo("Test Runner")
                 .jsonPath("$.roleSlugs[0]").isEqualTo("developer")
+                .jsonPath("$.dashboardSsoEnabled").isEqualTo(true)
+                .jsonPath("$.lastHeartbeat.dashboardBaseUrl").isEqualTo("https://bot.example.test/dashboard")
                 .jsonPath("$.capabilities.providers[0]").isEqualTo("openai");
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/dashboard-sso", golemId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {"enabled":false}
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.dashboardSsoEnabled").isEqualTo(false);
 
         webTestClient.get()
                 .uri("/api/v1/golems?query=Test")
@@ -236,6 +251,81 @@ class FleetControllerIntegrationTest {
                         """)
                 .exchange()
                 .expectStatus().isEqualTo(409);
+    }
+
+    @Test
+    void shouldIssueOAuth2SsoTokenForConnectedGolem() throws Exception {
+        String operatorToken = loginAsAdmin();
+        EntityExchangeResult<String> enrollmentTokenResult = webTestClient.post()
+                .uri("/api/v1/enrollment-tokens")
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {"note":"sso-bot","expiresInMinutes":60}
+                        """)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(String.class)
+                .returnResult();
+        String enrollmentToken = objectMapper.readTree(enrollmentTokenResult.getResponseBody()).get("token").asText();
+
+        EntityExchangeResult<String> registerResult = webTestClient.post()
+                .uri("/api/v1/golems/register")
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "enrollmentToken":"%s",
+                          "displayName":"SSO Bot",
+                          "supportedChannels":["web"]
+                        }
+                        """.formatted(enrollmentToken))
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(String.class)
+                .returnResult();
+        JsonNode registerPayload = objectMapper.readTree(registerResult.getResponseBody());
+        String golemId = registerPayload.get("golemId").asText();
+        String golemAccessToken = "Bearer " + registerPayload.get("accessToken").asText();
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/heartbeat", golemId)
+                .header(HttpHeaders.AUTHORIZATION, golemAccessToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {"status":"healthy","dashboardBaseUrl":"https://bot.example.test/dashboard"}
+                        """)
+                .exchange()
+                .expectStatus().isOk();
+
+        EntityExchangeResult<byte[]> authorizeResult = webTestClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/v1/oauth2/authorize")
+                        .queryParam("client_id", golemId)
+                        .queryParam("redirect_uri", "https://bot.example.test/dashboard/api/auth/hive/callback")
+                        .queryParam("response_type", "code")
+                        .queryParam("state", "state-1")
+                        .build())
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isFound()
+                .expectBody(byte[].class)
+                .returnResult();
+        String redirectUri = authorizeResult.getResponseHeaders().getLocation().toString();
+        String code = redirectUri.substring(redirectUri.indexOf("code=") + "code=".length(),
+                redirectUri.indexOf("&state="));
+
+        webTestClient.post()
+                .uri("/api/v1/oauth2/token")
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue(
+                        """
+                                {"code":"%s","clientId":"%s","redirectUri":"https://bot.example.test/dashboard/api/auth/hive/callback"}
+                                """
+                                .formatted(code, golemId))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.login.accessToken").exists()
+                .jsonPath("$.login.operator.username").isEqualTo("admin");
     }
 
     private String loginAsAdmin() throws Exception {

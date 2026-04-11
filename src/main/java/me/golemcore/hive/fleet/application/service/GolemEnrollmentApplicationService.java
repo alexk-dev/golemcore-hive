@@ -118,7 +118,8 @@ public class GolemEnrollmentApplicationService implements GolemEnrollmentUseCase
                 GolemScope.EVENTS_WRITE.value(),
                 GolemScope.HEARTBEAT.value(),
                 GolemScope.POLICY_READ.value(),
-                GolemScope.POLICY_WRITE.value());
+                GolemScope.POLICY_WRITE.value(),
+                GolemScope.DASHBOARD_SSO.value());
         MachineTokenPair tokens = issueMachineTokens(golem, scopes, null);
         enrollmentToken.setLastUsedAt(Instant.now());
         enrollmentToken.setRegistrationCount(enrollmentToken.getRegistrationCount() + 1L);

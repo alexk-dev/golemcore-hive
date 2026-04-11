@@ -38,6 +38,11 @@ public class JjwtOperatorTokenAdapter implements OperatorTokenPort {
     }
 
     @Override
+    public String issueAccessTokenForAudience(OperatorAccount operatorAccount, String audience) {
+        return jwtTokenProvider.generateAccessTokenForAudience(operatorAccount, audience);
+    }
+
+    @Override
     public String issueRefreshToken(OperatorAccount operatorAccount, String sessionId) {
         return jwtTokenProvider.generateRefreshToken(operatorAccount, sessionId);
     }

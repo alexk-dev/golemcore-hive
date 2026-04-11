@@ -200,7 +200,8 @@ class GolemEnrollmentApplicationServiceTest {
                         "golems:events:write",
                         "golems:heartbeat",
                         "golems:policy:read",
-                        "golems:policy:write")))
+                        "golems:policy:write",
+                        "golems:dashboard:sso")))
                 .thenReturn("golem-access-token");
         when(golemTokenPort.issueRefreshToken(eq(golem),
                 eq(List.of(
@@ -208,7 +209,8 @@ class GolemEnrollmentApplicationServiceTest {
                         "golems:events:write",
                         "golems:heartbeat",
                         "golems:policy:read",
-                        "golems:policy:write")),
+                        "golems:policy:write",
+                        "golems:dashboard:sso")),
                 org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn("golem-refresh-token");
 

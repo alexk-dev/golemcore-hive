@@ -53,4 +53,5 @@ public class HeartbeatPing {
     private Integer appliedPolicyVersion;
     private String syncStatus;
     private String lastPolicyErrorDigest;
+    private String dashboardBaseUrl;
 }

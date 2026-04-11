@@ -19,6 +19,7 @@
 package me.golemcore.hive.fleet.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
@@ -159,4 +160,37 @@ class GolemFleetApplicationServiceTest {
         verify(auditPort).record(argThat(event -> "golem.state_changed".equals(event.getEventType())
                 && "golem_1".equals(event.getGolemId())));
     }
+
+    @Test
+    void shouldUpdateDashboardSsoSetting() {
+        GolemRepository golemRepository = mock(GolemRepository.class);
+        HeartbeatRepository heartbeatRepository = mock(HeartbeatRepository.class);
+        GolemRoleRepository golemRoleRepository = mock(GolemRoleRepository.class);
+        FleetAuditPort auditPort = mock(FleetAuditPort.class);
+        FleetNotificationPort notificationPort = mock(FleetNotificationPort.class);
+        FleetSettings settings = new FleetSettings("wss://hive.example.test/control", 30, 2, 4, 60, 15, 30);
+        Golem golem = Golem.builder()
+                .id("golem_1")
+                .displayName("Builder")
+                .state(GolemState.ONLINE)
+                .dashboardSsoEnabled(true)
+                .build();
+        when(golemRepository.findById("golem_1")).thenReturn(Optional.of(golem));
+
+        GolemFleetApplicationService service = new GolemFleetApplicationService(
+                golemRepository,
+                heartbeatRepository,
+                golemRoleRepository,
+                auditPort,
+                notificationPort,
+                settings);
+
+        Golem updated = service.updateDashboardSso("golem_1", false, new ActorContext("op_1", "admin"));
+
+        assertFalse(updated.isDashboardSsoEnabled());
+        verify(golemRepository).save(argThat(saved -> !saved.isDashboardSsoEnabled() && saved.getUpdatedAt() != null));
+        verify(auditPort).record(argThat(event -> "golem.dashboard_sso_updated".equals(event.getEventType())
+                && "op_1".equals(event.getActorId())));
+    }
+
 }

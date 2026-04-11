@@ -309,6 +309,7 @@ describe('PolicyGroupsPage', () => {
         lastSeenAt: '2026-04-08T10:40:00Z',
         missedHeartbeatCount: 0,
         roleSlugs: ['developer'],
+        dashboardSsoEnabled: true,
         policyBinding: {
           policyGroupId: 'pg_1',
           targetVersion: 2,
@@ -331,6 +332,7 @@ describe('PolicyGroupsPage', () => {
         lastSeenAt: '2026-04-08T10:41:00Z',
         missedHeartbeatCount: 0,
         roleSlugs: ['reviewer'],
+        dashboardSsoEnabled: true,
         policyBinding: null,
       },
     ]);

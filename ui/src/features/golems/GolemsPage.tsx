@@ -9,6 +9,7 @@ import {
   revokeGolem,
   resumeGolem,
   unassignGolemRoles,
+  updateGolemDashboardSso,
 } from '../../lib/api/golemsApi';
 import { listPolicyGroups } from '../../lib/api/policiesApi';
 import { GolemDetailsModal } from './GolemDetailsPanel';
@@ -90,6 +91,21 @@ function useGolemsPageState() {
     },
   });
 
+  const dashboardSsoMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      if (!selectedGolemId) {
+        return;
+      }
+      await updateGolemDashboardSso(selectedGolemId, enabled);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['golem', selectedGolemId] }),
+        queryClient.invalidateQueries({ queryKey: ['golems'] }),
+      ]);
+    },
+  });
+
   return {
     query,
     stateFilter,
@@ -103,6 +119,7 @@ function useGolemsPageState() {
     policiesQuery,
     roleBindingMutation,
     golemActionMutation,
+    dashboardSsoMutation,
     setQuery,
     setStateFilter,
     setRoleFilter,
@@ -157,7 +174,11 @@ export function GolemsPage() {
         golem={state.golemDetailsQuery.data ?? null}
         roles={state.rolesQuery.data ?? []}
         policies={state.policiesQuery.data ?? []}
-        isBusy={state.roleBindingMutation.isPending || state.golemActionMutation.isPending}
+        isBusy={
+          state.roleBindingMutation.isPending
+          || state.golemActionMutation.isPending
+          || state.dashboardSsoMutation.isPending
+        }
         onClose={state.closeDetailsModal}
         onToggleRole={async (roleSlug, nextAssigned) => {
           await state.roleBindingMutation.mutateAsync({ roleSlug, nextAssigned });
@@ -167,6 +188,9 @@ export function GolemsPage() {
           await state.golemActionMutation.mutateAsync({ action: 'resume' });
         }}
         onRevoke={state.openRevokeDialog}
+        onDashboardSsoChange={async (enabled) => {
+          await state.dashboardSsoMutation.mutateAsync(enabled);
+        }}
       />
 
       <GolemActionDialog

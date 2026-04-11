@@ -43,6 +43,7 @@ describe('KanbanColumn', () => {
               lastSeenAt: null,
               missedHeartbeatCount: 0,
               roleSlugs: ['developer'],
+              dashboardSsoEnabled: true,
             },
           ]}
           onOpenCard={vi.fn()}

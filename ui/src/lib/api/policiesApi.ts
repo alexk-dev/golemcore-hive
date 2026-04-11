@@ -104,6 +104,17 @@ export interface PolicyAutonomyConfigResponse {
   notifyMilestones: boolean | null;
 }
 
+export interface PolicySdlcConfigResponse {
+  taskCreationEnabled: boolean | null;
+  autoApplyDecompositionEnabled: boolean | null;
+  maxDecompositionFanOut: number | null;
+  assignmentEnabled: boolean | null;
+  reviewerAssignmentEnabled: boolean | null;
+  requireReviewerSeparationOfDuties: boolean | null;
+  approvalRequiredAboveFanOut: number | null;
+  allowedCardKinds: string[];
+}
+
 export interface PolicyGroupSpecResponse {
   schemaVersion: number;
   llmProviders: Record<string, PolicyProviderConfigResponse>;
@@ -121,6 +132,7 @@ export interface PolicyGroupSpecResponse {
   memory: PolicyMemoryConfigResponse | null;
   mcp: PolicyMcpConfigResponse | null;
   autonomy: PolicyAutonomyConfigResponse | null;
+  sdlc?: PolicySdlcConfigResponse | null;
   checksum: string | null;
 }
 
@@ -254,6 +266,17 @@ export interface PolicyDraftAutonomyConfig {
   notifyMilestones?: boolean | null;
 }
 
+export interface PolicyDraftSdlcConfig {
+  taskCreationEnabled?: boolean | null;
+  autoApplyDecompositionEnabled?: boolean | null;
+  maxDecompositionFanOut?: number | null;
+  assignmentEnabled?: boolean | null;
+  reviewerAssignmentEnabled?: boolean | null;
+  requireReviewerSeparationOfDuties?: boolean | null;
+  approvalRequiredAboveFanOut?: number | null;
+  allowedCardKinds?: string[];
+}
+
 export interface PolicyDraftSpec {
   schemaVersion: number;
   llmProviders: Record<string, PolicyDraftProviderConfig>;
@@ -271,6 +294,7 @@ export interface PolicyDraftSpec {
   memory: PolicyDraftMemoryConfig | null;
   mcp: PolicyDraftMcpConfig | null;
   autonomy: PolicyDraftAutonomyConfig | null;
+  sdlc?: PolicyDraftSdlcConfig | null;
 }
 
 export interface GolemPolicyBinding {

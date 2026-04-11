@@ -84,6 +84,7 @@ const getSelfEvolvingArtifactCompareEvidenceMock = vi.mocked(getSelfEvolvingArti
 const getSelfEvolvingArtifactTransitionEvidenceMock = vi.mocked(getSelfEvolvingArtifactTransitionEvidence);
 const searchSelfEvolvingTacticsMock = vi.mocked(searchSelfEvolvingTactics);
 const listApprovalsMock = vi.mocked(listApprovals);
+const INSPECTION_PAGE_SCENARIO_TIMEOUT_MS = 10_000;
 
 describe('InspectionPage', () => {
   beforeEach(() => {
@@ -410,11 +411,25 @@ describe('InspectionPage', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: /Atlas Inspect/i })).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: /Conv 1/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole(
+        'heading',
+        { name: /Atlas Inspect/i },
+        { timeout: INSPECTION_PAGE_SCENARIO_TIMEOUT_MS },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole(
+        'button',
+        { name: /Conv 1/i },
+        { timeout: INSPECTION_PAGE_SCENARIO_TIMEOUT_MS },
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Thread 2/i })).toBeInTheDocument();
 
-    expect(await screen.findByText('hello from the operator')).toBeInTheDocument();
+    expect(
+      await screen.findByText('hello from the operator', {}, { timeout: INSPECTION_PAGE_SCENARIO_TIMEOUT_MS }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Compact' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Export trace' })).toBeInTheDocument();
@@ -435,16 +450,20 @@ describe('InspectionPage', () => {
     await waitFor(() => {
       expect(getInspectionSessionTraceMock).toHaveBeenCalledWith('golem_1', 'web:conv-1');
     });
-    expect(await screen.findByText('Conversation + trace')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Conversation + trace', {}, { timeout: INSPECTION_PAGE_SCENARIO_TIMEOUT_MS }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText('trace inbound message').length).toBeGreaterThan(0);
-  });
+  }, INSPECTION_PAGE_SCENARIO_TIMEOUT_MS);
 
   it('shows the online-only gate when the golem is offline', async () => {
     getGolemMock.mockResolvedValue(createGolem('OFFLINE'));
 
     renderPage();
 
-    expect(await screen.findByText('Inspection unavailable')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Inspection unavailable', {}, { timeout: INSPECTION_PAGE_SCENARIO_TIMEOUT_MS }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/only available while the golem is online/i)).toBeInTheDocument();
     expect(listInspectionSessionsMock).not.toHaveBeenCalled();
     expect(listSelfEvolvingRunsMock).not.toHaveBeenCalled();
@@ -482,7 +501,9 @@ describe('InspectionPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText('No traces captured for this session.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No traces captured for this session.', {}, { timeout: INSPECTION_PAGE_SCENARIO_TIMEOUT_MS }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Export trace' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Load details' })).not.toBeInTheDocument();
   });

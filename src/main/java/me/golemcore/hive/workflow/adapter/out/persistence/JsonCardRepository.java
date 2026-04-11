@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.domain.model.Card;
+import me.golemcore.hive.domain.model.CardAssignmentPolicy;
+import me.golemcore.hive.domain.model.CardKind;
+import me.golemcore.hive.domain.model.CardReviewStatus;
 import me.golemcore.hive.infrastructure.storage.StoragePort;
 import me.golemcore.hive.workflow.application.port.out.CardRepository;
 import org.springframework.stereotype.Component;
@@ -63,7 +66,9 @@ public class JsonCardRepository implements CardRepository {
     @Override
     public void save(Card card) {
         try {
-            storagePort.putTextAtomic(CARDS_DIR, card.getId() + ".json", objectMapper.writeValueAsString(card));
+            Card normalized = normalizeCard(card);
+            storagePort.putTextAtomic(CARDS_DIR, normalized.getId() + ".json",
+                    objectMapper.writeValueAsString(normalized));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize card " + card.getId(), exception);
         }
@@ -71,9 +76,31 @@ public class JsonCardRepository implements CardRepository {
 
     private Card readCard(String content, String cardRef) {
         try {
-            return objectMapper.readValue(content, Card.class);
+            return normalizeCard(objectMapper.readValue(content, Card.class));
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to deserialize card " + cardRef, exception);
         }
+    }
+
+    private Card normalizeCard(Card card) {
+        if (card == null) {
+            return null;
+        }
+        if (card.getKind() == null) {
+            card.setKind(CardKind.TASK);
+        }
+        if (card.getDependsOnCardIds() == null) {
+            card.setDependsOnCardIds(new ArrayList<>());
+        }
+        if (card.getReviewerGolemIds() == null) {
+            card.setReviewerGolemIds(new ArrayList<>());
+        }
+        if (card.getReviewStatus() == null) {
+            card.setReviewStatus(CardReviewStatus.NOT_REQUIRED);
+        }
+        if (card.getAssignmentPolicy() == null) {
+            card.setAssignmentPolicy(CardAssignmentPolicy.MANUAL);
+        }
+        return card;
     }
 }

@@ -72,6 +72,7 @@ describe('CardDetailsDrawer', () => {
           onClose={vi.fn()}
           onUpdate={vi.fn(async () => undefined)}
           onAssign={vi.fn(async () => undefined)}
+          onRequestReview={vi.fn(async () => undefined)}
           onArchive={vi.fn(async () => undefined)}
           onDispatchCommand={vi.fn(async () => undefined)}
           onCancelRun={vi.fn(async () => undefined)}
@@ -103,6 +104,7 @@ describe('CardDetailsDrawer', () => {
           onClose={vi.fn()}
           onUpdate={vi.fn(async () => undefined)}
           onAssign={vi.fn(async () => undefined)}
+          onRequestReview={vi.fn(async () => undefined)}
           onArchive={vi.fn(async () => undefined)}
           onDispatchCommand={vi.fn(async () => undefined)}
           onCancelRun={vi.fn(async () => undefined)}

@@ -20,21 +20,25 @@ package me.golemcore.hive.workflow.adapter.config;
 
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.workflow.application.service.AssignmentWorkflowApplicationService;
+import me.golemcore.hive.workflow.application.service.DecompositionPlanningApplicationService;
 import me.golemcore.hive.workflow.application.service.BoardWorkflowApplicationService;
 import me.golemcore.hive.workflow.application.service.CardWorkflowApplicationService;
 import me.golemcore.hive.workflow.application.service.FlowRemapApplicationService;
+import me.golemcore.hive.workflow.application.service.ReviewWorkflowApplicationService;
 import me.golemcore.hive.workflow.application.service.ObjectiveService;
 import me.golemcore.hive.workflow.application.service.OrganizationService;
 import me.golemcore.hive.workflow.application.service.TeamService;
 import me.golemcore.hive.workflow.application.service.ThreadWorkflowApplicationService;
 import me.golemcore.hive.workflow.application.port.out.BoardRepository;
 import me.golemcore.hive.workflow.application.port.out.CardRepository;
+import me.golemcore.hive.workflow.application.port.out.DecompositionPlanRepository;
 import me.golemcore.hive.workflow.application.port.out.ObjectiveRepository;
 import me.golemcore.hive.workflow.application.port.out.OrganizationRepository;
 import me.golemcore.hive.workflow.application.port.out.TeamRepository;
 import me.golemcore.hive.workflow.application.port.out.ThreadRepository;
 import me.golemcore.hive.workflow.application.port.out.WorkflowAssignmentPort;
 import me.golemcore.hive.workflow.application.port.out.WorkflowAuditPort;
+import me.golemcore.hive.workflow.application.port.out.WorkflowPolicyPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -119,5 +123,41 @@ public class WorkflowApplicationConfiguration {
             ThreadRepository threadRepository,
             CardRepository cardRepository) {
         return new ThreadWorkflowApplicationService(threadRepository, cardRepository);
+    }
+
+    @Bean
+    public ReviewWorkflowApplicationService reviewWorkflowApplicationService(
+            CardRepository cardRepository,
+            CardWorkflowApplicationService cardWorkflowApplicationService,
+            BoardWorkflowApplicationService boardWorkflowApplicationService,
+            TeamService teamService,
+            GolemDirectoryUseCase golemDirectoryUseCase,
+            ThreadWorkflowApplicationService threadWorkflowApplicationService,
+            WorkflowAuditPort workflowAuditPort) {
+        return new ReviewWorkflowApplicationService(
+                cardRepository,
+                cardWorkflowApplicationService,
+                boardWorkflowApplicationService,
+                teamService,
+                golemDirectoryUseCase,
+                threadWorkflowApplicationService,
+                workflowAuditPort);
+    }
+
+    @Bean
+    public DecompositionPlanningApplicationService decompositionPlanningApplicationService(
+            DecompositionPlanRepository decompositionPlanRepository,
+            CardWorkflowApplicationService cardWorkflowApplicationService,
+            BoardWorkflowApplicationService boardWorkflowApplicationService,
+            ReviewWorkflowApplicationService reviewWorkflowApplicationService,
+            WorkflowAuditPort workflowAuditPort,
+            WorkflowPolicyPort workflowPolicyPort) {
+        return new DecompositionPlanningApplicationService(
+                decompositionPlanRepository,
+                cardWorkflowApplicationService,
+                boardWorkflowApplicationService,
+                reviewWorkflowApplicationService,
+                workflowAuditPort,
+                workflowPolicyPort);
     }
 }

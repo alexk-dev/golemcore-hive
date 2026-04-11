@@ -24,7 +24,9 @@ import me.golemcore.hive.domain.model.Board;
 import me.golemcore.hive.domain.model.BoardSignalDecision;
 import me.golemcore.hive.domain.model.BoardSignalMapping;
 import me.golemcore.hive.domain.model.Card;
+import me.golemcore.hive.domain.model.CardKind;
 import me.golemcore.hive.domain.model.CardLifecycleSignal;
+import me.golemcore.hive.domain.model.CardReviewDecision;
 import me.golemcore.hive.domain.model.CardTransitionOrigin;
 import me.golemcore.hive.domain.model.LifecycleSignalType;
 import me.golemcore.hive.domain.model.OperatorUpdate;
@@ -37,26 +39,34 @@ import me.golemcore.hive.execution.application.port.out.OperatorUpdatePublisherP
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
+import me.golemcore.hive.workflow.application.port.in.ReviewWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ThreadWorkflowUseCase;
+import me.golemcore.hive.execution.application.port.in.ExecutionOperationsUseCase;
 
 public class LifecycleSignalResolutionApplicationService implements LifecycleSignalResolutionUseCase {
 
     private final BoardWorkflowUseCase boardWorkflowUseCase;
     private final CardWorkflowUseCase cardWorkflowUseCase;
+    private final ReviewWorkflowUseCase reviewWorkflowUseCase;
     private final ThreadWorkflowUseCase threadWorkflowUseCase;
     private final GolemDirectoryUseCase golemDirectoryUseCase;
+    private final ExecutionOperationsUseCase executionOperationsUseCase;
     private final OperatorUpdatePublisherPort operatorUpdatePublisherPort;
 
     public LifecycleSignalResolutionApplicationService(
             BoardWorkflowUseCase boardWorkflowUseCase,
             CardWorkflowUseCase cardWorkflowUseCase,
+            ReviewWorkflowUseCase reviewWorkflowUseCase,
             ThreadWorkflowUseCase threadWorkflowUseCase,
             GolemDirectoryUseCase golemDirectoryUseCase,
+            ExecutionOperationsUseCase executionOperationsUseCase,
             OperatorUpdatePublisherPort operatorUpdatePublisherPort) {
         this.boardWorkflowUseCase = boardWorkflowUseCase;
         this.cardWorkflowUseCase = cardWorkflowUseCase;
+        this.reviewWorkflowUseCase = reviewWorkflowUseCase;
         this.threadWorkflowUseCase = threadWorkflowUseCase;
         this.golemDirectoryUseCase = golemDirectoryUseCase;
+        this.executionOperationsUseCase = executionOperationsUseCase;
         this.operatorUpdatePublisherPort = operatorUpdatePublisherPort;
     }
 
@@ -66,6 +76,29 @@ public class LifecycleSignalResolutionApplicationService implements LifecycleSig
         Board board = boardWorkflowUseCase.getBoard(card.getBoardId());
         ThreadRecord thread = threadWorkflowUseCase.getThreadByCardId(card.getId());
         String golemDisplayName = resolveGolemDisplayName(signal.getGolemId());
+        boolean reviewDecisionSignal = signal.getSignalType() == LifecycleSignalType.REVIEW_APPROVED
+                || signal.getSignalType() == LifecycleSignalType.CHANGES_REQUESTED;
+        if (reviewDecisionSignal && card.getKind() != CardKind.REVIEW) {
+            signal.setDecision(BoardSignalDecision.IGNORE);
+            signal.setResolvedTargetColumnId(null);
+            signal.setResolvedAt(Instant.now());
+            signal.setResolutionOutcome(SignalResolutionOutcome.REJECTED);
+            signal.setResolutionSummary("Review decision signals must target review cards");
+            threadWorkflowUseCase.appendMessage(thread, signal.getCommandId(), signal.getRunId(), signal.getId(),
+                    ThreadMessageType.SIGNAL, ThreadParticipantType.SYSTEM, signal.getGolemId(), golemDisplayName,
+                    buildSignalMessage(signal), signal.getCreatedAt());
+            operatorUpdatePublisherPort.publish(OperatorUpdate.builder()
+                    .eventType("thread_updated")
+                    .cardId(card.getId())
+                    .threadId(thread.getId())
+                    .commandId(signal.getCommandId())
+                    .runId(signal.getRunId())
+                    .signalId(signal.getId())
+                    .kinds(List.of("signal", "thread_message", "card"))
+                    .createdAt(signal.getCreatedAt() != null ? signal.getCreatedAt() : Instant.now())
+                    .build());
+            return signal;
+        }
         BoardSignalMapping mapping = resolveMapping(board, signal.getSignalType());
         BoardSignalDecision decision = mapping != null ? mapping.getDecision()
                 : defaultDecision(signal.getSignalType());
@@ -99,6 +132,8 @@ public class LifecycleSignalResolutionApplicationService implements LifecycleSig
             signal.setResolutionSummary("Moved card to " + targetColumnId);
         }
 
+        handleReviewSideEffects(signal, card, reviewDecisionSignal, golemDisplayName);
+
         threadWorkflowUseCase.appendMessage(thread, signal.getCommandId(), signal.getRunId(), signal.getId(),
                 ThreadMessageType.SIGNAL, ThreadParticipantType.SYSTEM, signal.getGolemId(), golemDisplayName,
                 buildSignalMessage(signal), signal.getCreatedAt());
@@ -114,6 +149,58 @@ public class LifecycleSignalResolutionApplicationService implements LifecycleSig
                 .createdAt(signal.getCreatedAt() != null ? signal.getCreatedAt() : Instant.now())
                 .build());
         return signal;
+    }
+
+    private void handleReviewSideEffects(
+            CardLifecycleSignal signal,
+            Card card,
+            boolean reviewDecisionSignal,
+            String golemDisplayName) {
+        if (signal.getSignalType() == LifecycleSignalType.WORK_COMPLETED) {
+            if (signal.getResolutionOutcome() != SignalResolutionOutcome.AUTO_APPLIED) {
+                return;
+            }
+            Card reviewCard = reviewWorkflowUseCase.activateReviewForCompletedWork(
+                    card.getId(), signal.getGolemId(), golemDisplayName);
+            dispatchReviewCommandIfNeeded(reviewCard);
+            return;
+        }
+        if (reviewDecisionSignal) {
+            if (signal.getResolutionOutcome() != SignalResolutionOutcome.AUTO_APPLIED) {
+                return;
+            }
+            Card reviewCard = reviewWorkflowUseCase.applyDecision(card.getId(),
+                    signal.getSignalType() == LifecycleSignalType.REVIEW_APPROVED
+                            ? CardReviewDecision.APPROVED
+                            : CardReviewDecision.CHANGES_REQUESTED,
+                    signal.getSummary(),
+                    signal.getDetails(),
+                    signal.getGolemId(),
+                    golemDisplayName);
+            if (signal.getSignalType() == LifecycleSignalType.REVIEW_APPROVED
+                    && reviewCard != null
+                    && reviewCard.getReviewOfCardId() != null
+                    && !reviewCard.getReviewOfCardId().isBlank()) {
+                Card nextReviewCard = reviewWorkflowUseCase.activateReviewForCompletedWork(
+                        reviewCard.getReviewOfCardId(), signal.getGolemId(), golemDisplayName);
+                if (nextReviewCard != null && !nextReviewCard.getId().equals(reviewCard.getId())) {
+                    dispatchReviewCommandIfNeeded(nextReviewCard);
+                }
+            }
+        }
+    }
+
+    private void dispatchReviewCommandIfNeeded(Card reviewCard) {
+        if (reviewCard != null && executionOperationsUseCase.listCommands(reviewCard.getThreadId()).isEmpty()) {
+            executionOperationsUseCase.createCommand(
+                    reviewCard.getThreadId(),
+                    reviewCard.getPrompt(),
+                    null,
+                    0,
+                    null,
+                    "system",
+                    "Hive");
+        }
     }
 
     private BoardSignalMapping resolveMapping(Board board, LifecycleSignalType signalType) {

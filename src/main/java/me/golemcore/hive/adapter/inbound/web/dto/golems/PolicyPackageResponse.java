@@ -23,7 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public record PolicyPackageResponse(String policyGroupId,int targetVersion,String checksum,Map<String,PolicyProviderConfigResponse>llmProviders,PolicyModelRouterResponse modelRouter,PolicyModelCatalogResponse modelCatalog,PolicyToolsConfigResponse tools,PolicyMemoryConfigResponse memory,PolicyMcpConfigResponse mcp,PolicyAutonomyConfigResponse autonomy){
+public record PolicyPackageResponse(String policyGroupId,int targetVersion,String checksum,Map<String,PolicyProviderConfigResponse>llmProviders,PolicyModelRouterResponse modelRouter,PolicyModelCatalogResponse modelCatalog,PolicyToolsConfigResponse tools,PolicyMemoryConfigResponse memory,PolicyMcpConfigResponse mcp,PolicyAutonomyConfigResponse autonomy,PolicySdlcConfigResponse sdlc){
 
 public PolicyPackageResponse{llmProviders=llmProviders!=null?llmProviders:new LinkedHashMap<>();}
 
@@ -63,4 +63,8 @@ public record PolicyMcpCatalogEntryResponse(String name,String description,Strin
 
 public PolicyMcpCatalogEntryResponse{env=env!=null?env:new LinkedHashMap<>();}}
 
-public record PolicyAutonomyConfigResponse(Boolean enabled,Integer tickIntervalSeconds,Integer taskTimeLimitMinutes,Boolean autoStart,Integer maxGoals,String modelTier,Boolean reflectionEnabled,Integer reflectionFailureThreshold,String reflectionModelTier,Boolean reflectionTierPriority,Boolean notifyMilestones){}}
+public record PolicyAutonomyConfigResponse(Boolean enabled,Integer tickIntervalSeconds,Integer taskTimeLimitMinutes,Boolean autoStart,Integer maxGoals,String modelTier,Boolean reflectionEnabled,Integer reflectionFailureThreshold,String reflectionModelTier,Boolean reflectionTierPriority,Boolean notifyMilestones){}
+
+public record PolicySdlcConfigResponse(Boolean taskCreationEnabled,Boolean autoApplyDecompositionEnabled,Integer maxDecompositionFanOut,Boolean assignmentEnabled,Boolean reviewerAssignmentEnabled,Boolean requireReviewerSeparationOfDuties,Integer approvalRequiredAboveFanOut,List<String>allowedCardKinds){
+
+public PolicySdlcConfigResponse{allowedCardKinds=allowedCardKinds!=null?allowedCardKinds:new ArrayList<>();}}}

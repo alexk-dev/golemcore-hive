@@ -57,6 +57,9 @@ public class PolicyGroupSpec {
     @Builder.Default
     private PolicyAutonomyConfig autonomy = new PolicyAutonomyConfig();
 
+    @Builder.Default
+    private PolicySdlcConfig sdlc = new PolicySdlcConfig();
+
     private String checksum;
 
     @Data
@@ -247,5 +250,22 @@ public class PolicyGroupSpec {
         private String reflectionModelTier;
         private Boolean reflectionTierPriority;
         private Boolean notifyMilestones;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PolicySdlcConfig {
+        private Boolean taskCreationEnabled;
+        private Boolean autoApplyDecompositionEnabled;
+        private Integer maxDecompositionFanOut;
+        private Boolean assignmentEnabled;
+        private Boolean reviewerAssignmentEnabled;
+        private Boolean requireReviewerSeparationOfDuties;
+        private Integer approvalRequiredAboveFanOut;
+
+        @Builder.Default
+        private List<String> allowedCardKinds = new ArrayList<>();
     }
 }

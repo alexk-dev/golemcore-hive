@@ -21,4 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.boards;
 import java.time.Instant;
 import java.util.List;
 
-public record CardDetailResponse(String id,String serviceId,String boardId,String teamId,String objectiveId,String threadId,String title,String description,String prompt,String columnId,String assigneeGolemId,String assignmentPolicy,Integer position,boolean archived,Instant archivedAt,Instant createdAt,Instant updatedAt,Instant lastTransitionAt,CardControlStateResponse controlState,List<CardTransitionResponse>transitions){}
+public record CardDetailResponse(String id,String serviceId,String boardId,String kind,String parentCardId,String epicCardId,List<String>dependsOnCardIds,String reviewOfCardId,List<String>reviewerGolemIds,String reviewerTeamId,int requiredReviewCount,String reviewStatus,String teamId,String objectiveId,String threadId,String title,String description,String prompt,String columnId,String assigneeGolemId,String assignmentPolicy,Integer position,boolean archived,Instant archivedAt,Instant createdAt,Instant updatedAt,Instant lastTransitionAt,CardControlStateResponse controlState,List<CardTransitionResponse>transitions){}

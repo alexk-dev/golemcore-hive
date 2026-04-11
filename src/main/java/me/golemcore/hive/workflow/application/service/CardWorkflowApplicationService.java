@@ -21,20 +21,27 @@ package me.golemcore.hive.workflow.application.service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import me.golemcore.hive.domain.model.AssignmentSuggestion;
 import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.Board;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardAssignmentPolicy;
+import me.golemcore.hive.domain.model.CardKind;
+import me.golemcore.hive.domain.model.CardReviewStatus;
 import me.golemcore.hive.domain.model.CardTransitionEvent;
 import me.golemcore.hive.domain.model.CardTransitionOrigin;
 import me.golemcore.hive.domain.model.Objective;
 import me.golemcore.hive.domain.model.Team;
 import me.golemcore.hive.domain.model.ThreadRecord;
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
+import me.golemcore.hive.workflow.application.CardCreateCommand;
+import me.golemcore.hive.workflow.application.CardQuery;
+import me.golemcore.hive.workflow.application.CardUpdateCommand;
 import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ObjectiveWorkflowUseCase;
@@ -76,7 +83,18 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
 
     @Override
     public List<Card> listCards(String serviceId, boolean includeArchived) {
-        String targetServiceId = normalizeOptionalId(serviceId);
+        return listCards(new CardQuery(serviceId, includeArchived, null, null, null, null, null));
+    }
+
+    @Override
+    public List<Card> listCards(CardQuery query) {
+        String targetServiceId = query != null ? normalizeOptionalId(query.serviceId()) : null;
+        boolean includeArchived = query != null && query.includeArchived();
+        CardKind targetKind = query != null ? query.kind() : null;
+        String targetParentCardId = query != null ? normalizeOptionalId(query.parentCardId()) : null;
+        String targetEpicCardId = query != null ? normalizeOptionalId(query.epicCardId()) : null;
+        String targetReviewOfCardId = query != null ? normalizeOptionalId(query.reviewOfCardId()) : null;
+        String targetObjectiveId = query != null ? normalizeOptionalId(query.objectiveId()) : null;
         List<Card> cards = new ArrayList<>();
         for (Card storedCard : cardRepository.list()) {
             Card card = normalizeCard(storedCard);
@@ -84,6 +102,21 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
                 continue;
             }
             if (!includeArchived && card.isArchived()) {
+                continue;
+            }
+            if (targetKind != null && card.getKind() != targetKind) {
+                continue;
+            }
+            if (targetParentCardId != null && !targetParentCardId.equals(card.getParentCardId())) {
+                continue;
+            }
+            if (targetEpicCardId != null && !targetEpicCardId.equals(card.getEpicCardId())) {
+                continue;
+            }
+            if (targetReviewOfCardId != null && !targetReviewOfCardId.equals(card.getReviewOfCardId())) {
+                continue;
+            }
+            if (targetObjectiveId != null && !targetObjectiveId.equals(card.getObjectiveId())) {
                 continue;
             }
             cards.add(card);
@@ -118,19 +151,66 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
             boolean autoAssign,
             String actorId,
             String actorName) {
-        if (title == null || title.isBlank()) {
+        return createCard(new CardCreateCommand(
+                serviceId,
+                title,
+                description,
+                prompt,
+                columnId,
+                teamId,
+                objectiveId,
+                assigneeGolemId,
+                assignmentPolicy,
+                autoAssign,
+                CardKind.TASK,
+                null,
+                null,
+                null,
+                null), actorId, actorName);
+    }
+
+    @Override
+    public Card createCard(CardCreateCommand command, String actorId, String actorName) {
+        if (command == null) {
+            throw new IllegalArgumentException("Card create command is required");
+        }
+        if (command.title() == null || command.title().isBlank()) {
             throw new IllegalArgumentException("Card title is required");
         }
-        if (prompt == null || prompt.isBlank()) {
+        if (command.prompt() == null || command.prompt().isBlank()) {
             throw new IllegalArgumentException("Card prompt is required");
         }
-        String effectiveServiceId = requireServiceId(serviceId);
-        String effectiveTeamId = normalizeOptionalId(teamId);
-        String effectiveObjectiveId = normalizeOptionalId(objectiveId);
+        String effectiveServiceId = requireServiceId(command.serviceId());
+        String effectiveTeamId = normalizeOptionalId(command.teamId());
+        String effectiveObjectiveId = normalizeOptionalId(command.objectiveId());
         validateCardScope(effectiveServiceId, effectiveTeamId, effectiveObjectiveId);
 
+        String cardId = "card_" + UUID.randomUUID().toString().replace("-", "");
+        CardKind effectiveKind = command.kind() != null ? command.kind() : CardKind.TASK;
+        String effectiveParentCardId = normalizeOptionalId(command.parentCardId());
+        String effectiveEpicCardId = resolveEpicCardId(
+                effectiveServiceId,
+                effectiveParentCardId,
+                normalizeOptionalId(command.epicCardId()),
+                cardId,
+                effectiveKind);
+        String effectiveReviewOfCardId = resolveReviewOfCardId(
+                effectiveServiceId,
+                effectiveKind,
+                normalizeOptionalId(command.reviewOfCardId()),
+                cardId);
+        List<String> effectiveDependsOnCardIds = normalizeCardReferences(command.dependsOnCardIds());
+        validateCardGraph(
+                effectiveServiceId,
+                cardId,
+                effectiveKind,
+                effectiveParentCardId,
+                effectiveEpicCardId,
+                effectiveDependsOnCardIds);
+
         Board board = boardWorkflowUseCase.getBoard(effectiveServiceId);
-        String targetColumnId = columnId != null && !columnId.isBlank() ? columnId
+        String targetColumnId = command.columnId() != null && !command.columnId().isBlank()
+                ? command.columnId()
                 : board.getFlow().getDefaultColumnId();
         boolean columnExists = board.getFlow().getColumns().stream()
                 .anyMatch(column -> column.getId().equals(targetColumnId));
@@ -139,18 +219,17 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
         }
 
         Instant now = Instant.now();
-        String cardId = "card_" + UUID.randomUUID().toString().replace("-", "");
         String threadId = "thread_" + UUID.randomUUID().toString().replace("-", "");
-        CardAssignmentPolicy effectivePolicy = assignmentPolicy != null
-                ? assignmentPolicy
+        CardAssignmentPolicy effectivePolicy = command.assignmentPolicy() != null
+                ? command.assignmentPolicy()
                 : board.getDefaultAssignmentPolicy();
-        String effectiveAssigneeId = normalizeOptionalId(assigneeGolemId);
+        String effectiveAssigneeId = normalizeOptionalId(command.assigneeGolemId());
 
         if (effectiveAssigneeId != null) {
             String requestedAssigneeId = effectiveAssigneeId;
             golemDirectoryUseCase.findGolem(requestedAssigneeId)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown assignee golem: " + requestedAssigneeId));
-        } else if (autoAssign && effectivePolicy == CardAssignmentPolicy.AUTOMATIC) {
+        } else if (command.autoAssign() && effectivePolicy == CardAssignmentPolicy.AUTOMATIC) {
             AssignmentSuggestion suggestion = workflowAssignmentPort.suggestDefaultAssignee(board);
             if (suggestion != null) {
                 effectiveAssigneeId = suggestion.getGolemId();
@@ -161,12 +240,17 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
                 .id(cardId)
                 .serviceId(effectiveServiceId)
                 .boardId(effectiveServiceId)
+                .kind(effectiveKind)
+                .parentCardId(effectiveParentCardId)
+                .epicCardId(effectiveEpicCardId)
+                .reviewOfCardId(effectiveReviewOfCardId)
+                .dependsOnCardIds(new ArrayList<>(effectiveDependsOnCardIds))
                 .teamId(effectiveTeamId)
                 .objectiveId(effectiveObjectiveId)
                 .threadId(threadId)
-                .title(title)
-                .description(description)
-                .prompt(prompt)
+                .title(command.title())
+                .description(command.description())
+                .prompt(command.prompt())
                 .columnId(targetColumnId)
                 .assigneeGolemId(effectiveAssigneeId)
                 .assignmentPolicy(effectivePolicy)
@@ -186,7 +270,7 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
                         .actorName(actorName)
                         .build())))
                 .build();
-        cardRepository.save(card);
+        cardRepository.save(normalizeCard(card));
         threadRepository.saveThread(ThreadRecord.builder()
                 .id(threadId)
                 .serviceId(effectiveServiceId)
@@ -194,7 +278,7 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
                 .teamId(effectiveTeamId)
                 .objectiveId(effectiveObjectiveId)
                 .cardId(cardId)
-                .title(title)
+                .title(command.title())
                 .assignedGolemId(effectiveAssigneeId)
                 .createdAt(now)
                 .updatedAt(now)
@@ -225,37 +309,88 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
             String teamId,
             String objectiveId,
             CardAssignmentPolicy assignmentPolicy) {
+        return updateCard(cardId, new CardUpdateCommand(
+                title,
+                description,
+                prompt,
+                teamId,
+                objectiveId,
+                assignmentPolicy,
+                null,
+                null,
+                null,
+                null,
+                null));
+    }
+
+    @Override
+    public Card updateCard(String cardId, CardUpdateCommand command) {
         Card card = normalizeCard(getCard(cardId));
-        if (title != null && !title.isBlank()) {
-            card.setTitle(title);
+        if (command == null) {
+            throw new IllegalArgumentException("Card update command is required");
         }
-        if (description != null) {
-            card.setDescription(description);
+        if (command.title() != null && !command.title().isBlank()) {
+            card.setTitle(command.title());
         }
-        if (prompt != null) {
-            if (prompt.isBlank()) {
+        if (command.description() != null) {
+            card.setDescription(command.description());
+        }
+
+        String effectivePrompt = card.getPrompt();
+        if (command.prompt() != null) {
+            if (command.prompt().isBlank()) {
                 throw new IllegalArgumentException("Card prompt is required");
             }
-            card.setPrompt(prompt);
+            effectivePrompt = command.prompt();
         }
-        String effectiveTeamId = card.getTeamId();
-        if (teamId != null) {
-            effectiveTeamId = normalizeOptionalId(teamId);
-        }
-        String effectiveObjectiveId = card.getObjectiveId();
-        if (objectiveId != null) {
-            effectiveObjectiveId = normalizeOptionalId(objectiveId);
-        }
-        validateCardScope(card.getServiceId(), effectiveTeamId, effectiveObjectiveId);
 
-        if (teamId != null) {
-            card.setTeamId(effectiveTeamId);
+        String effectiveTeamId = command.teamId() != null ? normalizeOptionalId(command.teamId()) : card.getTeamId();
+        String effectiveObjectiveId = command.objectiveId() != null ? normalizeOptionalId(command.objectiveId())
+                : card.getObjectiveId();
+        CardKind effectiveKind = command.kind() != null ? command.kind() : card.getKind();
+        String effectiveParentCardId = command.parentCardId() != null ? normalizeOptionalId(command.parentCardId())
+                : card.getParentCardId();
+        String explicitEpicCardId = command.epicCardId() != null ? normalizeOptionalId(command.epicCardId())
+                : card.getEpicCardId();
+        String explicitReviewOfCardId = command.reviewOfCardId() != null ? normalizeOptionalId(command.reviewOfCardId())
+                : card.getReviewOfCardId();
+        List<String> effectiveDependsOnCardIds = command.dependsOnCardIds() != null
+                ? normalizeCardReferences(command.dependsOnCardIds())
+                : normalizeCardReferences(card.getDependsOnCardIds());
+
+        validateCardScope(card.getServiceId(), effectiveTeamId, effectiveObjectiveId);
+        String effectiveEpicCardId = resolveEpicCardId(
+                card.getServiceId(),
+                effectiveParentCardId,
+                explicitEpicCardId,
+                card.getId(),
+                effectiveKind);
+        String effectiveReviewOfCardId = resolveReviewOfCardId(
+                card.getServiceId(),
+                effectiveKind,
+                explicitReviewOfCardId,
+                card.getId());
+        validateCardGraph(
+                card.getServiceId(),
+                card.getId(),
+                effectiveKind,
+                effectiveParentCardId,
+                effectiveEpicCardId,
+                effectiveDependsOnCardIds);
+        if (effectiveKind == CardKind.TASK && (effectivePrompt == null || effectivePrompt.isBlank())) {
+            throw new IllegalArgumentException("Card prompt is required");
         }
-        if (objectiveId != null) {
-            card.setObjectiveId(effectiveObjectiveId);
-        }
-        if (assignmentPolicy != null) {
-            card.setAssignmentPolicy(assignmentPolicy);
+
+        card.setKind(effectiveKind);
+        card.setPrompt(effectivePrompt);
+        card.setTeamId(effectiveTeamId);
+        card.setObjectiveId(effectiveObjectiveId);
+        card.setParentCardId(effectiveParentCardId);
+        card.setEpicCardId(effectiveEpicCardId);
+        card.setReviewOfCardId(effectiveReviewOfCardId);
+        card.setDependsOnCardIds(new ArrayList<>(effectiveDependsOnCardIds));
+        if (command.assignmentPolicy() != null) {
+            card.setAssignmentPolicy(command.assignmentPolicy());
         }
         card.setUpdatedAt(Instant.now());
         cardRepository.save(card);
@@ -468,6 +603,136 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
         }
     }
 
+    private void validateCardGraph(
+            String serviceId,
+            String currentCardId,
+            CardKind kind,
+            String parentCardId,
+            String epicCardId,
+            List<String> dependsOnCardIds) {
+        if (kind == CardKind.EPIC) {
+            if (parentCardId != null) {
+                throw new IllegalArgumentException("Epic cards cannot have a parent card");
+            }
+            if (epicCardId != null) {
+                throw new IllegalArgumentException("Epic cards cannot belong to another epic");
+            }
+        }
+
+        validateGraphReference(serviceId, currentCardId, parentCardId, "parent");
+        validateGraphReference(serviceId, currentCardId, epicCardId, "epic");
+        if (epicCardId != null) {
+            Card epic = getCard(epicCardId);
+            if (epic.getKind() != CardKind.EPIC) {
+                throw new IllegalArgumentException("Epic reference must point to an EPIC card");
+            }
+        }
+        if (dependsOnCardIds != null) {
+            for (String dependencyCardId : dependsOnCardIds) {
+                validateGraphReference(serviceId, currentCardId, dependencyCardId, "dependency");
+            }
+        }
+    }
+
+    private void validateGraphReference(String serviceId, String currentCardId, String referenceCardId, String label) {
+        if (referenceCardId == null) {
+            return;
+        }
+        if (referenceCardId.equals(currentCardId)) {
+            throw new IllegalArgumentException("Card cannot reference itself as " + label);
+        }
+        Card referencedCard = getCard(referenceCardId);
+        if (!serviceId.equals(referencedCard.getServiceId())) {
+            throw new IllegalArgumentException("Card graph reference must stay within service: " + referenceCardId);
+        }
+    }
+
+    private String resolveEpicCardId(
+            String serviceId,
+            String parentCardId,
+            String epicCardId,
+            String currentCardId,
+            CardKind kind) {
+        if (kind == CardKind.EPIC) {
+            return null;
+        }
+
+        String effectiveParentCardId = normalizeOptionalId(parentCardId);
+        String effectiveEpicCardId = normalizeOptionalId(epicCardId);
+        String derivedEpicCardId = null;
+        if (effectiveParentCardId != null) {
+            Card parentCard = getCard(effectiveParentCardId);
+            if (!serviceId.equals(parentCard.getServiceId())) {
+                throw new IllegalArgumentException("Card graph reference must stay within service: "
+                        + effectiveParentCardId);
+            }
+            if (effectiveParentCardId.equals(currentCardId)) {
+                throw new IllegalArgumentException("Card cannot reference itself as parent");
+            }
+            if (parentCard.getKind() == CardKind.EPIC) {
+                derivedEpicCardId = parentCard.getId();
+            } else {
+                derivedEpicCardId = normalizeOptionalId(parentCard.getEpicCardId());
+            }
+        }
+        if (effectiveEpicCardId != null) {
+            Card epicCard = getCard(effectiveEpicCardId);
+            if (!serviceId.equals(epicCard.getServiceId())) {
+                throw new IllegalArgumentException(
+                        "Card graph reference must stay within service: " + effectiveEpicCardId);
+            }
+            if (effectiveEpicCardId.equals(currentCardId)) {
+                throw new IllegalArgumentException("Card cannot reference itself as epic");
+            }
+            if (epicCard.getKind() != CardKind.EPIC) {
+                throw new IllegalArgumentException("Epic reference must point to an EPIC card");
+            }
+            if (derivedEpicCardId != null && !derivedEpicCardId.equals(effectiveEpicCardId)) {
+                throw new IllegalArgumentException("Parent card belongs to a different epic");
+            }
+            return effectiveEpicCardId;
+        }
+        return derivedEpicCardId;
+    }
+
+    private String resolveReviewOfCardId(String serviceId, CardKind kind, String reviewOfCardId, String currentCardId) {
+        String effectiveReviewOfCardId = normalizeOptionalId(reviewOfCardId);
+        if (kind != CardKind.REVIEW) {
+            if (effectiveReviewOfCardId != null) {
+                throw new IllegalArgumentException("Only review cards can reference reviewOfCardId");
+            }
+            return null;
+        }
+        if (effectiveReviewOfCardId == null) {
+            throw new IllegalArgumentException("Review cards must reference an implementation card");
+        }
+        Card reviewedCard = getCard(effectiveReviewOfCardId);
+        if (!serviceId.equals(reviewedCard.getServiceId())) {
+            throw new IllegalArgumentException("Review reference must stay within service: " + effectiveReviewOfCardId);
+        }
+        if (effectiveReviewOfCardId.equals(currentCardId)) {
+            throw new IllegalArgumentException("Card cannot review itself");
+        }
+        if (reviewedCard.getKind() != CardKind.TASK) {
+            throw new IllegalArgumentException("Review cards must point to a TASK card");
+        }
+        return effectiveReviewOfCardId;
+    }
+
+    private List<String> normalizeCardReferences(List<String> cardIds) {
+        if (cardIds == null || cardIds.isEmpty()) {
+            return List.of();
+        }
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String cardId : cardIds) {
+            String normalizedCardId = normalizeOptionalId(cardId);
+            if (normalizedCardId != null) {
+                normalized.add(normalizedCardId);
+            }
+        }
+        return new ArrayList<>(normalized);
+    }
+
     private Card normalizeCard(Card card) {
         if (card == null) {
             return null;
@@ -477,6 +742,21 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
         }
         if (card.getBoardId() == null || card.getBoardId().isBlank()) {
             card.setBoardId(card.getServiceId());
+        }
+        if (card.getKind() == null) {
+            card.setKind(CardKind.TASK);
+        }
+        if (card.getDependsOnCardIds() == null) {
+            card.setDependsOnCardIds(new ArrayList<>());
+        }
+        if (card.getReviewerGolemIds() == null) {
+            card.setReviewerGolemIds(new ArrayList<>());
+        }
+        if (card.getReviewStatus() == null) {
+            card.setReviewStatus(CardReviewStatus.NOT_REQUIRED);
+        }
+        if (card.getAssignmentPolicy() == null) {
+            card.setAssignmentPolicy(CardAssignmentPolicy.MANUAL);
         }
         return card;
     }

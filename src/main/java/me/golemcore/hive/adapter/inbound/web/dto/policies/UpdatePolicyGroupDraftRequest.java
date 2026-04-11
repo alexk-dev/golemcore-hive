@@ -23,7 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public record UpdatePolicyGroupDraftRequest(Integer schemaVersion,Map<String,PolicyProviderConfigRequest>llmProviders,PolicyModelRouterRequest modelRouter,PolicyModelCatalogRequest modelCatalog,PolicyToolsConfigRequest tools,PolicyMemoryConfigRequest memory,PolicyMcpConfigRequest mcp,PolicyAutonomyConfigRequest autonomy){
+public record UpdatePolicyGroupDraftRequest(Integer schemaVersion,Map<String,PolicyProviderConfigRequest>llmProviders,PolicyModelRouterRequest modelRouter,PolicyModelCatalogRequest modelCatalog,PolicyToolsConfigRequest tools,PolicyMemoryConfigRequest memory,PolicyMcpConfigRequest mcp,PolicyAutonomyConfigRequest autonomy,PolicySdlcConfigRequest sdlc){
 
 public UpdatePolicyGroupDraftRequest{llmProviders=llmProviders!=null?llmProviders:new LinkedHashMap<>();}
 
@@ -61,4 +61,8 @@ public PolicyMcpConfigRequest{catalog=catalog!=null?catalog:new ArrayList<>();}}
 
 public record PolicyMcpCatalogEntryRequest(String name,String description,String command,Map<String,String>env,Integer startupTimeoutSeconds,Integer idleTimeoutMinutes,Boolean enabled){}
 
-public record PolicyAutonomyConfigRequest(Boolean enabled,Integer tickIntervalSeconds,Integer taskTimeLimitMinutes,Boolean autoStart,Integer maxGoals,String modelTier,Boolean reflectionEnabled,Integer reflectionFailureThreshold,String reflectionModelTier,Boolean reflectionTierPriority,Boolean notifyMilestones){}}
+public record PolicyAutonomyConfigRequest(Boolean enabled,Integer tickIntervalSeconds,Integer taskTimeLimitMinutes,Boolean autoStart,Integer maxGoals,String modelTier,Boolean reflectionEnabled,Integer reflectionFailureThreshold,String reflectionModelTier,Boolean reflectionTierPriority,Boolean notifyMilestones){}
+
+public record PolicySdlcConfigRequest(Boolean taskCreationEnabled,Boolean autoApplyDecompositionEnabled,Integer maxDecompositionFanOut,Boolean assignmentEnabled,Boolean reviewerAssignmentEnabled,Boolean requireReviewerSeparationOfDuties,Integer approvalRequiredAboveFanOut,List<String>allowedCardKinds){
+
+public PolicySdlcConfigRequest{allowedCardKinds=allowedCardKinds!=null?allowedCardKinds:new ArrayList<>();}}}

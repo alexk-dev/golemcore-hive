@@ -18,6 +18,9 @@ export function CardDetailsHeader({
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <AssignmentPolicyBadge policy={card.assignmentPolicy} />
+          <span className="border border-border bg-muted/60 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground">
+            {card.kind ?? 'TASK'}
+          </span>
           <span className="text-xs text-muted-foreground">{card.columnId}</span>
         </div>
         <h2 className="mt-2 text-2xl font-bold tracking-tight text-foreground">{card.title}</h2>

@@ -151,8 +151,16 @@ class GolemEnrollmentApplicationServiceTest {
                 .rotatedAt(Instant.parse("2026-04-08T17:00:00Z"))
                 .build()));
         when(golemFleetUseCase.findGolem("golem_1")).thenReturn(Optional.of(golem));
-        when(golemTokenPort.issueAccessToken(golem, List.of("golems:heartbeat"))).thenReturn("new-access-token");
-        when(golemTokenPort.issueRefreshToken(golem, List.of("golems:heartbeat"), "gs_123"))
+        List<String> rotatedScopes = List.of(
+                "golems:control:connect",
+                "golems:events:write",
+                "golems:heartbeat",
+                "golems:policy:read",
+                "golems:policy:write",
+                "golems:sdlc:read",
+                "golems:sdlc:write");
+        when(golemTokenPort.issueAccessToken(golem, rotatedScopes)).thenReturn("new-access-token");
+        when(golemTokenPort.issueRefreshToken(golem, rotatedScopes, "gs_123"))
                 .thenReturn("new-refresh-token");
 
         GolemEnrollmentApplicationService service = new GolemEnrollmentApplicationService(
@@ -194,21 +202,18 @@ class GolemEnrollmentApplicationServiceTest {
                 Set.of("control", "events"),
                 GolemCapabilitySnapshot.builder().snapshotHash("abc123").build(), "et_1"))
                 .thenReturn(golem);
-        when(golemTokenPort.issueAccessToken(golem,
-                List.of(
-                        "golems:control:connect",
-                        "golems:events:write",
-                        "golems:heartbeat",
-                        "golems:policy:read",
-                        "golems:policy:write")))
+        List<String> registrationScopes = List.of(
+                "golems:control:connect",
+                "golems:events:write",
+                "golems:heartbeat",
+                "golems:policy:read",
+                "golems:policy:write",
+                "golems:sdlc:read",
+                "golems:sdlc:write");
+        when(golemTokenPort.issueAccessToken(golem, registrationScopes))
                 .thenReturn("golem-access-token");
         when(golemTokenPort.issueRefreshToken(eq(golem),
-                eq(List.of(
-                        "golems:control:connect",
-                        "golems:events:write",
-                        "golems:heartbeat",
-                        "golems:policy:read",
-                        "golems:policy:write")),
+                eq(registrationScopes),
                 org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn("golem-refresh-token");
 

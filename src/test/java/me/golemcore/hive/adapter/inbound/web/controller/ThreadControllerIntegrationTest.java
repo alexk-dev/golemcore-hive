@@ -636,6 +636,102 @@ class ThreadControllerIntegrationTest {
         }
     }
 
+    @Test
+    void shouldAllowGolemMachineTokenToUseSdlcEndpointsForAssignedCard() throws Exception {
+        String operatorToken = loginAsAdmin();
+        createRole(operatorToken, "developer");
+        RegisteredGolem developer = registerOnlineGolem(operatorToken, "Atlas SDLC", "host-sdlc", "developer");
+        RegisteredGolem reviewer = registerOnlineGolem(operatorToken, "Review SDLC", "host-review", "developer");
+        String boardId = createBoard(operatorToken);
+        String cardId = createCard(operatorToken, boardId, "Machine SDLC access", "ready", developer.golemId());
+        String threadId = getThreadId(operatorToken, cardId);
+
+        webTestClient.get()
+                .uri("/api/v1/golems/{golemId}/sdlc/cards/{cardId}", developer.golemId(), cardId)
+                .header(HttpHeaders.AUTHORIZATION, developer.accessToken())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(cardId)
+                .jsonPath("$.threadId").isEqualTo(threadId);
+
+        webTestClient.get()
+                .uri("/api/v1/golems/{golemId}/sdlc/cards?boardId={boardId}", developer.golemId(), boardId)
+                .header(HttpHeaders.AUTHORIZATION, developer.accessToken())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].id").isEqualTo(cardId);
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/sdlc/threads/{threadId}/messages", developer.golemId(), threadId)
+                .header(HttpHeaders.AUTHORIZATION, developer.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "body":"SDLC note from golem"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.participantType").isEqualTo("GOLEM")
+                .jsonPath("$.authorId").isEqualTo(developer.golemId())
+                .jsonPath("$.body").isEqualTo("SDLC note from golem");
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/sdlc/cards/{cardId}:request-review", developer.golemId(), cardId)
+                .header(HttpHeaders.AUTHORIZATION, developer.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "reviewerGolemIds":["%s"],
+                          "requiredReviewCount":1
+                        }
+                        """.formatted(reviewer.golemId()))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.reviewStatus").isEqualTo("REQUIRED")
+                .jsonPath("$.reviewerGolemIds[0]").isEqualTo(reviewer.golemId());
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/sdlc/cards", developer.golemId())
+                .header(HttpHeaders.AUTHORIZATION, developer.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "title":"Follow-up from golem",
+                          "description":"Created by machine SDLC API",
+                          "prompt":"Investigate the follow-up.",
+                          "parentCardId":"%s",
+                          "assignmentPolicy":"MANUAL",
+                          "autoAssign":false
+                        }
+                        """.formatted(cardId))
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody()
+                .jsonPath("$.parentCardId").isEqualTo(cardId)
+                .jsonPath("$.title").isEqualTo("Follow-up from golem");
+    }
+
+    @Test
+    void shouldDenyGolemSdlcAccessToUnassignedCards() throws Exception {
+        String operatorToken = loginAsAdmin();
+        createRole(operatorToken, "developer");
+        RegisteredGolem developer = registerOnlineGolem(operatorToken, "Atlas Owner", "host-owner", "developer");
+        RegisteredGolem other = registerOnlineGolem(operatorToken, "Atlas Other", "host-other", "developer");
+        String boardId = createBoard(operatorToken);
+        String cardId = createCard(operatorToken, boardId, "Private SDLC card", "ready", developer.golemId());
+
+        webTestClient.get()
+                .uri("/api/v1/golems/{golemId}/sdlc/cards/{cardId}", other.golemId(), cardId)
+                .header(HttpHeaders.AUTHORIZATION, other.accessToken())
+                .exchange()
+                .expectStatus().isForbidden();
+    }
+
     private String createBoard(String operatorToken) throws Exception {
         EntityExchangeResult<String> createBoardResult = webTestClient.post()
                 .uri("/api/v1/boards")

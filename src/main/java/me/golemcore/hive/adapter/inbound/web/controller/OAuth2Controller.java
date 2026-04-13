@@ -80,7 +80,8 @@ public class OAuth2Controller {
             @RequestParam("redirect_uri") String redirectUri,
             @RequestParam(value = "response_type", required = false) String responseType,
             @RequestParam(value = "state", required = false) String state,
-            @RequestParam(value = "code_challenge", required = false) String codeChallenge) {
+            @RequestParam(value = "code_challenge", required = false) String codeChallenge,
+            @RequestParam(value = "code_challenge_method", required = false) String codeChallengeMethod) {
         return Mono.fromCallable(() -> {
             if (responseType != null && !"code".equals(responseType)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only authorization code flow is supported");
@@ -101,7 +102,8 @@ public class OAuth2Controller {
                     clientId,
                     redirectUri,
                     state,
-                    codeChallenge);
+                    codeChallenge,
+                    codeChallengeMethod);
             ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(redirect));
             if (refreshed != null && refreshed.refreshToken() != null) {
@@ -118,7 +120,7 @@ public class OAuth2Controller {
                     request.code(),
                     request.clientId(),
                     request.redirectUri(),
-                    null).orElse(null);
+                    request.codeVerifier()).orElse(null);
             if (result == null) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid authorization code");
             }

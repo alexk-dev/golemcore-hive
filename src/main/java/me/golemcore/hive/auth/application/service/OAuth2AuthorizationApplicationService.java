@@ -26,6 +26,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -48,9 +49,10 @@ public class OAuth2AuthorizationApplicationService {
     private final GolemDirectoryUseCase golemDirectoryUseCase;
 
     public String authorize(String operatorId, String clientId, String redirectUri, String state,
-            String codeChallenge) {
+            String codeChallenge, String codeChallengeMethod) {
         Golem golem = resolveEnabledSsoGolem(clientId);
         validateRedirectUri(golem, redirectUri);
+        validateCodeChallenge(codeChallenge, codeChallengeMethod);
         String code = generateCode();
         authorizationCodeRepository.save(new OAuth2AuthorizationCode(
                 code,
@@ -58,6 +60,7 @@ public class OAuth2AuthorizationApplicationService {
                 operatorId,
                 redirectUri,
                 codeChallenge,
+                normalizeCodeChallengeMethod(codeChallengeMethod),
                 Instant.now().plus(AUTHORIZATION_CODE_TTL)));
         String separator = redirectUri.contains("?") ? "&" : "?";
         StringBuilder result = new StringBuilder(redirectUri)
@@ -155,10 +158,29 @@ public class OAuth2AuthorizationApplicationService {
                 && requested.getPort() == allowedBaseUri.getPort();
     }
 
+    private void validateCodeChallenge(String codeChallenge, String codeChallengeMethod) {
+        if (codeChallenge == null || codeChallenge.isBlank()) {
+            return;
+        }
+        String normalizedMethod = normalizeCodeChallengeMethod(codeChallengeMethod);
+        if (!"plain".equals(normalizedMethod)) {
+            throw new IllegalArgumentException("Only plain PKCE code challenge method is supported");
+        }
+    }
+
+    private String normalizeCodeChallengeMethod(String codeChallengeMethod) {
+        return codeChallengeMethod != null && !codeChallengeMethod.isBlank()
+                ? codeChallengeMethod.trim().toLowerCase(Locale.ROOT)
+                : "plain";
+    }
+
     private boolean isPkceVerifierAccepted(OAuth2AuthorizationCode authorizationCode, String codeVerifier) {
         String expectedChallenge = authorizationCode.codeChallenge();
         if (expectedChallenge == null || expectedChallenge.isBlank()) {
             return true;
+        }
+        if (!"plain".equals(authorizationCode.codeChallengeMethod())) {
+            return false;
         }
         return expectedChallenge.equals(codeVerifier);
     }

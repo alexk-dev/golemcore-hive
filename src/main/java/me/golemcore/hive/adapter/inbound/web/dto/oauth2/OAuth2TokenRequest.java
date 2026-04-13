@@ -20,4 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.oauth2;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record OAuth2TokenRequest(@NotBlank String code,@NotBlank String clientId,@NotBlank String redirectUri){}
+public record OAuth2TokenRequest(@NotBlank String code,@NotBlank String clientId,@NotBlank String redirectUri,String codeVerifier){}

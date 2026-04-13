@@ -70,6 +70,7 @@ class OAuth2AuthorizationApplicationServiceTest {
                 "golem_1",
                 "https://bot.example.com/dashboard/api/auth/hive/callback",
                 "state-1",
+                null,
                 null);
         String code = redirectUri.substring(redirectUri.indexOf("code=") + "code=".length(),
                 redirectUri.indexOf("&state="));
@@ -107,9 +108,54 @@ class OAuth2AuthorizationApplicationServiceTest {
                 "golem_1",
                 "https://bot.example.com/dashboard/api/auth/hive/callback",
                 null,
+                null,
                 null));
 
         assertEquals("Dashboard SSO is disabled for golem golem_1", error.getMessage());
+    }
+
+    @Test
+    void shouldRequirePlainPkceVerifierWhenChallengeIsPresent() {
+        InMemoryRepository authorizationCodeRepository = new InMemoryRepository();
+        OperatorAuthApplicationService operatorAuthApplicationService = mock(OperatorAuthApplicationService.class);
+        GolemDirectoryUseCase golemDirectoryUseCase = mock(GolemDirectoryUseCase.class);
+        OperatorAccount operator = OperatorAccount.builder()
+                .id("op_1")
+                .username("admin")
+                .displayName("Hive Admin")
+                .roles(Set.of(Role.ADMIN))
+                .build();
+        Golem golem = Golem.builder()
+                .id("golem_1")
+                .dashboardSsoEnabled(true)
+                .lastHeartbeat(HeartbeatPing.builder()
+                        .dashboardBaseUrl("https://bot.example.com/dashboard")
+                        .build())
+                .build();
+        when(golemDirectoryUseCase.findGolem("golem_1")).thenReturn(Optional.of(golem));
+        when(operatorAuthApplicationService.issueSsoTokens("op_1", "golem_1"))
+                .thenReturn(Optional.of(new OperatorAuthResult(operator, "bot-access", null)));
+        OAuth2AuthorizationApplicationService service = new OAuth2AuthorizationApplicationService(
+                authorizationCodeRepository,
+                operatorAuthApplicationService,
+                golemDirectoryUseCase);
+
+        String redirectUri = service.authorize(
+                "op_1",
+                "golem_1",
+                "https://bot.example.com/dashboard/api/auth/hive/callback",
+                null,
+                "verifier-1",
+                "plain");
+        String code = redirectUri.substring(redirectUri.indexOf("code=") + "code=".length());
+
+        Optional<OperatorAuthResult> rejected = service.exchange(
+                code,
+                "golem_1",
+                "https://bot.example.com/dashboard/api/auth/hive/callback",
+                "wrong-verifier");
+
+        assertTrue(rejected.isEmpty());
     }
 
     private static class InMemoryRepository implements OAuth2AuthorizationCodeRepository {

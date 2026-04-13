@@ -20,4 +20,4 @@ package me.golemcore.hive.auth.application;
 
 import java.time.Instant;
 
-public record OAuth2AuthorizationCode(String code,String golemId,String operatorId,String redirectUri,String codeChallenge,Instant expiresAt){}
+public record OAuth2AuthorizationCode(String code,String golemId,String operatorId,String redirectUri,String codeChallenge,String codeChallengeMethod,Instant expiresAt){}

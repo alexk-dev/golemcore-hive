@@ -270,7 +270,8 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
                 .transitionEvents(new ArrayList<>(List.of(CardTransitionEvent.builder()
                         .fromColumnId(null)
                         .toColumnId(targetColumnId)
-                        .origin(CardTransitionOrigin.MANUAL)
+                        .origin(actor.type() == ActorType.GOLEM ? CardTransitionOrigin.GOLEM_SDLC
+                                : CardTransitionOrigin.MANUAL)
                         .summary("Card created")
                         .occurredAt(now)
                         .actorId(actor.id())
@@ -479,7 +480,7 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
         workflowAuditPort.record(AuditEvent.builder()
                 .eventType("card.moved")
                 .severity("INFO")
-                .actorType(origin == CardTransitionOrigin.GOLEM_SIGNAL ? "GOLEM" : "OPERATOR")
+                .actorType(isGolemOrigin(origin) ? "GOLEM" : "OPERATOR")
                 .actorId(actorId)
                 .actorName(actorName)
                 .targetType("CARD")
@@ -539,6 +540,10 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
                 .summary("Card archived")
                 .details(card.getTitle()));
         return card;
+    }
+
+    private boolean isGolemOrigin(CardTransitionOrigin origin) {
+        return origin == CardTransitionOrigin.GOLEM_SIGNAL || origin == CardTransitionOrigin.GOLEM_SDLC;
     }
 
     private void syncThread(Card card) {

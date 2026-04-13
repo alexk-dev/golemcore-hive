@@ -483,7 +483,7 @@ public class ReviewWorkflowApplicationService implements ReviewWorkflowUseCase {
                 card.getId(),
                 targetColumnId,
                 null,
-                CardTransitionOrigin.BOARD_AUTOMATION,
+                CardTransitionOrigin.GOLEM_SDLC,
                 actorId,
                 actorName,
                 summary != null ? summary : card.getTitle());

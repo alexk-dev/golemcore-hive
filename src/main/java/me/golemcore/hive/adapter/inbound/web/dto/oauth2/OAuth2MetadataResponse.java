@@ -18,5 +18,4 @@
 
 package me.golemcore.hive.adapter.inbound.web.dto.oauth2;
 
-public record OAuth2MetadataResponse(String issuer, String authorizationEndpoint, String tokenEndpoint, String responseType, String grantType,
-        String codeChallengeMethod){}
+public record OAuth2MetadataResponse(String issuer,String authorizationEndpoint,String tokenEndpoint,String responseType,String grantType,String codeChallengeMethod){}

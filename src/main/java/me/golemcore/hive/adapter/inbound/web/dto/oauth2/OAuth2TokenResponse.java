@@ -20,4 +20,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.oauth2;
 
 import me.golemcore.hive.adapter.inbound.web.dto.LoginResponse;
 
-public record OAuth2TokenResponse(LoginResponse login, String code){}
+public record OAuth2TokenResponse(LoginResponse login,String code){}

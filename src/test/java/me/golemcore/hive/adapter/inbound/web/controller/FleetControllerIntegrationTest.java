@@ -20,7 +20,11 @@ package me.golemcore.hive.adapter.inbound.web.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -303,6 +307,8 @@ class FleetControllerIntegrationTest {
                         .queryParam("redirect_uri", "https://bot.example.test/dashboard/api/auth/hive/callback")
                         .queryParam("response_type", "code")
                         .queryParam("state", "state-1")
+                        .queryParam("code_challenge", toS256Challenge("verifier-1"))
+                        .queryParam("code_challenge_method", "S256")
                         .build())
                 .header(HttpHeaders.AUTHORIZATION, operatorToken)
                 .exchange()
@@ -318,7 +324,7 @@ class FleetControllerIntegrationTest {
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
                 .bodyValue(
                         """
-                                {"code":"%s","clientId":"%s","redirectUri":"https://bot.example.test/dashboard/api/auth/hive/callback"}
+                                {"code":"%s","clientId":"%s","redirectUri":"https://bot.example.test/dashboard/api/auth/hive/callback","codeVerifier":"verifier-1"}
                                 """
                                 .formatted(code, golemId))
                 .exchange()
@@ -326,6 +332,16 @@ class FleetControllerIntegrationTest {
                 .expectBody()
                 .jsonPath("$.login.accessToken").exists()
                 .jsonPath("$.login.operator.username").isEqualTo("admin");
+    }
+
+    private String toS256Challenge(String codeVerifier) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(codeVerifier.getBytes(StandardCharsets.US_ASCII));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("Missing SHA-256 implementation", exception);
+        }
     }
 
     private String loginAsAdmin() throws Exception {

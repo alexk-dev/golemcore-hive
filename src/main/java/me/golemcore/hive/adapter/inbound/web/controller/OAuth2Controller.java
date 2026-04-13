@@ -68,7 +68,7 @@ public class OAuth2Controller {
                 "/api/v1/oauth2/token",
                 "code",
                 "authorization_code",
-                "plain");
+                "S256");
         return Mono.just(ResponseEntity.ok(response));
     }
 

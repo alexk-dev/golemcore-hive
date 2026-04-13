@@ -22,6 +22,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -160,29 +162,38 @@ public class OAuth2AuthorizationApplicationService {
 
     private void validateCodeChallenge(String codeChallenge, String codeChallengeMethod) {
         if (codeChallenge == null || codeChallenge.isBlank()) {
-            return;
+            throw new IllegalArgumentException("code_challenge is required");
         }
         String normalizedMethod = normalizeCodeChallengeMethod(codeChallengeMethod);
-        if (!"plain".equals(normalizedMethod)) {
-            throw new IllegalArgumentException("Only plain PKCE code challenge method is supported");
+        if (!"S256".equals(normalizedMethod)) {
+            throw new IllegalArgumentException("Only S256 PKCE code challenge method is supported");
         }
     }
 
     private String normalizeCodeChallengeMethod(String codeChallengeMethod) {
         return codeChallengeMethod != null && !codeChallengeMethod.isBlank()
-                ? codeChallengeMethod.trim().toLowerCase(Locale.ROOT)
-                : "plain";
+                ? codeChallengeMethod.trim().toUpperCase(Locale.ROOT)
+                : "";
     }
 
     private boolean isPkceVerifierAccepted(OAuth2AuthorizationCode authorizationCode, String codeVerifier) {
         String expectedChallenge = authorizationCode.codeChallenge();
-        if (expectedChallenge == null || expectedChallenge.isBlank()) {
-            return true;
-        }
-        if (!"plain".equals(authorizationCode.codeChallengeMethod())) {
+        if (expectedChallenge == null || expectedChallenge.isBlank()
+                || codeVerifier == null || codeVerifier.isBlank()
+                || !"S256".equals(authorizationCode.codeChallengeMethod())) {
             return false;
         }
-        return expectedChallenge.equals(codeVerifier);
+        return expectedChallenge.equals(toS256Challenge(codeVerifier));
+    }
+
+    private String toS256Challenge(String codeVerifier) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(codeVerifier.getBytes(StandardCharsets.US_ASCII));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("Missing SHA-256 implementation", exception);
+        }
     }
 
     private String urlEncode(String value) {

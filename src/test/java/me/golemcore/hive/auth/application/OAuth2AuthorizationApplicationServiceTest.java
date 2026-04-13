@@ -24,7 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.Set;
 import me.golemcore.hive.auth.application.port.out.OAuth2AuthorizationCodeRepository;
@@ -70,15 +74,15 @@ class OAuth2AuthorizationApplicationServiceTest {
                 "golem_1",
                 "https://bot.example.com/dashboard/api/auth/hive/callback",
                 "state-1",
-                null,
-                null);
+                toS256Challenge("verifier-1"),
+                "S256");
         String code = redirectUri.substring(redirectUri.indexOf("code=") + "code=".length(),
                 redirectUri.indexOf("&state="));
         Optional<OperatorAuthResult> result = service.exchange(
                 code,
                 "golem_1",
                 "https://bot.example.com/dashboard/api/auth/hive/callback",
-                null);
+                "verifier-1");
 
         assertTrue(redirectUri.startsWith("https://bot.example.com/dashboard/api/auth/hive/callback?code="));
         assertTrue(result.isPresent());
@@ -108,14 +112,14 @@ class OAuth2AuthorizationApplicationServiceTest {
                 "golem_1",
                 "https://bot.example.com/dashboard/api/auth/hive/callback",
                 null,
-                null,
-                null));
+                toS256Challenge("verifier-1"),
+                "S256"));
 
         assertEquals("Dashboard SSO is disabled for golem golem_1", error.getMessage());
     }
 
     @Test
-    void shouldRequirePlainPkceVerifierWhenChallengeIsPresent() {
+    void shouldRequireS256PkceVerifierWhenChallengeIsPresent() {
         InMemoryRepository authorizationCodeRepository = new InMemoryRepository();
         OperatorAuthApplicationService operatorAuthApplicationService = mock(OperatorAuthApplicationService.class);
         GolemDirectoryUseCase golemDirectoryUseCase = mock(GolemDirectoryUseCase.class);
@@ -145,8 +149,8 @@ class OAuth2AuthorizationApplicationServiceTest {
                 "golem_1",
                 "https://bot.example.com/dashboard/api/auth/hive/callback",
                 null,
-                "verifier-1",
-                "plain");
+                toS256Challenge("verifier-1"),
+                "S256");
         String code = redirectUri.substring(redirectUri.indexOf("code=") + "code=".length());
 
         Optional<OperatorAuthResult> rejected = service.exchange(
@@ -156,6 +160,16 @@ class OAuth2AuthorizationApplicationServiceTest {
                 "wrong-verifier");
 
         assertTrue(rejected.isEmpty());
+    }
+
+    private String toS256Challenge(String codeVerifier) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(codeVerifier.getBytes(StandardCharsets.US_ASCII));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("Missing SHA-256 implementation", exception);
+        }
     }
 
     private static class InMemoryRepository implements OAuth2AuthorizationCodeRepository {

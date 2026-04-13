@@ -434,7 +434,7 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
         if (!targetExists) {
             throw new IllegalArgumentException("Target column does not exist in board flow");
         }
-        boolean transitionAllowed = origin == CardTransitionOrigin.BOARD_AUTOMATION
+        boolean transitionAllowed = isAutomationOrigin(origin)
                 ? boardWorkflowUseCase.isTransitionReachable(board, card.getColumnId(), targetColumnId)
                 : boardWorkflowUseCase.isTransitionAllowed(board, card.getColumnId(), targetColumnId);
         if (!transitionAllowed) {
@@ -540,6 +540,10 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
                 .summary("Card archived")
                 .details(card.getTitle()));
         return card;
+    }
+
+    private boolean isAutomationOrigin(CardTransitionOrigin origin) {
+        return origin == CardTransitionOrigin.BOARD_AUTOMATION || origin == CardTransitionOrigin.GOLEM_SDLC;
     }
 
     private boolean isGolemOrigin(CardTransitionOrigin origin) {

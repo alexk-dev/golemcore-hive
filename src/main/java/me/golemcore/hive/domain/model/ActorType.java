@@ -18,6 +18,6 @@
 
 package me.golemcore.hive.domain.model;
 
-public enum CardTransitionOrigin {
-    MANUAL, FLOW_REMAP, GOLEM_SIGNAL, BOARD_AUTOMATION, GOLEM_SDLC
+public enum ActorType {
+    OPERATOR, GOLEM, SYSTEM
 }

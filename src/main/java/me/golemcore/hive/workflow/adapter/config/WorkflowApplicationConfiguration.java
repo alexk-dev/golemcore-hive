@@ -24,6 +24,7 @@ import me.golemcore.hive.workflow.application.service.DecompositionPlanningAppli
 import me.golemcore.hive.workflow.application.service.BoardWorkflowApplicationService;
 import me.golemcore.hive.workflow.application.service.CardWorkflowApplicationService;
 import me.golemcore.hive.workflow.application.service.FlowRemapApplicationService;
+import me.golemcore.hive.workflow.application.service.GolemCardAccessPolicy;
 import me.golemcore.hive.workflow.application.service.ReviewWorkflowApplicationService;
 import me.golemcore.hive.workflow.application.service.ObjectiveService;
 import me.golemcore.hive.workflow.application.service.OrganizationService;
@@ -123,6 +124,11 @@ public class WorkflowApplicationConfiguration {
             ThreadRepository threadRepository,
             CardRepository cardRepository) {
         return new ThreadWorkflowApplicationService(threadRepository, cardRepository);
+    }
+
+    @Bean
+    public GolemCardAccessPolicy golemCardAccessPolicy(CardWorkflowApplicationService cardWorkflowApplicationService) {
+        return new GolemCardAccessPolicy(cardWorkflowApplicationService);
     }
 
     @Bean

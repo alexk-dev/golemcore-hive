@@ -218,3 +218,25 @@ Rule:
 - Operator policy read APIs must redact provider secrets and expose only presence metadata such as `apiKeyPresent`.
 - If an operator updates a draft policy and omits an existing provider `apiKey`, Hive preserves the stored secret instead of clearing it.
 - Raw provider API keys are allowed only on machine-scoped policy package fetches and must never travel over the control channel.
+
+## 8. SDLC Machine API
+
+Hive exposes machine-scoped SDLC endpoints for built-in bot SDLC tools:
+
+- `GET /api/v1/golems/{golemId}/sdlc/cards/{cardId}`
+- `GET /api/v1/golems/{golemId}/sdlc/cards?...`
+- `POST /api/v1/golems/{golemId}/sdlc/cards`
+- `POST /api/v1/golems/{golemId}/sdlc/threads/{threadId}/messages`
+- `POST /api/v1/golems/{golemId}/sdlc/cards/{cardId}:request-review`
+
+Machine scopes:
+
+- `golems:sdlc:read` for card/thread reads
+- `golems:sdlc:write` for thread messages, review requests, and follow-up card creation
+
+Rules:
+
+- path `golemId` must match the machine-token subject,
+- Hive filters card reads to cards assigned to the golem, assigned for review to the golem, or linked as child/review cards to accessible cards,
+- golem-created cards must reference an accessible parent card or review target,
+- lifecycle signals continue to use `POST /api/v1/golems/{golemId}/events:batch`.

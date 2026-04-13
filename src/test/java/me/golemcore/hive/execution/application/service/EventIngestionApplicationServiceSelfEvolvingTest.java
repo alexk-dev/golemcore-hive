@@ -36,6 +36,8 @@ import me.golemcore.hive.execution.application.port.in.GolemInspectionResponseUs
 import me.golemcore.hive.execution.application.port.in.LifecycleSignalResolutionUseCase;
 import me.golemcore.hive.execution.application.port.out.CardLifecycleSignalRepository;
 import me.golemcore.hive.execution.application.port.out.SelfEvolvingEventProjectionPort;
+import me.golemcore.hive.workflow.application.port.in.ThreadWorkflowUseCase;
+import me.golemcore.hive.workflow.application.service.GolemCardAccessPolicy;
 import org.junit.jupiter.api.Test;
 
 class EventIngestionApplicationServiceSelfEvolvingTest {
@@ -48,12 +50,16 @@ class EventIngestionApplicationServiceSelfEvolvingTest {
                 LifecycleSignalResolutionUseCase.class);
         GolemInspectionResponseUseCase golemInspectionResponseUseCase = mock(GolemInspectionResponseUseCase.class);
         SelfEvolvingEventProjectionPort selfEvolvingEventProjectionPort = mock(SelfEvolvingEventProjectionPort.class);
+        GolemCardAccessPolicy golemCardAccessPolicy = mock(GolemCardAccessPolicy.class);
+        ThreadWorkflowUseCase threadWorkflowUseCase = mock(ThreadWorkflowUseCase.class);
         EventIngestionApplicationService service = new EventIngestionApplicationService(
                 cardLifecycleSignalRepository,
                 executionOperationsUseCase,
                 lifecycleSignalResolutionUseCase,
                 golemInspectionResponseUseCase,
-                selfEvolvingEventProjectionPort);
+                selfEvolvingEventProjectionPort,
+                golemCardAccessPolicy,
+                threadWorkflowUseCase);
 
         EventIngestionResult result = service.ingestBatch("golem-1", new GolemEventBatchCommand(
                 1,
@@ -96,12 +102,16 @@ class EventIngestionApplicationServiceSelfEvolvingTest {
                 LifecycleSignalResolutionUseCase.class);
         GolemInspectionResponseUseCase golemInspectionResponseUseCase = mock(GolemInspectionResponseUseCase.class);
         SelfEvolvingEventProjectionPort selfEvolvingEventProjectionPort = mock(SelfEvolvingEventProjectionPort.class);
+        GolemCardAccessPolicy golemCardAccessPolicy = mock(GolemCardAccessPolicy.class);
+        ThreadWorkflowUseCase threadWorkflowUseCase = mock(ThreadWorkflowUseCase.class);
         EventIngestionApplicationService service = new EventIngestionApplicationService(
                 cardLifecycleSignalRepository,
                 executionOperationsUseCase,
                 lifecycleSignalResolutionUseCase,
                 golemInspectionResponseUseCase,
-                selfEvolvingEventProjectionPort);
+                selfEvolvingEventProjectionPort,
+                golemCardAccessPolicy,
+                threadWorkflowUseCase);
 
         EventIngestionResult result = service.ingestBatch("golem-1", new GolemEventBatchCommand(
                 1,

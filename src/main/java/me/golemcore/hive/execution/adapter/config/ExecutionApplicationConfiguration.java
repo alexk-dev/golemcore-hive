@@ -38,6 +38,7 @@ import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ReviewWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ThreadWorkflowUseCase;
+import me.golemcore.hive.workflow.application.service.GolemCardAccessPolicy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -56,13 +57,17 @@ public class ExecutionApplicationConfiguration {
             ExecutionOperationsUseCase executionOperationsUseCase,
             LifecycleSignalResolutionUseCase lifecycleSignalResolutionUseCase,
             GolemInspectionResponseUseCase golemInspectionResponseUseCase,
-            SelfEvolvingEventProjectionPort selfEvolvingEventProjectionPort) {
+            SelfEvolvingEventProjectionPort selfEvolvingEventProjectionPort,
+            GolemCardAccessPolicy golemCardAccessPolicy,
+            ThreadWorkflowUseCase threadWorkflowUseCase) {
         return new EventIngestionApplicationService(
                 cardLifecycleSignalRepository,
                 executionOperationsUseCase,
                 lifecycleSignalResolutionUseCase,
                 golemInspectionResponseUseCase,
-                selfEvolvingEventProjectionPort);
+                selfEvolvingEventProjectionPort,
+                golemCardAccessPolicy,
+                threadWorkflowUseCase);
     }
 
     @Bean

@@ -53,6 +53,7 @@ import me.golemcore.hive.domain.model.ThreadRecord;
 import me.golemcore.hive.execution.application.port.in.ExecutionOperationsUseCase;
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.workflow.application.CardCreateCommand;
+import me.golemcore.hive.workflow.application.WorkflowActor;
 import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.TeamWorkflowUseCase;
@@ -168,6 +169,52 @@ class ReviewWorkflowApplicationServiceTest {
                 null,
                 "operator-1",
                 "Hive Admin"));
+    }
+
+    @Test
+    void requestReviewShouldAuditGolemActorWhenRequestedByMachineApi() {
+        InMemoryCardRepository cardRepository = new InMemoryCardRepository();
+        Card implementationCard = Card.builder()
+                .id("card-1")
+                .serviceId("service-1")
+                .boardId("service-1")
+                .title("Implement feature")
+                .prompt("Build the feature")
+                .columnId("in_progress")
+                .assigneeGolemId("golem-1")
+                .threadId("thread-1")
+                .kind(CardKind.TASK)
+                .build();
+        cardRepository.save(implementationCard);
+
+        CardWorkflowUseCase cardWorkflowUseCase = mock(CardWorkflowUseCase.class);
+        when(cardWorkflowUseCase.getCard("card-1")).thenAnswer(invocation -> cardRepository.get("card-1"));
+        BoardWorkflowUseCase boardWorkflowUseCase = mock(BoardWorkflowUseCase.class);
+        TeamWorkflowUseCase teamWorkflowUseCase = mock(TeamWorkflowUseCase.class);
+        GolemDirectoryUseCase golemDirectoryUseCase = mock(GolemDirectoryUseCase.class);
+        ThreadWorkflowUseCase threadWorkflowUseCase = mock(ThreadWorkflowUseCase.class);
+        WorkflowAuditPort workflowAuditPort = mock(WorkflowAuditPort.class);
+
+        ReviewWorkflowApplicationService service = new ReviewWorkflowApplicationService(
+                cardRepository,
+                cardWorkflowUseCase,
+                boardWorkflowUseCase,
+                teamWorkflowUseCase,
+                golemDirectoryUseCase,
+                threadWorkflowUseCase,
+                workflowAuditPort);
+
+        when(golemDirectoryUseCase.findGolem("golem-2")).thenReturn(Optional.of(Golem.builder().id("golem-2").build()));
+
+        service.requestReview(
+                "card-1",
+                List.of("golem-2"),
+                null,
+                1,
+                WorkflowActor.golem("golem-1", "Atlas"));
+
+        verify(workflowAuditPort)
+                .record(org.mockito.ArgumentMatchers.argThat(builder -> isReviewRequestedByGolem(builder)));
     }
 
     @Test
@@ -472,6 +519,16 @@ class ReviewWorkflowApplicationServiceTest {
         assertEquals(CardReviewStatus.IN_REVIEW, cardRepository.get("card-1").getReviewStatus());
         assertEquals("review", cardRepository.get("card-1").getColumnId());
         assertEquals("done", cardRepository.get("card-review-1").getColumnId());
+    }
+
+    private boolean isReviewRequestedByGolem(AuditEvent.AuditEventBuilder builder) {
+        if (builder == null) {
+            return false;
+        }
+        AuditEvent event = builder.build();
+        return "card.review_requested".equals(event.getEventType())
+                && "GOLEM".equals(event.getActorType())
+                && "golem-1".equals(event.getActorId());
     }
 
     private Board boardWithReviewColumns() {

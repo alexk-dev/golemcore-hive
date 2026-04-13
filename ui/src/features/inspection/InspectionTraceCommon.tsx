@@ -23,13 +23,13 @@ export type SnapshotExportHandler = (
 function toneClasses(tone: TraceTagTone): string {
   switch (tone) {
     case 'info':
-      return 'border-sky-200 bg-sky-100 text-sky-900';
+      return 'border-sky-500/40 bg-sky-500/10 text-sky-200';
     case 'success':
-      return 'border-emerald-200 bg-emerald-900/40 text-emerald-300';
+      return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200';
     case 'warning':
-      return 'border-amber-200 bg-amber-900/40 text-amber-300';
+      return 'border-amber-500/40 bg-amber-500/10 text-amber-200';
     case 'danger':
-      return 'border-rose-200 bg-rose-900/40 text-rose-300';
+      return 'border-rose-500/40 bg-rose-500/10 text-rose-200';
     case 'muted':
     default:
       return 'border-border bg-muted/70 text-muted-foreground';

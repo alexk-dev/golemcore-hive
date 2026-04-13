@@ -300,14 +300,16 @@ export function formatVersionPair(targetVersion: number | null, appliedVersion: 
 }
 
 export function syncBadgeClassName(syncStatus: string | null | undefined) {
+  const base =
+    'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]';
   if (syncStatus === 'IN_SYNC') {
-    return 'inline-flex items-center border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-900';
+    return `${base} border-emerald-500/40 bg-emerald-500/10 text-emerald-200`;
   }
   if (syncStatus === 'SYNC_PENDING') {
-    return 'inline-flex items-center border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-900';
+    return `${base} border-amber-500/40 bg-amber-500/10 text-amber-200`;
   }
   if (syncStatus === 'APPLY_FAILED' || syncStatus === 'OUT_OF_SYNC') {
-    return 'inline-flex items-center border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-900';
+    return `${base} border-rose-500/40 bg-rose-500/10 text-rose-200`;
   }
-  return 'inline-flex items-center border border-border/70 bg-panel/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground';
+  return `${base} border-border/70 bg-panel/80 text-muted-foreground`;
 }

@@ -8,6 +8,7 @@ module.exports = {
         foreground: 'hsl(var(--foreground))',
         muted: 'hsl(var(--muted))',
         'muted-foreground': 'hsl(var(--muted-foreground))',
+        'subtle-foreground': 'hsl(var(--subtle-foreground))',
         panel: 'hsl(var(--panel))',
         'panel-foreground': 'hsl(var(--panel-foreground))',
         primary: 'hsl(var(--primary))',
@@ -19,6 +20,10 @@ module.exports = {
       },
       boxShadow: {
         glow: '0 22px 50px rgba(234, 120, 40, 0.15)',
+      },
+      borderRadius: {
+        xl: '0.875rem',
+        '2xl': '1.125rem',
       },
     },
   },

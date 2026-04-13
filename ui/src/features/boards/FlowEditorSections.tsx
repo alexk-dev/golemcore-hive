@@ -250,7 +250,7 @@ export function FlowPreviewPanel({
   }
   if (!preview.removedColumnIds.length) {
     return (
-      <div className="border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-300">
+      <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-200">
         No remap required.
       </div>
     );

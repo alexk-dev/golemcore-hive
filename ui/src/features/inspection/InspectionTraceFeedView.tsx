@@ -11,20 +11,20 @@ import {
 function bubbleClasses(kind: 'system' | 'llm' | 'tool' | 'outbound' | 'user' | 'assistant' | 'other'): string {
   switch (kind) {
     case 'user':
-      return 'border-sky-200 bg-sky-50';
+      return 'rounded-lg border border-sky-500/30 bg-sky-500/10';
     case 'assistant':
-      return 'border-emerald-200 bg-emerald-50';
+      return 'rounded-lg border border-emerald-500/30 bg-emerald-500/10';
     case 'tool':
-      return 'border-amber-200 bg-amber-950/40';
+      return 'rounded-lg border border-amber-500/30 bg-amber-500/10';
     case 'llm':
-      return 'border-accent/20 bg-accent/5';
+      return 'rounded-lg border border-accent/30 bg-accent/5';
     case 'outbound':
-      return 'border-primary/25 bg-primary/5';
+      return 'rounded-lg border border-primary/30 bg-primary/5';
     case 'system':
-      return 'border-border bg-panel';
+      return 'rounded-lg border border-border bg-panel';
     case 'other':
     default:
-      return 'border-border bg-muted/40';
+      return 'rounded-lg border border-border bg-muted/40';
   }
 }
 

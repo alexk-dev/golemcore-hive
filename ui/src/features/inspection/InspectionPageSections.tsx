@@ -12,8 +12,8 @@ import type { FeedbackState } from './inspectionPageUtils';
 
 function feedbackClasses(tone: FeedbackState['tone']) {
   return tone === 'success'
-    ? 'border-emerald-200 bg-emerald-900/40 text-emerald-300'
-    : 'border-rose-200 bg-rose-900/40 text-rose-300';
+    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
+    : 'border-rose-500/40 bg-rose-500/10 text-rose-200';
 }
 
 export function InspectionFeedbackBanner({ feedback }: { feedback: FeedbackState | null }) {
@@ -117,10 +117,10 @@ function MessageCard({ message }: { message: InspectionMessage }) {
     <article
       className={
         message.role === 'user'
-          ? 'border border-sky-200 bg-sky-50 p-3'
+          ? 'rounded-lg border border-sky-500/30 bg-sky-500/10 p-3'
           : message.role === 'assistant'
-            ? 'border border-emerald-200 bg-emerald-50 p-3'
-            : 'border border-border bg-panel p-3'
+            ? 'rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3'
+            : 'rounded-lg border border-border bg-panel p-3'
       }
     >
       <div className="flex flex-wrap items-start justify-between gap-3">

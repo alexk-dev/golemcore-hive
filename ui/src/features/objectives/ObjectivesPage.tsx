@@ -215,7 +215,7 @@ function CreateObjectiveForm({
         <input
           value={name}
           onChange={(event) => onNameChange(event.target.value)}
-          className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
           placeholder="Reduce onboarding latency"
         />
       </label>
@@ -225,7 +225,7 @@ function CreateObjectiveForm({
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value)}
           rows={3}
-          className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
         />
       </label>
       <div className="grid gap-4 md:grid-cols-2">
@@ -234,7 +234,7 @@ function CreateObjectiveForm({
           <select
             value={status}
             onChange={(event) => onStatusChange(event.target.value)}
-            className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+            className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>
@@ -248,7 +248,7 @@ function CreateObjectiveForm({
           <select
             value={ownerTeamId}
             onChange={(event) => onOwnerTeamIdChange(event.target.value)}
-            className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+            className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
           >
             <option value="">Select team</option>
             {teams.map((team) => (
@@ -265,7 +265,7 @@ function CreateObjectiveForm({
           type="date"
           value={targetDate}
           onChange={(event) => onTargetDateChange(event.target.value)}
-          className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+          className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
         />
       </label>
       <SelectionGroup
@@ -287,7 +287,7 @@ function CreateObjectiveForm({
       <button
         type="submit"
         disabled={isPending || !name.trim() || !ownerTeamId}
-        className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+        className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition hover:opacity-90 disabled:opacity-60"
       >
         {isPending ? 'Creating...' : 'Create objective'}
       </button>
@@ -316,7 +316,7 @@ function SelectionGroup({
       {options.length ? (
         <div className="grid gap-2">
           {options.map((option) => (
-            <label key={option.id} className="flex items-center gap-3 border border-border/70 bg-white/70 p-3">
+            <label key={option.id} className="flex items-center gap-3 rounded-lg border border-border/70 bg-muted/40 p-3">
               <input
                 type="checkbox"
                 checked={selectedIds.includes(option.id)}

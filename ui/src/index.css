@@ -5,19 +5,35 @@
 @tailwind utilities;
 
 @layer base {
+  button,
+  [role='button'] {
+    @apply rounded-lg;
+  }
+
+  select,
+  input[type='text'],
+  input[type='email'],
+  input[type='search'],
+  input[type='number'],
+  input[type='password'],
+  textarea {
+    @apply rounded-lg;
+  }
+
   :root {
-    --background: 225 15% 10%;
-    --foreground: 210 20% 90%;
+    --background: 225 15% 9%;
+    --foreground: 210 25% 94%;
     --muted: 220 12% 18%;
-    --muted-foreground: 215 12% 55%;
+    --muted-foreground: 215 16% 72%;
+    --subtle-foreground: 215 12% 58%;
     --panel: 224 14% 13%;
-    --panel-foreground: 210 20% 90%;
-    --primary: 22 90% 55%;
-    --primary-foreground: 0 0% 100%;
-    --accent: 160 50% 45%;
-    --accent-foreground: 0 0% 100%;
-    --border: 220 10% 22%;
-    --ring: 22 90% 55%;
+    --panel-foreground: 210 25% 94%;
+    --primary: 22 95% 55%;
+    --primary-foreground: 220 30% 9%;
+    --accent: 160 55% 55%;
+    --accent-foreground: 220 30% 9%;
+    --border: 220 10% 24%;
+    --ring: 22 95% 55%;
     font-family: 'Inter', sans-serif;
     color: hsl(var(--foreground));
     background: hsl(var(--background));
@@ -25,6 +41,7 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
   }
 
   * {
@@ -54,14 +71,18 @@
 
 @layer components {
   .panel {
-    @apply border border-border/50 bg-panel;
+    @apply rounded-xl border border-border/60 bg-panel shadow-[0_1px_0_rgba(255,255,255,0.03)_inset,0_12px_32px_-24px_rgba(0,0,0,0.6)];
   }
 
   .soft-card {
-    @apply border border-border/40 bg-muted/50;
+    @apply rounded-lg border border-border/40 bg-muted/50;
   }
 
   .pill {
-    @apply inline-flex items-center border border-border/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+    @apply inline-flex items-center rounded-full border border-border/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+  }
+
+  .subtle {
+    color: hsl(var(--subtle-foreground));
   }
 }

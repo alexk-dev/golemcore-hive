@@ -17,8 +17,8 @@ export function InspectionSelfEvolvingTacticSearchStatusBanner({
 
   return (
     <section className={status.degraded
-      ? 'border border-amber-700 bg-amber-950/40 p-3'
-      : 'border border-emerald-300 bg-emerald-50 p-3'}
+      ? 'rounded-lg border border-amber-500/40 bg-amber-500/10 p-3'
+      : 'rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3'}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-foreground">{headline}</span>

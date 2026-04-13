@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { InspectionActionDialog } from './InspectionActionDialog';
 import {
   InspectionOnlineContent,
   InspectionStatusPanels,
   MissingGolemIdPanel,
+  type InspectionTab,
 } from './InspectionPageContent';
 import { InspectionFeedbackBanner, InspectionPageHeader } from './InspectionPageSections';
 import { buildTraceErrorMessage } from './inspectionPageUtils';
@@ -14,13 +16,14 @@ type InspectionPageController = ReturnType<typeof useInspectionPageController>;
 export function InspectionPage() {
   const { golemId } = useParams();
   const controller = useInspectionPageController(golemId ?? '');
+  const [activeTab, setActiveTab] = useState<InspectionTab>('session');
 
   if (!controller.hasResolvedGolemId) {
     return <MissingGolemIdPanel />;
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="mx-auto grid w-full max-w-[1600px] gap-5">
       <InspectionPageHeader
         golem={controller.golemQuery.data}
         channelFilter={controller.channelFilter}
@@ -37,7 +40,11 @@ export function InspectionPage() {
         showOffline={Boolean(controller.golemQuery.data && !controller.isOnline)}
       />
 
-      <OnlineInspectionSection controller={controller} />
+      <OnlineInspectionSection
+        controller={controller}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
       <ActionDialogSection controller={controller} />
     </div>
   );
@@ -45,14 +52,24 @@ export function InspectionPage() {
 
 function OnlineInspectionSection({
   controller,
+  activeTab,
+  onTabChange,
 }: {
   controller: InspectionPageController;
+  activeTab: InspectionTab;
+  onTabChange: (tab: InspectionTab) => void;
 }) {
   if (!controller.isOnline) {
     return null;
   }
 
-  return <InspectionOnlineContent {...buildOnlineInspectionProps(controller)} />;
+  return (
+    <InspectionOnlineContent
+      {...buildOnlineInspectionProps(controller)}
+      activeTab={activeTab}
+      onTabChange={onTabChange}
+    />
+  );
 }
 
 function ActionDialogSection({

@@ -93,7 +93,7 @@ export function EnrollmentTokenDialog({
                   {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy'}
                 </button>
               </div>
-              <pre className="mt-2 overflow-x-auto bg-foreground px-4 py-3 text-sm text-primary-foreground">
+              <pre className="mt-2 overflow-x-auto rounded-lg bg-foreground px-4 py-3 text-sm text-background">
                 {createdToken.joinCode}
               </pre>
               <p className="mt-2 text-xs text-muted-foreground">

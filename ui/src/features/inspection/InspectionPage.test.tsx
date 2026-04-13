@@ -435,15 +435,6 @@ describe('InspectionPage', () => {
     expect(screen.getByRole('button', { name: 'Export trace' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
     expect(screen.getByText('Trace summary')).toBeInTheDocument();
-    expect(await screen.findByText('Judging')).toBeInTheDocument();
-    expect(screen.getByText('Lineage')).toBeInTheDocument();
-    expect(await screen.findByText('Artifacts')).toBeInTheDocument();
-    expect(screen.getByText('Planner skill')).toBeInTheDocument();
-    expect(screen.getByText('Semantic diff')).toBeInTheDocument();
-    expect(screen.getByText('Candidate queue')).toBeInTheDocument();
-    expect(screen.getByText('Benchmark lab')).toBeInTheDocument();
-    expect(screen.getAllByText('campaign-1').length).toBeGreaterThan(0);
-    expect(screen.getByText('Promotion approvals')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Load details' }));
 
@@ -454,6 +445,18 @@ describe('InspectionPage', () => {
       await screen.findByText('Conversation + trace', {}, { timeout: INSPECTION_PAGE_SCENARIO_TIMEOUT_MS }),
     ).toBeInTheDocument();
     expect(screen.getAllByText('trace inbound message').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('tab', { name: /Self-Evolving/i }));
+
+    expect(await screen.findByText('Judging')).toBeInTheDocument();
+    expect(screen.getByText('Lineage')).toBeInTheDocument();
+    expect(await screen.findByText('Artifacts')).toBeInTheDocument();
+    expect(screen.getByText('Planner skill')).toBeInTheDocument();
+    expect(screen.getByText('Semantic diff')).toBeInTheDocument();
+    expect(screen.getByText('Candidate queue')).toBeInTheDocument();
+    expect(screen.getByText('Benchmark lab')).toBeInTheDocument();
+    expect(screen.getAllByText('campaign-1').length).toBeGreaterThan(0);
+    expect(screen.getByText('Promotion approvals')).toBeInTheDocument();
   }, INSPECTION_PAGE_SCENARIO_TIMEOUT_MS);
 
   it('shows the online-only gate when the golem is offline', async () => {

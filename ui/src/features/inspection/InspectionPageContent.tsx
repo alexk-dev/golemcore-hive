@@ -1,6 +1,8 @@
 import type { ApprovalRequest } from '../../lib/api/approvalsApi';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { readErrorMessage } from '../../lib/format';
+
+export type InspectionTab = 'session' | 'self-evolving';
 import type {
   InspectionMessage,
   InspectionSessionDetail,
@@ -116,6 +118,8 @@ interface InspectionOnlineContentProps {
   isArtifactDiffLoading: boolean;
   isArtifactEvidenceLoading: boolean;
   promotionApprovals: ApprovalRequest[];
+  activeTab: InspectionTab;
+  onTabChange: (tab: InspectionTab) => void;
   onSelectSession: (sessionId: string) => void;
   onSelectSelfEvolvingRun: (runId: string) => void;
   onSelectArtifactStream: (artifactStreamId: string) => void;
@@ -173,6 +177,8 @@ export function InspectionOnlineContent({
   isArtifactDiffLoading,
   isArtifactEvidenceLoading,
   promotionApprovals,
+  activeTab,
+  onTabChange,
   onSelectSession,
   onSelectSelfEvolvingRun,
   onSelectArtifactStream,
@@ -195,75 +201,152 @@ export function InspectionOnlineContent({
     selectedSession,
   );
   const canExportTrace = hasTraceSummaryData(traceSummary);
+  const sessionBadge = sessions.length > 0 ? String(sessions.length) : undefined;
+  const selfEvolvingBadge =
+    selfEvolvingRuns.length > 0 || promotionApprovals.length > 0
+      ? String(selfEvolvingRuns.length + promotionApprovals.length)
+      : undefined;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
-      <InspectionSessionsSidebar
-        sessions={sessions}
-        selectedSessionId={selectedSessionId}
-        isLoading={sessionsLoading}
-        error={sessionsError}
-        onSelect={onSelectSession}
+    <div className="grid gap-5">
+      <InspectionTabBar
+        active={activeTab}
+        onChange={onTabChange}
+        tabs={[
+          { key: 'session', label: 'Session & Trace', badge: sessionBadge },
+          { key: 'self-evolving', label: 'Self-Evolving', badge: selfEvolvingBadge },
+        ]}
       />
 
-      <div className="grid gap-4">
-        <InspectionSelectedSessionContent
-          selectedSessionId={selectedSessionId}
-          selectedSession={selectedSession}
-          sessionLoading={sessionLoading}
-          sessionError={sessionError}
-          selectedSessionView={selectedSessionView}
-          keepLast={keepLast}
-          isMutating={isMutating}
-          isExportingTrace={isExportingTrace}
-          canExportTrace={canExportTrace}
-          traceSummary={traceSummary}
-          trace={trace}
-          messages={messages}
-          isLoadingTraceSummary={isLoadingTraceSummary}
-          isLoadingTrace={isLoadingTrace}
-          traceErrorMessage={traceErrorMessage}
-          isExportingSnapshot={isExportingSnapshot}
-          onKeepLastChange={onKeepLastChange}
-          onCompact={onCompact}
-          onClear={onClear}
-          onExportTrace={onExportTrace}
-          onDelete={onDelete}
-          onLoadTrace={onLoadTrace}
-          onExportSnapshotPayload={onExportSnapshotPayload}
-        />
+      {activeTab === 'session' ? (
+        <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+          <InspectionSessionsSidebar
+            sessions={sessions}
+            selectedSessionId={selectedSessionId}
+            isLoading={sessionsLoading}
+            error={sessionsError}
+            onSelect={onSelectSession}
+          />
 
-        <InspectionSelfEvolvingContent
-          runs={selfEvolvingRuns}
-          selectedRunId={selectedSelfEvolvingRunId}
-          selectedRun={selectedSelfEvolvingRun}
-          candidates={selfEvolvingCandidates}
-          campaigns={selfEvolvingCampaigns}
-          lineage={selfEvolvingLineage}
-          artifacts={selfEvolvingArtifacts}
-          selectedArtifactStreamId={selectedArtifactStreamId}
-          artifactLineage={artifactLineage}
-          artifactCompareMode={artifactCompareMode}
-          artifactRevisionDiff={artifactRevisionDiff}
-          artifactTransitionDiff={artifactTransitionDiff}
-          artifactEvidence={artifactEvidence}
-          tacticQuery={tacticQuery}
-          tacticSearchResponse={tacticSearchResponse}
-          selectedTacticId={selectedTacticId}
-          isArtifactsLoading={isArtifactsLoading}
-          isArtifactLineageLoading={isArtifactLineageLoading}
-          isArtifactDiffLoading={isArtifactDiffLoading}
-          isArtifactEvidenceLoading={isArtifactEvidenceLoading}
-          promotionApprovals={promotionApprovals}
-          onSelectRun={onSelectSelfEvolvingRun}
-          onSelectArtifactStream={onSelectArtifactStream}
-          onSelectArtifactCompareMode={onSelectArtifactCompareMode}
-          onSelectArtifactRevisionPair={onSelectArtifactRevisionPair}
-          onSelectArtifactTransitionPair={onSelectArtifactTransitionPair}
-          onTacticQueryChange={onTacticQueryChange}
-          onSelectTacticId={onSelectTacticId}
-        />
-      </div>
+          <div className="grid gap-4 min-w-0">
+            <InspectionSelectedSessionContent
+              selectedSessionId={selectedSessionId}
+              selectedSession={selectedSession}
+              sessionLoading={sessionLoading}
+              sessionError={sessionError}
+              selectedSessionView={selectedSessionView}
+              keepLast={keepLast}
+              isMutating={isMutating}
+              isExportingTrace={isExportingTrace}
+              canExportTrace={canExportTrace}
+              traceSummary={traceSummary}
+              trace={trace}
+              messages={messages}
+              isLoadingTraceSummary={isLoadingTraceSummary}
+              isLoadingTrace={isLoadingTrace}
+              traceErrorMessage={traceErrorMessage}
+              isExportingSnapshot={isExportingSnapshot}
+              onKeepLastChange={onKeepLastChange}
+              onCompact={onCompact}
+              onClear={onClear}
+              onExportTrace={onExportTrace}
+              onDelete={onDelete}
+              onLoadTrace={onLoadTrace}
+              onExportSnapshotPayload={onExportSnapshotPayload}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-4 min-w-0">
+          <InspectionSelfEvolvingContent
+            runs={selfEvolvingRuns}
+            selectedRunId={selectedSelfEvolvingRunId}
+            selectedRun={selectedSelfEvolvingRun}
+            candidates={selfEvolvingCandidates}
+            campaigns={selfEvolvingCampaigns}
+            lineage={selfEvolvingLineage}
+            artifacts={selfEvolvingArtifacts}
+            selectedArtifactStreamId={selectedArtifactStreamId}
+            artifactLineage={artifactLineage}
+            artifactCompareMode={artifactCompareMode}
+            artifactRevisionDiff={artifactRevisionDiff}
+            artifactTransitionDiff={artifactTransitionDiff}
+            artifactEvidence={artifactEvidence}
+            tacticQuery={tacticQuery}
+            tacticSearchResponse={tacticSearchResponse}
+            selectedTacticId={selectedTacticId}
+            isArtifactsLoading={isArtifactsLoading}
+            isArtifactLineageLoading={isArtifactLineageLoading}
+            isArtifactDiffLoading={isArtifactDiffLoading}
+            isArtifactEvidenceLoading={isArtifactEvidenceLoading}
+            promotionApprovals={promotionApprovals}
+            onSelectRun={onSelectSelfEvolvingRun}
+            onSelectArtifactStream={onSelectArtifactStream}
+            onSelectArtifactCompareMode={onSelectArtifactCompareMode}
+            onSelectArtifactRevisionPair={onSelectArtifactRevisionPair}
+            onSelectArtifactTransitionPair={onSelectArtifactTransitionPair}
+            onTacticQueryChange={onTacticQueryChange}
+            onSelectTacticId={onSelectTacticId}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface InspectionTabDescriptor {
+  key: InspectionTab;
+  label: string;
+  badge?: string;
+}
+
+function InspectionTabBar({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: InspectionTabDescriptor[];
+  active: InspectionTab;
+  onChange: (tab: InspectionTab) => void;
+}): ReactNode {
+  return (
+    <div
+      role="tablist"
+      aria-label="Inspection sections"
+      className="flex flex-wrap gap-1 rounded-xl border border-border/60 bg-panel/70 p-1 backdrop-blur"
+    >
+      {tabs.map((tab) => {
+        const isActive = active === tab.key;
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onChange(tab.key)}
+            className={[
+              'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition',
+              isActive
+                ? 'bg-primary/15 text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.45)]'
+                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+            ].join(' ')}
+          >
+            <span>{tab.label}</span>
+            {tab.badge ? (
+              <span
+                className={[
+                  'min-w-[1.5rem] rounded-full px-1.5 py-0.5 text-center text-[10px] font-bold tracking-wider',
+                  isActive
+                    ? 'bg-primary/25 text-foreground'
+                    : 'bg-muted/80 text-muted-foreground',
+                ].join(' ')}
+              >
+                {tab.badge}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -76,13 +76,13 @@ export function ServicesPage() {
                   <div className="flex flex-wrap gap-2">
                     <Link
                       to={`/services/${service.id}`}
-                      className="bg-foreground px-4 py-2 text-sm font-semibold text-white"
+                      className="rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background"
                     >
                       Open queue
                     </Link>
                     <Link
                       to={`/services/${service.id}/settings`}
-                      className="border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-foreground"
+                      className="rounded-lg border border-border bg-muted/60 px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted"
                     >
                       Settings
                     </Link>
@@ -117,7 +117,7 @@ export function ServicesPage() {
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
               placeholder="Platform engineering"
             />
           </label>
@@ -127,7 +127,7 @@ export function ServicesPage() {
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}
-              className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+              className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
             />
           </label>
           <div className="grid gap-4 md:grid-cols-2">
@@ -136,7 +136,7 @@ export function ServicesPage() {
               <select
                 value={templateKey}
                 onChange={(event) => setTemplateKey(event.target.value)}
-                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
               >
                 {archetypeOptions.map((option) => (
                   <option key={option.key} value={option.key}>
@@ -150,7 +150,7 @@ export function ServicesPage() {
               <select
                 value={defaultAssignmentPolicy}
                 onChange={(event) => setDefaultAssignmentPolicy(event.target.value)}
-                className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+                className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
               >
                 <option value="MANUAL">MANUAL</option>
                 <option value="SUGGESTED">SUGGESTED</option>
@@ -161,7 +161,7 @@ export function ServicesPage() {
           <button
             type="submit"
             disabled={createServiceMutation.isPending || !name.trim()}
-            className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition hover:opacity-90 disabled:opacity-60"
           >
             {createServiceMutation.isPending ? 'Creating...' : 'Create service'}
           </button>

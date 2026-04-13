@@ -109,7 +109,7 @@ export function TeamsPage() {
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+            className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
             placeholder="Platform operations"
           />
         </label>
@@ -119,7 +119,7 @@ export function TeamsPage() {
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={3}
-            className="border border-border bg-white/90 px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+            className="rounded-lg border border-border bg-muted/60 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary"
           />
         </label>
 
@@ -128,7 +128,7 @@ export function TeamsPage() {
           {(golemsQuery.data ?? []).length ? (
             <div className="grid gap-2">
               {(golemsQuery.data ?? []).map((golem) => (
-                <label key={golem.id} className="flex items-center gap-3 border border-border/70 bg-white/70 p-3">
+                <label key={golem.id} className="flex items-center gap-3 rounded-lg border border-border/70 bg-muted/40 p-3">
                   <input
                     type="checkbox"
                     checked={selectedGolemIds.includes(golem.id)}
@@ -152,7 +152,7 @@ export function TeamsPage() {
           {(servicesQuery.data ?? []).length ? (
             <div className="grid gap-2">
               {(servicesQuery.data ?? []).map((service) => (
-                <label key={service.id} className="flex items-center gap-3 border border-border/70 bg-white/70 p-3">
+                <label key={service.id} className="flex items-center gap-3 rounded-lg border border-border/70 bg-muted/40 p-3">
                   <input
                     type="checkbox"
                     checked={selectedServiceIds.includes(service.id)}
@@ -174,7 +174,7 @@ export function TeamsPage() {
         <button
           type="submit"
           disabled={createTeamMutation.isPending || !name.trim()}
-          className="bg-foreground px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+          className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition hover:opacity-90 disabled:opacity-60"
         >
           {createTeamMutation.isPending ? 'Creating...' : 'Create team'}
         </button>

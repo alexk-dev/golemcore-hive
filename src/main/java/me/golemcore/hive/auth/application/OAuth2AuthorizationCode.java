@@ -16,19 +16,8 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.auth.application.port.out;
+package me.golemcore.hive.auth.application;
 
-import java.util.Optional;
-import me.golemcore.hive.auth.application.OperatorRefreshTokenClaims;
-import me.golemcore.hive.domain.model.OperatorAccount;
+import java.time.Instant;
 
-public interface OperatorTokenPort {
-
-    String issueAccessToken(OperatorAccount operatorAccount);
-
-    String issueAccessTokenForAudience(OperatorAccount operatorAccount, String audience);
-
-    String issueRefreshToken(OperatorAccount operatorAccount, String sessionId);
-
-    Optional<OperatorRefreshTokenClaims> parseRefreshToken(String refreshToken);
-}
+public record OAuth2AuthorizationCode(String code,String golemId,String operatorId,String redirectUri,String codeChallenge,String codeChallengeMethod,Instant expiresAt){}

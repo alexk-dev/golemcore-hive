@@ -61,5 +61,8 @@ public class Golem {
     private GolemPolicyBinding policyBinding;
 
     @Builder.Default
+    private boolean dashboardSsoEnabled = true;
+
+    @Builder.Default
     private List<GolemRoleBinding> roleBindings = new ArrayList<>();
 }

@@ -70,12 +70,17 @@ public class JwtTokenProvider {
 
     public String generateAccessToken(OperatorAccount operator) {
         Duration expiration = Duration.ofMinutes(properties.getSecurity().getJwt().getAccessExpirationMinutes());
-        return buildOperatorToken(operator, "access", expiration, null);
+        return buildOperatorToken(operator, "access", expiration, null, null);
+    }
+
+    public String generateAccessTokenForAudience(OperatorAccount operator, String audience) {
+        Duration expiration = Duration.ofMinutes(properties.getSecurity().getJwt().getAccessExpirationMinutes());
+        return buildOperatorToken(operator, "access", expiration, null, audience);
     }
 
     public String generateRefreshToken(OperatorAccount operator, String sessionId) {
         Duration expiration = Duration.ofDays(properties.getSecurity().getJwt().getRefreshExpirationDays());
-        return buildOperatorToken(operator, "refresh", expiration, sessionId);
+        return buildOperatorToken(operator, "refresh", expiration, sessionId, null);
     }
 
     public String generateGolemAccessToken(Golem golem, List<String> scopes) {
@@ -91,7 +96,8 @@ public class JwtTokenProvider {
     public boolean validateToken(String token) {
         try {
             Claims claims = parseClaims(token);
-            return properties.getSecurity().getJwt().getIssuer().equals(claims.getIssuer());
+            return properties.getSecurity().getJwt().getIssuer().equals(claims.getIssuer())
+                    && isAudienceAccepted(claims);
         } catch (JwtException | IllegalArgumentException exception) {
             log.debug("[Auth] Invalid JWT: {}", exception.getMessage());
             return false;
@@ -152,16 +158,25 @@ public class JwtTokenProvider {
                 : null;
     }
 
+    private boolean isAudienceAccepted(Claims claims) {
+        if (!properties.getSecurity().getJwt().isValidateAudience()) {
+            return true;
+        }
+        return claims.getAudience().contains(properties.getSecurity().getJwt().getAudience())
+                || claims.getAudience().contains(properties.getSecurity().getJwt().getGolemAudience());
+    }
+
     private String getTokenType(String token) {
         return parseClaims(token).get("type", String.class);
     }
 
-    private String buildOperatorToken(OperatorAccount operator, String type, Duration expiration, String sessionId) {
+    private String buildOperatorToken(OperatorAccount operator, String type, Duration expiration, String sessionId,
+            String audience) {
         Instant now = Instant.now();
         io.jsonwebtoken.JwtBuilder builder = Jwts.builder()
                 .subject(operator.getUsername())
                 .issuer(properties.getSecurity().getJwt().getIssuer())
-                .audience().add(properties.getSecurity().getJwt().getAudience()).and()
+                .audience().add(resolveOperatorAudience(audience)).and()
                 .claim("principalType", SubjectType.OPERATOR.name())
                 .claim("type", type)
                 .claim("operatorId", operator.getId())
@@ -172,6 +187,12 @@ public class JwtTokenProvider {
             builder.claim("sid", sessionId);
         }
         return builder.signWith(signingKey).compact();
+    }
+
+    private String resolveOperatorAudience(String audience) {
+        return audience != null && !audience.isBlank()
+                ? audience
+                : properties.getSecurity().getJwt().getAudience();
     }
 
     private String buildGolemToken(Golem golem, List<String> scopes, String type, Duration expiration,

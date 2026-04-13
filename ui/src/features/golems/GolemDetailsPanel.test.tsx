@@ -62,6 +62,7 @@ describe('GolemDetailsModal', () => {
               lastPolicyErrorDigest: 'provider timeout',
             },
             roleSlugs: ['developer'],
+            dashboardSsoEnabled: true,
             policyBinding: {
               policyGroupId: 'pg_1',
               targetVersion: 2,
@@ -98,6 +99,7 @@ describe('GolemDetailsModal', () => {
           onPause={() => undefined}
           onResume={async () => undefined}
           onRevoke={() => undefined}
+          onDashboardSsoChange={() => undefined}
         />
       </MemoryRouter>,
     );

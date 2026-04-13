@@ -226,6 +226,29 @@ public class GolemFleetApplicationService
     }
 
     @Override
+    public Golem updateDashboardSso(String golemId, boolean enabled, ActorContext actor) {
+        Golem golem = golemRepository.findById(golemId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown golem: " + golemId));
+        Instant now = Instant.now();
+        golem.setDashboardSsoEnabled(enabled);
+        golem.setUpdatedAt(now);
+        golemRepository.save(golem);
+        auditPort.record(AuditEvent.builder()
+                .eventType("golem.dashboard_sso_updated")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(actor.subjectId())
+                .actorName(actor.name())
+                .targetType("GOLEM")
+                .targetId(golem.getId())
+                .golemId(golem.getId())
+                .summary("Golem dashboard SSO setting updated")
+                .details(enabled ? "enabled" : "disabled")
+                .build());
+        return golem;
+    }
+
+    @Override
     public List<GolemRole> listRoles() {
         return golemRoleRepository.list().stream()
                 .sorted(Comparator.comparing(GolemRole::getSlug))

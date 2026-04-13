@@ -18,11 +18,14 @@
 
 package me.golemcore.hive.auth.adapter.config;
 
+import me.golemcore.hive.auth.application.port.out.OAuth2AuthorizationCodeRepository;
 import me.golemcore.hive.auth.application.port.out.OperatorAccountRepository;
 import me.golemcore.hive.auth.application.port.out.OperatorRefreshSessionRepository;
 import me.golemcore.hive.auth.application.port.out.OperatorTokenPort;
 import me.golemcore.hive.auth.application.port.out.PasswordHashPort;
+import me.golemcore.hive.auth.application.service.OAuth2AuthorizationApplicationService;
 import me.golemcore.hive.auth.application.service.OperatorAuthApplicationService;
+import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -41,4 +44,16 @@ public class AuthApplicationConfiguration {
                 passwordHashPort,
                 operatorTokenPort);
     }
+
+    @Bean
+    public OAuth2AuthorizationApplicationService oAuth2AuthorizationApplicationService(
+            OAuth2AuthorizationCodeRepository authorizationCodeRepository,
+            OperatorAuthApplicationService operatorAuthApplicationService,
+            GolemDirectoryUseCase golemDirectoryUseCase) {
+        return new OAuth2AuthorizationApplicationService(
+                authorizationCodeRepository,
+                operatorAuthApplicationService,
+                golemDirectoryUseCase);
+    }
+
 }

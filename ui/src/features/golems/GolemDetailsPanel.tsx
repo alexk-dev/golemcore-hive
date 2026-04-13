@@ -14,6 +14,7 @@ interface GolemDetailsModalProps {
   onPause: () => void | Promise<void>;
   onResume: () => Promise<void>;
   onRevoke: () => void | Promise<void>;
+  onDashboardSsoChange: (enabled: boolean) => void | Promise<void>;
 }
 
 export function GolemDetailsModal({
@@ -26,6 +27,7 @@ export function GolemDetailsModal({
   onPause,
   onResume,
   onRevoke,
+  onDashboardSsoChange,
 }: GolemDetailsModalProps) {
   if (!golem) {
     return null;
@@ -69,10 +71,12 @@ export function GolemDetailsModal({
           state={golem.state}
           pauseReason={golem.pauseReason}
           revokeReason={golem.revokeReason}
+          dashboardSsoEnabled={golem.dashboardSsoEnabled}
           isBusy={isBusy}
           onPause={onPause}
           onResume={onResume}
           onRevoke={onRevoke}
+          onDashboardSsoChange={onDashboardSsoChange}
         />
       </div>
     </div>
@@ -240,19 +244,23 @@ function GolemLifecycleActions({
   state,
   pauseReason,
   revokeReason,
+  dashboardSsoEnabled,
   isBusy,
   onPause,
   onResume,
   onRevoke,
+  onDashboardSsoChange,
 }: {
   golemId: string;
   state: string;
   pauseReason: string | null;
   revokeReason: string | null;
+  dashboardSsoEnabled: boolean;
   isBusy: boolean;
   onPause: () => void | Promise<void>;
   onResume: () => Promise<void>;
   onRevoke: () => void | Promise<void>;
+  onDashboardSsoChange: (enabled: boolean) => void | Promise<void>;
 }) {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
@@ -283,6 +291,16 @@ function GolemLifecycleActions({
           Pause
         </button>
       )}
+      <label className="flex items-center gap-1.5 text-xs text-foreground">
+        <input
+          type="checkbox"
+          checked={dashboardSsoEnabled}
+          disabled={isBusy || state === 'REVOKED'}
+          onChange={(event) => void onDashboardSsoChange(event.target.checked)}
+          className="h-3 w-3 border-border text-primary focus:ring-primary"
+        />
+        <span>Hive SSO</span>
+      </label>
       <button
         type="button"
         onClick={() => void onRevoke()}

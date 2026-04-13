@@ -19,16 +19,11 @@
 package me.golemcore.hive.auth.application.port.out;
 
 import java.util.Optional;
-import me.golemcore.hive.auth.application.OperatorRefreshTokenClaims;
-import me.golemcore.hive.domain.model.OperatorAccount;
+import me.golemcore.hive.auth.application.OAuth2AuthorizationCode;
 
-public interface OperatorTokenPort {
+public interface OAuth2AuthorizationCodeRepository {
 
-    String issueAccessToken(OperatorAccount operatorAccount);
+    void save(OAuth2AuthorizationCode authorizationCode);
 
-    String issueAccessTokenForAudience(OperatorAccount operatorAccount, String audience);
-
-    String issueRefreshToken(OperatorAccount operatorAccount, String sessionId);
-
-    Optional<OperatorRefreshTokenClaims> parseRefreshToken(String refreshToken);
+    Optional<OAuth2AuthorizationCode> consume(String code);
 }

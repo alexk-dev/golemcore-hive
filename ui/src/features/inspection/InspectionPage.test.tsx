@@ -575,6 +575,7 @@ function createGolem(state: string) {
       capabilitySnapshotHash: 'abc123',
     },
     roleSlugs: ['ops'],
+    dashboardSsoEnabled: true,
   };
 }
 

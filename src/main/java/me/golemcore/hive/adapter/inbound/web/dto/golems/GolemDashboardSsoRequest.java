@@ -16,19 +16,6 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.auth.application.port.out;
+package me.golemcore.hive.adapter.inbound.web.dto.golems;
 
-import java.util.Optional;
-import me.golemcore.hive.auth.application.OperatorRefreshTokenClaims;
-import me.golemcore.hive.domain.model.OperatorAccount;
-
-public interface OperatorTokenPort {
-
-    String issueAccessToken(OperatorAccount operatorAccount);
-
-    String issueAccessTokenForAudience(OperatorAccount operatorAccount, String audience);
-
-    String issueRefreshToken(OperatorAccount operatorAccount, String sessionId);
-
-    Optional<OperatorRefreshTokenClaims> parseRefreshToken(String refreshToken);
-}
+public record GolemDashboardSsoRequest(boolean enabled){}

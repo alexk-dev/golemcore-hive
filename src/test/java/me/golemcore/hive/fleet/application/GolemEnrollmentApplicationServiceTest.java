@@ -157,6 +157,7 @@ class GolemEnrollmentApplicationServiceTest {
                 "golems:heartbeat",
                 "golems:policy:read",
                 "golems:policy:write",
+                "golems:dashboard:sso",
                 "golems:sdlc:read",
                 "golems:sdlc:write");
         when(golemTokenPort.issueAccessToken(golem, rotatedScopes)).thenReturn("new-access-token");
@@ -208,6 +209,7 @@ class GolemEnrollmentApplicationServiceTest {
                 "golems:heartbeat",
                 "golems:policy:read",
                 "golems:policy:write",
+                "golems:dashboard:sso",
                 "golems:sdlc:read",
                 "golems:sdlc:write");
         when(golemTokenPort.issueAccessToken(golem, registrationScopes))

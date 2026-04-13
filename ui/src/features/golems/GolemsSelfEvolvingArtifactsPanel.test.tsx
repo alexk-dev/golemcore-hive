@@ -118,6 +118,7 @@ function createGolems(): GolemSummary[] {
       lastSeenAt: '2026-03-30T20:00:00Z',
       missedHeartbeatCount: 0,
       roleSlugs: ['worker'],
+      dashboardSsoEnabled: true,
     },
     {
       id: 'golem-2',
@@ -129,6 +130,7 @@ function createGolems(): GolemSummary[] {
       lastSeenAt: '2026-03-30T20:10:00Z',
       missedHeartbeatCount: 0,
       roleSlugs: ['worker'],
+      dashboardSsoEnabled: true,
     },
   ];
 }

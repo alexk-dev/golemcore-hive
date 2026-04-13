@@ -149,6 +149,7 @@ public class GolemEnrollmentApplicationService implements GolemEnrollmentUseCase
                 GolemScope.HEARTBEAT.value(),
                 GolemScope.POLICY_READ.value(),
                 GolemScope.POLICY_WRITE.value(),
+                GolemScope.DASHBOARD_SSO.value(),
                 GolemScope.SDLC_READ.value(),
                 GolemScope.SDLC_WRITE.value());
     }

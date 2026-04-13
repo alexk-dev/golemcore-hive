@@ -15,6 +15,7 @@ hive:
     cookie:
       secure: true
       same-site: Lax
+      path: /api/v1
   bootstrap:
     admin:
       enabled: true

@@ -27,18 +27,21 @@ import lombok.RequiredArgsConstructor;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.ActionReasonRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemAuthResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemCapabilitySnapshotRequest;
+import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemDashboardSsoRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemDetailsResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemPolicyBindingResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemSummaryResponse;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.GolemTokenRotateRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.HeartbeatRequest;
 import me.golemcore.hive.adapter.inbound.web.dto.golems.RegisterGolemRequest;
+import me.golemcore.hive.adapter.inbound.web.security.AuthenticatedActor;
 import me.golemcore.hive.config.HiveProperties;
 import me.golemcore.hive.domain.model.Golem;
 import me.golemcore.hive.domain.model.GolemCapabilitySnapshot;
 import me.golemcore.hive.domain.model.GolemPolicyBinding;
 import me.golemcore.hive.domain.model.GolemScope;
 import me.golemcore.hive.domain.model.HeartbeatPing;
+import me.golemcore.hive.fleet.application.ActorContext;
 import me.golemcore.hive.fleet.application.MachineTokenPair;
 import me.golemcore.hive.fleet.application.RegistrationResult;
 import me.golemcore.hive.fleet.application.port.in.GolemEnrollmentUseCase;
@@ -157,6 +160,7 @@ public class GolemsController {
                     .appliedPolicyVersion(request != null ? request.appliedPolicyVersion() : null)
                     .syncStatus(request != null ? request.syncStatus() : null)
                     .lastPolicyErrorDigest(request != null ? request.lastPolicyErrorDigest() : null)
+                    .dashboardBaseUrl(request != null ? request.dashboardBaseUrl() : null)
                     .build();
             Golem golem = golemFleetUseCase.updateHeartbeat(golemId, heartbeatPing);
             if (request != null) {
@@ -206,6 +210,19 @@ public class GolemsController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    @PostMapping("/{golemId}/dashboard-sso")
+    public Mono<ResponseEntity<GolemDetailsResponse>> updateDashboardSso(
+            Principal principal,
+            @PathVariable String golemId,
+            @RequestBody GolemDashboardSsoRequest request) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Golem golem = golemFleetUseCase.updateDashboardSso(golemId, request.enabled(),
+                    new ActorContext(actor.getSubjectId(), actor.getName()));
+            return ResponseEntity.ok(toDetailsResponse(golem));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
     private GolemAuthResponse toAuthResponse(Golem golem, MachineTokenPair tokens) {
         return new GolemAuthResponse(
                 golem.getId(),
@@ -231,7 +248,8 @@ public class GolemsController {
                 golem.getLastSeenAt(),
                 golem.getMissedHeartbeatCount(),
                 golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList(),
-                toPolicyBindingResponse(golem.getPolicyBinding()));
+                toPolicyBindingResponse(golem.getPolicyBinding()),
+                golem.isDashboardSsoEnabled());
     }
 
     private GolemDetailsResponse toDetailsResponse(Golem golem) {
@@ -257,7 +275,8 @@ public class GolemsController {
                 toCapabilitiesRequest(golem.getCapabilitySnapshot()),
                 toHeartbeatRequest(golem.getLastHeartbeat()),
                 golem.getRoleBindings().stream().map(binding -> binding.getRoleSlug()).sorted().toList(),
-                toPolicyBindingResponse(golem.getPolicyBinding()));
+                toPolicyBindingResponse(golem.getPolicyBinding()),
+                golem.isDashboardSsoEnabled());
     }
 
     private GolemCapabilitySnapshot toCapabilitySnapshot(GolemCapabilitySnapshotRequest request) {
@@ -321,7 +340,8 @@ public class GolemsController {
                 heartbeatPing.getTargetPolicyVersion(),
                 heartbeatPing.getAppliedPolicyVersion(),
                 heartbeatPing.getSyncStatus(),
-                heartbeatPing.getLastPolicyErrorDigest());
+                heartbeatPing.getLastPolicyErrorDigest(),
+                heartbeatPing.getDashboardBaseUrl());
     }
 
     private GolemPolicyBindingResponse toPolicyBindingResponse(GolemPolicyBinding policyBinding) {

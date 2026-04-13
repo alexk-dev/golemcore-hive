@@ -101,6 +101,20 @@ public class OperatorAuthApplicationService {
         return operatorAccountRepository.findByUsername(username);
     }
 
+    public Optional<OperatorAuthResult> issueSsoTokens(String operatorId, String audience) {
+        if (operatorId == null || operatorId.isBlank() || audience == null || audience.isBlank()) {
+            return Optional.empty();
+        }
+        OperatorAccount operator = operatorAccountRepository.findById(operatorId).orElse(null);
+        if (operator == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new OperatorAuthResult(
+                operator,
+                operatorTokenPort.issueAccessTokenForAudience(operator, audience),
+                null));
+    }
+
     private OperatorAuthResult issueTokens(OperatorAccount operator, RefreshSession existingSession) {
         Instant now = Instant.now();
         String sessionId = existingSession != null

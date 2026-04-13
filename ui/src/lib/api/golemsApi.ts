@@ -30,6 +30,7 @@ export interface HeartbeatSnapshot {
   appliedPolicyVersion?: number | null;
   syncStatus?: string | null;
   lastPolicyErrorDigest?: string | null;
+  dashboardBaseUrl?: string | null;
 }
 
 export interface GolemPolicyBinding {
@@ -55,6 +56,7 @@ export interface GolemSummary {
   missedHeartbeatCount: number;
   roleSlugs: string[];
   policyBinding?: GolemPolicyBinding | null;
+  dashboardSsoEnabled: boolean;
 }
 
 export interface GolemDetails {
@@ -80,6 +82,7 @@ export interface GolemDetails {
   lastHeartbeat: HeartbeatSnapshot | null;
   roleSlugs: string[];
   policyBinding?: GolemPolicyBinding | null;
+  dashboardSsoEnabled: boolean;
 }
 
 export interface EnrollmentToken {
@@ -224,6 +227,13 @@ export function pauseGolem(golemId: string, reason?: string) {
 export function resumeGolem(golemId: string) {
   return apiRequest<GolemDetails>(`/api/v1/golems/${golemId}:resume`, {
     method: 'POST',
+  });
+}
+
+export function updateGolemDashboardSso(golemId: string, enabled: boolean) {
+  return apiRequest<GolemDetails>(`/api/v1/golems/${golemId}/dashboard-sso`, {
+    method: 'POST',
+    body: JSON.stringify({ enabled }),
   });
 }
 

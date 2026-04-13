@@ -58,6 +58,7 @@ public class HiveProperties {
         private String audience = "golemcore-hive-ui";
         @NotBlank
         private String golemAudience = "golemcore-hive-golem";
+        private boolean validateAudience;
         private String secret = "";
         @Min(1)
         private int accessExpirationMinutes = 30;
@@ -77,7 +78,7 @@ public class HiveProperties {
         @NotBlank
         private String sameSite = "Lax";
         @NotBlank
-        private String path = "/api/v1/auth";
+        private String path = "/api/v1";
     }
 
     @Data

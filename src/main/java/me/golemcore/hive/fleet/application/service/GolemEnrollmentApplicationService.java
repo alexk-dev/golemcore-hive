@@ -113,13 +113,7 @@ public class GolemEnrollmentApplicationService implements GolemEnrollmentUseCase
         EnrollmentToken enrollmentToken = validateEnrollmentToken(enrollmentTokenValue);
         Golem golem = golemFleetUseCase.registerGolem(displayName, hostLabel, runtimeVersion, buildVersion,
                 supportedChannels, capabilitySnapshot, enrollmentToken.getId());
-        List<String> scopes = List.of(
-                GolemScope.CONTROL_CONNECT.value(),
-                GolemScope.EVENTS_WRITE.value(),
-                GolemScope.HEARTBEAT.value(),
-                GolemScope.POLICY_READ.value(),
-                GolemScope.POLICY_WRITE.value());
-        MachineTokenPair tokens = issueMachineTokens(golem, scopes, null);
+        MachineTokenPair tokens = issueMachineTokens(golem, defaultMachineScopes(), null);
         enrollmentToken.setLastUsedAt(Instant.now());
         enrollmentToken.setRegistrationCount(enrollmentToken.getRegistrationCount() + 1L);
         enrollmentToken.setLastRegisteredGolemId(golem.getId());
@@ -145,7 +139,26 @@ public class GolemEnrollmentApplicationService implements GolemEnrollmentUseCase
         if (golem == null || golem.getState() == GolemState.REVOKED) {
             return null;
         }
-        return issueMachineTokens(golem, List.copyOf(session.getScopes()), session);
+        return issueMachineTokens(golem, mergeDefaultMachineScopes(session.getScopes()), session);
+    }
+
+    private List<String> defaultMachineScopes() {
+        return List.of(
+                GolemScope.CONTROL_CONNECT.value(),
+                GolemScope.EVENTS_WRITE.value(),
+                GolemScope.HEARTBEAT.value(),
+                GolemScope.POLICY_READ.value(),
+                GolemScope.POLICY_WRITE.value(),
+                GolemScope.SDLC_READ.value(),
+                GolemScope.SDLC_WRITE.value());
+    }
+
+    private List<String> mergeDefaultMachineScopes(Set<String> existingScopes) {
+        Set<String> mergedScopes = new java.util.LinkedHashSet<>(defaultMachineScopes());
+        if (existingScopes != null) {
+            mergedScopes.addAll(existingScopes);
+        }
+        return List.copyOf(mergedScopes);
     }
 
     private EnrollmentToken validateEnrollmentToken(String enrollmentTokenValue) {

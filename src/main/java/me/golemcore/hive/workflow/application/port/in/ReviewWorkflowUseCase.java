@@ -21,6 +21,7 @@ package me.golemcore.hive.workflow.application.port.in;
 import java.util.List;
 import me.golemcore.hive.domain.model.Card;
 import me.golemcore.hive.domain.model.CardReviewDecision;
+import me.golemcore.hive.workflow.application.WorkflowActor;
 
 public interface ReviewWorkflowUseCase {
 
@@ -31,6 +32,13 @@ public interface ReviewWorkflowUseCase {
             Integer requiredReviewCount,
             String actorId,
             String actorName);
+
+    Card requestReview(
+            String cardId,
+            List<String> reviewerGolemIds,
+            String reviewerTeamId,
+            Integer requiredReviewCount,
+            WorkflowActor actor);
 
     Card activateReviewForCompletedWork(String implementationCardId, String actorId, String actorName);
 

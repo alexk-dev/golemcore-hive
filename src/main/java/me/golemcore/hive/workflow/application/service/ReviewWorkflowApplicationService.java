@@ -39,6 +39,7 @@ import me.golemcore.hive.domain.model.ThreadRecord;
 import me.golemcore.hive.domain.model.Team;
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.workflow.application.CardCreateCommand;
+import me.golemcore.hive.workflow.application.WorkflowActor;
 import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ReviewWorkflowUseCase;
@@ -82,6 +83,21 @@ public class ReviewWorkflowApplicationService implements ReviewWorkflowUseCase {
             Integer requiredReviewCount,
             String actorId,
             String actorName) {
+        return requestReview(
+                cardId,
+                reviewerGolemIds,
+                reviewerTeamId,
+                requiredReviewCount,
+                WorkflowActor.operator(actorId, actorName));
+    }
+
+    @Override
+    public Card requestReview(
+            String cardId,
+            List<String> reviewerGolemIds,
+            String reviewerTeamId,
+            Integer requiredReviewCount,
+            WorkflowActor actor) {
         Card implementationCard = cardWorkflowUseCase.getCard(cardId);
         List<String> normalizedReviewerIds = normalizeIds(reviewerGolemIds);
         String normalizedReviewerTeamId = normalizeOptionalId(reviewerTeamId);
@@ -114,9 +130,9 @@ public class ReviewWorkflowApplicationService implements ReviewWorkflowUseCase {
         workflowAuditPort.record(AuditEvent.builder()
                 .eventType("card.review_requested")
                 .severity("INFO")
-                .actorType("OPERATOR")
-                .actorId(actorId)
-                .actorName(actorName)
+                .actorType(actor.auditType())
+                .actorId(actor.id())
+                .actorName(actor.name())
                 .targetType("CARD")
                 .targetId(implementationCard.getId())
                 .boardId(implementationCard.getBoardId())
@@ -467,7 +483,7 @@ public class ReviewWorkflowApplicationService implements ReviewWorkflowUseCase {
                 card.getId(),
                 targetColumnId,
                 null,
-                CardTransitionOrigin.BOARD_AUTOMATION,
+                CardTransitionOrigin.GOLEM_SDLC,
                 actorId,
                 actorName,
                 summary != null ? summary : card.getTitle());

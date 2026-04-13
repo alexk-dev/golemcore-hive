@@ -16,8 +16,16 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.domain.model;
+package me.golemcore.hive.workflow.application;
 
-public enum CardTransitionOrigin {
-    MANUAL, FLOW_REMAP, GOLEM_SIGNAL, BOARD_AUTOMATION, GOLEM_SDLC
-}
+import me.golemcore.hive.domain.model.ActorType;
+
+public record WorkflowActor(ActorType type,String id,String name){
+
+public static WorkflowActor operator(String id,String name){return new WorkflowActor(ActorType.OPERATOR,id,name);}
+
+public static WorkflowActor golem(String id,String name){return new WorkflowActor(ActorType.GOLEM,id,name);}
+
+public static WorkflowActor system(String id,String name){return new WorkflowActor(ActorType.SYSTEM,id,name);}
+
+public String auditType(){return type!=null?type.name():ActorType.OPERATOR.name();}}

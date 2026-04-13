@@ -16,7 +16,7 @@ type InspectionPageController = ReturnType<typeof useInspectionPageController>;
 export function InspectionPage() {
   const { golemId } = useParams();
   const controller = useInspectionPageController(golemId ?? '');
-  const [activeTab, setActiveTab] = useState<InspectionTab>('session');
+  const [activeTab, setActiveTab] = useState<InspectionTab>('overview');
 
   if (!controller.hasResolvedGolemId) {
     return <MissingGolemIdPanel />;
@@ -97,6 +97,7 @@ function ActionDialogSection({
 
 function buildOnlineInspectionProps(controller: InspectionPageController) {
   return {
+    golem: controller.golemQuery.data,
     sessions: controller.sessionsQuery.data ?? [],
     selectedSessionId: controller.selectedSessionId,
     sessionsLoading: controller.sessionsQuery.isLoading,

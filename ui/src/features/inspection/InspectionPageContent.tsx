@@ -1,8 +1,6 @@
-import type { ApprovalRequest } from '../../lib/api/approvalsApi';
 import type { ComponentProps, ReactNode } from 'react';
-import { readErrorMessage } from '../../lib/format';
-
-export type InspectionTab = 'session' | 'self-evolving';
+import type { ApprovalRequest } from '../../lib/api/approvalsApi';
+import type { GolemDetails } from '../../lib/api/golemsApi';
 import type {
   InspectionMessage,
   InspectionSessionDetail,
@@ -22,12 +20,21 @@ import type {
   SelfEvolvingTacticSearchResponse,
   SelfEvolvingRun,
 } from '../../lib/api/selfEvolvingApi';
+import { readErrorMessage } from '../../lib/format';
+import { InspectionOverviewTab } from './InspectionOverviewTab';
 import { InspectionSessionsSidebar } from './InspectionPageSections';
 import { InspectionSelfEvolvingSection } from './InspectionSelfEvolvingSection';
 import {
   InspectionSelectedSessionContent,
 } from './InspectionSelectedSessionContent';
 import { hasTraceSummaryData } from './inspectionPageUtils';
+import { buildSelectedSessionView } from './inspectionSessionView';
+import { handleTablistArrowKeys, tabId, tabPanelId } from './tabListNavigation';
+
+export type InspectionTab = 'overview' | 'session' | 'self-evolving';
+
+const TAB_NAMESPACE = 'inspection';
+const TAB_ORDER: InspectionTab[] = ['overview', 'session', 'self-evolving'];
 
 function NoticePanel({ children }: { children: string }) {
   return (
@@ -79,6 +86,7 @@ export function InspectionStatusPanels({
 }
 
 interface InspectionOnlineContentProps {
+  golem: GolemDetails | undefined;
   sessions: InspectionSessionSummary[];
   selectedSessionId: string | null;
   sessionsLoading: boolean;
@@ -138,6 +146,7 @@ interface InspectionOnlineContentProps {
 }
 
 export function InspectionOnlineContent({
+  golem,
   sessions,
   selectedSessionId,
   sessionsLoading,
@@ -213,13 +222,38 @@ export function InspectionOnlineContent({
         active={activeTab}
         onChange={onTabChange}
         tabs={[
-          { key: 'session', label: 'Session & Trace', badge: sessionBadge },
+          { key: 'overview', label: 'Overview' },
+          { key: 'session', label: 'Sessions', badge: sessionBadge },
           { key: 'self-evolving', label: 'Self-Evolving', badge: selfEvolvingBadge },
         ]}
       />
 
+      {activeTab === 'overview' ? (
+        <div
+          role="tabpanel"
+          id={tabPanelId(TAB_NAMESPACE, 'overview')}
+          aria-labelledby={tabId(TAB_NAMESPACE, 'overview')}
+        >
+          <InspectionOverviewTab
+            golem={golem}
+            sessions={sessions}
+            traceSummary={traceSummary}
+            selfEvolvingRuns={selfEvolvingRuns}
+            promotionApprovals={promotionApprovals}
+            onOpenSessions={() => onTabChange('session')}
+            onOpenSelfEvolving={() => onTabChange('self-evolving')}
+            onSelectSession={onSelectSession}
+          />
+        </div>
+      ) : null}
+
       {activeTab === 'session' ? (
-        <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+        <div
+          role="tabpanel"
+          id={tabPanelId(TAB_NAMESPACE, 'session')}
+          aria-labelledby={tabId(TAB_NAMESPACE, 'session')}
+          className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]"
+        >
           <InspectionSessionsSidebar
             sessions={sessions}
             selectedSessionId={selectedSessionId}
@@ -256,8 +290,15 @@ export function InspectionOnlineContent({
             />
           </div>
         </div>
-      ) : (
-        <div className="grid gap-4 min-w-0">
+      ) : null}
+
+      {activeTab === 'self-evolving' ? (
+        <div
+          role="tabpanel"
+          id={tabPanelId(TAB_NAMESPACE, 'self-evolving')}
+          aria-labelledby={tabId(TAB_NAMESPACE, 'self-evolving')}
+          className="grid gap-4 min-w-0"
+        >
           <InspectionSelfEvolvingContent
             runs={selfEvolvingRuns}
             selectedRunId={selectedSelfEvolvingRunId}
@@ -289,7 +330,7 @@ export function InspectionOnlineContent({
             onSelectTacticId={onSelectTacticId}
           />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -320,10 +361,14 @@ function InspectionTabBar({
         return (
           <button
             key={tab.key}
+            id={tabId(TAB_NAMESPACE, tab.key)}
             type="button"
             role="tab"
             aria-selected={isActive}
+            aria-controls={tabPanelId(TAB_NAMESPACE, tab.key)}
+            tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(tab.key)}
+            onKeyDown={(event) => handleTablistArrowKeys(event, TAB_ORDER, active, onChange)}
             className={[
               'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition',
               isActive
@@ -353,66 +398,4 @@ function InspectionTabBar({
 
 function InspectionSelfEvolvingContent(props: ComponentProps<typeof InspectionSelfEvolvingSection>) {
   return <InspectionSelfEvolvingSection {...props} />;
-}
-
-function buildSelectedSessionView(
-  selectedSessionId: string,
-  selectedSessionSummary: InspectionSessionSummary | null,
-  selectedSession: InspectionSessionDetail | undefined,
-) {
-  return {
-    channelType: resolveChannelType(selectedSessionSummary, selectedSession),
-    conversationKey: resolveConversationKey(selectedSessionId, selectedSessionSummary, selectedSession),
-    preview: resolvePreview(selectedSessionSummary),
-    title: resolveTitle(selectedSessionId, selectedSessionSummary),
-    updatedAt: resolveUpdatedAt(selectedSessionSummary, selectedSession),
-  };
-}
-
-function resolveChannelType(
-  selectedSessionSummary: InspectionSessionSummary | null,
-  selectedSession: InspectionSessionDetail | undefined,
-): string {
-  if (selectedSessionSummary?.channelType) {
-    return selectedSessionSummary.channelType;
-  }
-  if (selectedSession?.channelType) {
-    return selectedSession.channelType;
-  }
-  return 'unknown';
-}
-
-function resolveConversationKey(
-  selectedSessionId: string,
-  selectedSessionSummary: InspectionSessionSummary | null,
-  selectedSession: InspectionSessionDetail | undefined,
-): string {
-  if (selectedSessionSummary?.conversationKey) {
-    return selectedSessionSummary.conversationKey;
-  }
-  if (selectedSession?.conversationKey) {
-    return selectedSession.conversationKey;
-  }
-  return selectedSessionId;
-}
-
-function resolvePreview(selectedSessionSummary: InspectionSessionSummary | null): string | null {
-  return selectedSessionSummary?.preview ?? null;
-}
-
-function resolveTitle(selectedSessionId: string, selectedSessionSummary: InspectionSessionSummary | null): string {
-  if (selectedSessionSummary?.title) {
-    return selectedSessionSummary.title;
-  }
-  return selectedSessionId;
-}
-
-function resolveUpdatedAt(
-  selectedSessionSummary: InspectionSessionSummary | null,
-  selectedSession: InspectionSessionDetail | undefined,
-): string | null {
-  if (selectedSessionSummary?.updatedAt) {
-    return selectedSessionSummary.updatedAt;
-  }
-  return selectedSession?.updatedAt ?? null;
 }

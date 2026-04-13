@@ -418,6 +418,12 @@ describe('InspectionPage', () => {
         { timeout: INSPECTION_PAGE_SCENARIO_TIMEOUT_MS },
       ),
     ).toBeInTheDocument();
+
+    expect(await screen.findByText('Runtime profile')).toBeInTheDocument();
+    expect(screen.getByText('Recent sessions')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Sessions/i }));
+
     expect(
       await screen.findByRole(
         'button',
@@ -448,15 +454,29 @@ describe('InspectionPage', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: /Self-Evolving/i }));
 
+    expect(await screen.findByRole('tab', { name: /^Runs/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Candidates/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Approvals/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Artifacts/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Lineage/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Tactics/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Benchmarks/i })).toBeInTheDocument();
+
     expect(await screen.findByText('Judging')).toBeInTheDocument();
-    expect(screen.getByText('Lineage')).toBeInTheDocument();
-    expect(await screen.findByText('Artifacts')).toBeInTheDocument();
-    expect(screen.getByText('Planner skill')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Artifacts/i }));
+    expect(await screen.findByText('Planner skill')).toBeInTheDocument();
     expect(screen.getByText('Semantic diff')).toBeInTheDocument();
-    expect(screen.getByText('Candidate queue')).toBeInTheDocument();
-    expect(screen.getByText('Benchmark lab')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Candidates/i }));
+    expect(await screen.findByText('Candidate queue')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Benchmarks/i }));
+    expect(await screen.findByText('Benchmark lab')).toBeInTheDocument();
     expect(screen.getAllByText('campaign-1').length).toBeGreaterThan(0);
-    expect(screen.getByText('Promotion approvals')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^Approvals/i }));
+    expect(await screen.findByText('Promotion approvals')).toBeInTheDocument();
   }, INSPECTION_PAGE_SCENARIO_TIMEOUT_MS);
 
   it('shows the online-only gate when the golem is offline', async () => {
@@ -503,6 +523,12 @@ describe('InspectionPage', () => {
     });
 
     renderPage();
+
+    expect(
+      await screen.findByText('Runtime profile', {}, { timeout: INSPECTION_PAGE_SCENARIO_TIMEOUT_MS }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Sessions/i }));
 
     expect(
       await screen.findByText('No traces captured for this session.', {}, { timeout: INSPECTION_PAGE_SCENARIO_TIMEOUT_MS }),

@@ -262,15 +262,15 @@ export function InspectionMessagesPanel({
   const messages = session?.messages ?? [];
 
   return (
-    <section className="panel p-4">
+    <section className="panel flex min-w-0 flex-col p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold text-foreground">Messages</h3>
-          <p className="text-xs text-muted-foreground">{messages.length} visible messages in this session</p>
+          <p className="text-xs text-muted-foreground">{messages.length} visible messages</p>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3">
+      <div className="mt-3 grid max-h-[60vh] gap-3 overflow-y-auto pr-1">
         {isLoading ? <p className="text-sm text-muted-foreground">Loading messages...</p> : null}
         {error ? <p className="text-sm text-rose-300">{readErrorMessage(error)}</p> : null}
         {messages.length === 0 && !isLoading ? (
@@ -316,34 +316,36 @@ export function InspectionSessionHeader({
   onDelete: () => void;
 }) {
   return (
-    <section className="panel p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-bold text-foreground">{title}</h2>
-          <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+    <section className="panel min-w-0 p-4">
+      <div className="grid gap-4">
+        <div className="min-w-0">
+          <h2 className="truncate text-sm font-bold text-foreground">{title}</h2>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span>{channelType}</span>
-            <span>{conversationKey}</span>
+            <span className="truncate">{conversationKey}</span>
             <span>{formatTimestamp(updatedAt)}</span>
           </div>
-          {preview ? <p className="mt-3 max-w-3xl text-sm text-muted-foreground">{preview}</p> : null}
+          {preview ? (
+            <p className="mt-2 line-clamp-2 max-w-3xl text-xs text-muted-foreground">{preview}</p>
+          ) : null}
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[minmax(0,120px)_repeat(4,minmax(0,auto))]">
-          <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="grid gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Keep last
             <input
               type="number"
               min={1}
               value={keepLast}
               onChange={(event) => onKeepLastChange(Number(event.target.value))}
-              className="border border-border bg-panel px-3 py-1.5 text-sm font-medium text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
+              className="w-20 rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-sm font-medium text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/50"
             />
           </label>
           <button
             type="button"
             onClick={onCompact}
             disabled={isMutating}
-            className="border border-border bg-panel px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+            className="rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
           >
             Compact
           </button>
@@ -351,7 +353,7 @@ export function InspectionSessionHeader({
             type="button"
             onClick={onClear}
             disabled={isMutating}
-            className="border border-border bg-panel px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+            className="rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
           >
             Clear
           </button>
@@ -360,7 +362,7 @@ export function InspectionSessionHeader({
               type="button"
               onClick={onExportTrace}
               disabled={isExportingTrace}
-              className="border border-border bg-panel px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+              className="rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
             >
               {isExportingTrace ? 'Exporting...' : 'Export trace'}
             </button>
@@ -369,7 +371,7 @@ export function InspectionSessionHeader({
             type="button"
             onClick={onDelete}
             disabled={isMutating}
-            className="border border-rose-700 bg-rose-900/40 px-3 py-2 text-xs font-semibold text-rose-300 disabled:opacity-60"
+            className="rounded-lg border border-rose-500/50 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/20 disabled:opacity-60"
           >
             Delete
           </button>

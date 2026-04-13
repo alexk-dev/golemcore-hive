@@ -41,9 +41,11 @@ import me.golemcore.hive.domain.model.ThreadRecord;
 import me.golemcore.hive.execution.application.port.in.ExecutionOperationsUseCase;
 import me.golemcore.hive.workflow.application.CardCreateCommand;
 import me.golemcore.hive.workflow.application.CardQuery;
+import me.golemcore.hive.workflow.application.WorkflowActor;
 import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ReviewWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ThreadWorkflowUseCase;
+import me.golemcore.hive.workflow.application.service.GolemCardAccessPolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -66,6 +68,7 @@ public class GolemSdlcController extends BoardMappingSupport {
     private final ExecutionOperationsUseCase executionOperationsUseCase;
     private final ReviewWorkflowUseCase reviewWorkflowUseCase;
     private final ThreadWorkflowUseCase threadWorkflowUseCase;
+    private final GolemCardAccessPolicy golemCardAccessPolicy;
 
     @GetMapping("/cards")
     public Mono<ResponseEntity<List<CardSummaryResponse>>> listCards(
@@ -93,7 +96,7 @@ public class GolemSdlcController extends BoardMappingSupport {
                     epicCardId,
                     reviewOfCardId,
                     objectiveId)).stream()
-                    .filter(card -> canAccessCard(actor, card))
+                    .filter(card -> golemCardAccessPolicy.canAccessCard(actor.getSubjectId(), card))
                     .toList();
             Map<String, CardControlStateSnapshot> controlStates = executionOperationsUseCase
                     .listActiveCardControlStates(cards);
@@ -115,7 +118,7 @@ public class GolemSdlcController extends BoardMappingSupport {
                     golemId,
                     GolemScope.SDLC_READ.value());
             Card card = cardWorkflowUseCase.getCard(cardId);
-            requireCanAccessCard(actor, card);
+            golemCardAccessPolicy.requireCanAccessCard(actor.getSubjectId(), card);
             return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -130,7 +133,7 @@ public class GolemSdlcController extends BoardMappingSupport {
                     principal,
                     golemId,
                     GolemScope.SDLC_WRITE.value());
-            Card relatedCard = requireRelatedCardAccess(actor, request.parentCardId(), request.reviewOfCardId());
+            Card relatedCard = requireRelatedCardAccess(actor, request);
             Card card = cardWorkflowUseCase.createCard(new CardCreateCommand(
                     resolveCreateServiceId(request, relatedCard),
                     request.title(),
@@ -146,7 +149,7 @@ public class GolemSdlcController extends BoardMappingSupport {
                     request.parentCardId(),
                     request.epicCardId(),
                     request.reviewOfCardId(),
-                    request.dependsOnCardIds()), actor.getSubjectId(), actor.getName());
+                    request.dependsOnCardIds()), WorkflowActor.golem(actor.getSubjectId(), actor.getName()));
             return ResponseEntity.status(HttpStatus.CREATED).body(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -163,14 +166,13 @@ public class GolemSdlcController extends BoardMappingSupport {
                     golemId,
                     GolemScope.SDLC_WRITE.value());
             Card existingCard = cardWorkflowUseCase.getCard(cardId);
-            requireCanAccessCard(actor, existingCard);
+            golemCardAccessPolicy.requireCanAccessCard(actor.getSubjectId(), existingCard);
             Card card = reviewWorkflowUseCase.requestReview(
                     cardId,
                     request != null ? request.reviewerGolemIds() : null,
                     request != null ? request.reviewerTeamId() : null,
                     request != null ? request.requiredReviewCount() : null,
-                    actor.getSubjectId(),
-                    actor.getName());
+                    WorkflowActor.golem(actor.getSubjectId(), actor.getName()));
             return ResponseEntity.ok(toCardDetailResponse(card, findControlState(card)));
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -210,16 +212,38 @@ public class GolemSdlcController extends BoardMappingSupport {
         return resolveServiceId(serviceId, boardId);
     }
 
-    private Card requireRelatedCardAccess(AuthenticatedActor actor, String parentCardId, String reviewOfCardId) {
-        String relatedCardId = firstNonBlank(parentCardId, reviewOfCardId);
-        if (relatedCardId == null) {
+    private Card requireRelatedCardAccess(AuthenticatedActor actor, CreateCardRequest request) {
+        Card relatedCard = null;
+        if (hasText(request.parentCardId())) {
+            relatedCard = requireRelatedCardAccess(actor, request.parentCardId());
+        }
+        if (hasText(request.reviewOfCardId())) {
+            Card reviewTargetCard = requireRelatedCardAccess(actor, request.reviewOfCardId());
+            if (relatedCard == null) {
+                relatedCard = reviewTargetCard;
+            }
+        }
+        requireRelatedCardAccess(actor, request.epicCardId());
+        if (request.dependsOnCardIds() != null) {
+            for (String dependsOnCardId : request.dependsOnCardIds()) {
+                requireRelatedCardAccess(actor, dependsOnCardId);
+            }
+        }
+        if (relatedCard == null) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Golem-created cards must reference an accessible parent or review target card");
         }
-        Card relatedCard = cardWorkflowUseCase.getCard(relatedCardId);
-        requireCanAccessCard(actor, relatedCard);
         return relatedCard;
+    }
+
+    private Card requireRelatedCardAccess(AuthenticatedActor actor, String cardId) {
+        if (!hasText(cardId)) {
+            return null;
+        }
+        Card card = cardWorkflowUseCase.getCard(cardId);
+        golemCardAccessPolicy.requireCanAccessCard(actor.getSubjectId(), card);
+        return card;
     }
 
     private String resolveCreateServiceId(CreateCardRequest request, Card relatedCard) {
@@ -234,39 +258,12 @@ public class GolemSdlcController extends BoardMappingSupport {
         if (thread == null || thread.getCardId() == null || thread.getCardId().isBlank()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Thread access denied");
         }
-        requireCanAccessCard(actor, cardWorkflowUseCase.getCard(thread.getCardId()));
+        golemCardAccessPolicy.requireCanAccessCard(actor.getSubjectId(),
+                cardWorkflowUseCase.getCard(thread.getCardId()));
     }
 
-    private void requireCanAccessCard(AuthenticatedActor actor, Card card) {
-        if (!canAccessCard(actor, card)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Card access denied");
-        }
-    }
-
-    private boolean canAccessCard(AuthenticatedActor actor, Card card) {
-        if (actor == null || card == null) {
-            return false;
-        }
-        if (actor.getSubjectId().equals(card.getAssigneeGolemId())
-                || (card.getReviewerGolemIds() != null && card.getReviewerGolemIds().contains(actor.getSubjectId()))) {
-            return true;
-        }
-        String relatedCardId = firstNonBlank(card.getParentCardId(), card.getReviewOfCardId());
-        if (relatedCardId != null) {
-            try {
-                return canAccessCard(actor, cardWorkflowUseCase.getCard(relatedCardId));
-            } catch (IllegalArgumentException exception) { // NOSONAR
-                return false;
-            }
-        }
-        return false;
-    }
-
-    private String firstNonBlank(String first, String second) {
-        if (first != null && !first.isBlank()) {
-            return first;
-        }
-        return second != null && !second.isBlank() ? second : null;
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private CardControlStateSnapshot findControlState(Card card) {

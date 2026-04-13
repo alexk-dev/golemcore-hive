@@ -30,6 +30,7 @@ import me.golemcore.hive.domain.model.AssignmentSuggestion;
 import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.Board;
 import me.golemcore.hive.domain.model.Card;
+import me.golemcore.hive.domain.model.ActorType;
 import me.golemcore.hive.domain.model.CardAssignmentPolicy;
 import me.golemcore.hive.domain.model.CardKind;
 import me.golemcore.hive.domain.model.CardReviewStatus;
@@ -42,6 +43,7 @@ import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.workflow.application.CardCreateCommand;
 import me.golemcore.hive.workflow.application.CardQuery;
 import me.golemcore.hive.workflow.application.CardUpdateCommand;
+import me.golemcore.hive.workflow.application.WorkflowActor;
 import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.CardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ObjectiveWorkflowUseCase;
@@ -171,6 +173,11 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
 
     @Override
     public Card createCard(CardCreateCommand command, String actorId, String actorName) {
+        return createCard(command, WorkflowActor.operator(actorId, actorName));
+    }
+
+    @Override
+    public Card createCard(CardCreateCommand command, WorkflowActor actor) {
         if (command == null) {
             throw new IllegalArgumentException("Card create command is required");
         }
@@ -258,16 +265,16 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
                 .createdAt(now)
                 .updatedAt(now)
                 .lastTransitionAt(now)
-                .createdByOperatorId(actorId)
-                .createdByOperatorUsername(actorName)
+                .createdByOperatorId(actor.type() == ActorType.OPERATOR ? actor.id() : null)
+                .createdByOperatorUsername(actor.type() == ActorType.OPERATOR ? actor.name() : null)
                 .transitionEvents(new ArrayList<>(List.of(CardTransitionEvent.builder()
                         .fromColumnId(null)
                         .toColumnId(targetColumnId)
                         .origin(CardTransitionOrigin.MANUAL)
                         .summary("Card created")
                         .occurredAt(now)
-                        .actorId(actorId)
-                        .actorName(actorName)
+                        .actorId(actor.id())
+                        .actorName(actor.name())
                         .build())))
                 .build();
         cardRepository.save(normalizeCard(card));
@@ -286,9 +293,9 @@ public class CardWorkflowApplicationService implements CardWorkflowUseCase {
         workflowAuditPort.record(AuditEvent.builder()
                 .eventType("card.created")
                 .severity("INFO")
-                .actorType("OPERATOR")
-                .actorId(actorId)
-                .actorName(actorName)
+                .actorType(actor.auditType())
+                .actorId(actor.id())
+                .actorName(actor.name())
                 .targetType("CARD")
                 .targetId(card.getId())
                 .boardId(card.getBoardId())

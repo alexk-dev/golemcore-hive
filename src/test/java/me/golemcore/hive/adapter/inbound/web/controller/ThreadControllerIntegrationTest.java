@@ -732,6 +732,134 @@ class ThreadControllerIntegrationTest {
                 .expectStatus().isForbidden();
     }
 
+    @Test
+    void shouldRejectLifecycleSignalsFromGolemThatCannotAccessCard() throws Exception {
+        String operatorToken = loginAsAdmin();
+        createRole(operatorToken, "developer");
+        RegisteredGolem owner = registerOnlineGolem(operatorToken, "Atlas Signal Owner", "host-signal-owner",
+                "developer");
+        RegisteredGolem other = registerOnlineGolem(operatorToken, "Atlas Signal Other", "host-signal-other",
+                "developer");
+        String boardId = createBoard(operatorToken);
+        String cardId = createCard(operatorToken, boardId, "Private signal card", "ready", owner.golemId());
+        String threadId = getThreadId(operatorToken, cardId);
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/events:batch", other.golemId())
+                .header(HttpHeaders.AUTHORIZATION, other.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "schemaVersion": 1,
+                          "golemId": "%s",
+                          "events": [
+                            {
+                              "eventType": "card_lifecycle_signal",
+                              "signalId": "sig_cross_golem_started",
+                              "cardId": "%s",
+                              "threadId": "%s",
+                              "signalType": "WORK_STARTED",
+                              "summary": "Cross-golem work started"
+                            }
+                          ]
+                        }
+                        """.formatted(other.golemId(), cardId, threadId))
+                .exchange()
+                .expectStatus().isForbidden();
+    }
+
+    @Test
+    void shouldRejectGolemCreatedCardWhenAnyRelatedCardIsInaccessible() throws Exception {
+        String operatorToken = loginAsAdmin();
+        createRole(operatorToken, "developer");
+        RegisteredGolem owner = registerOnlineGolem(operatorToken, "Atlas Link Owner", "host-link-owner", "developer");
+        RegisteredGolem other = registerOnlineGolem(operatorToken, "Atlas Link Other", "host-link-other", "developer");
+        String boardId = createBoard(operatorToken);
+        String ownerCardId = createCard(operatorToken, boardId, "Accessible parent", "ready", owner.golemId());
+        String otherCardId = createCard(operatorToken, boardId, "Inaccessible dependency", "ready", other.golemId());
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/sdlc/cards", owner.golemId())
+                .header(HttpHeaders.AUTHORIZATION, owner.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "title":"Blocked follow-up",
+                          "description":"Should not be allowed",
+                          "prompt":"Investigate the inaccessible dependency.",
+                          "parentCardId":"%s",
+                          "dependsOnCardIds":["%s"],
+                          "assignmentPolicy":"MANUAL",
+                          "autoAssign":false
+                        }
+                        """.formatted(ownerCardId, otherCardId))
+                .exchange()
+                .expectStatus().isForbidden();
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/sdlc/cards", owner.golemId())
+                .header(HttpHeaders.AUTHORIZATION, owner.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "title":"Blocked review follow-up",
+                          "description":"Should not be allowed",
+                          "prompt":"Investigate the inaccessible review target.",
+                          "parentCardId":"%s",
+                          "reviewOfCardId":"%s",
+                          "kind":"REVIEW",
+                          "assignmentPolicy":"MANUAL",
+                          "autoAssign":false
+                        }
+                        """.formatted(ownerCardId, otherCardId))
+                .exchange()
+                .expectStatus().isForbidden();
+    }
+
+    @Test
+    void shouldRejectLifecycleSignalsWithMismatchedRunCard() throws Exception {
+        String operatorToken = loginAsAdmin();
+        createRole(operatorToken, "developer");
+        RegisteredGolem developer = registerOnlineGolem(operatorToken, "Atlas Run Guard", "host-run-guard",
+                "developer");
+        String boardId = createBoard(operatorToken);
+        String firstCardId = createCard(operatorToken, boardId, "First guarded card", "ready", developer.golemId());
+        String secondCardId = createCard(operatorToken, boardId, "Second guarded card", "ready", developer.golemId());
+        String firstThreadId = getThreadId(operatorToken, firstCardId);
+        String secondThreadId = getThreadId(operatorToken, secondCardId);
+        CommandEnvelope firstCommand = createCommand(operatorToken, firstThreadId, "Start guarded work.");
+
+        webTestClient.post()
+                .uri("/api/v1/golems/{golemId}/events:batch", developer.golemId())
+                .header(HttpHeaders.AUTHORIZATION, developer.accessToken())
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "schemaVersion": 1,
+                          "golemId": "%s",
+                          "events": [
+                            {
+                              "eventType": "card_lifecycle_signal",
+                              "signalId": "sig_mismatched_run_card",
+                              "cardId": "%s",
+                              "threadId": "%s",
+                              "commandId": "%s",
+                              "runId": "%s",
+                              "signalType": "WORK_STARTED",
+                              "summary": "Mismatched run card"
+                            }
+                          ]
+                        }
+                        """.formatted(
+                        developer.golemId(),
+                        secondCardId,
+                        secondThreadId,
+                        firstCommand.commandId(),
+                        firstCommand.runId()))
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
     private String createBoard(String operatorToken) throws Exception {
         EntityExchangeResult<String> createBoardResult = webTestClient.post()
                 .uri("/api/v1/boards")

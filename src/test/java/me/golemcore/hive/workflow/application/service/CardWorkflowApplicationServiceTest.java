@@ -19,8 +19,10 @@
 package me.golemcore.hive.workflow.application.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -28,6 +30,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
+import me.golemcore.hive.domain.model.AuditEvent;
 import me.golemcore.hive.domain.model.Board;
 import me.golemcore.hive.domain.model.BoardColumn;
 import me.golemcore.hive.domain.model.BoardTeam;
@@ -38,6 +41,7 @@ import me.golemcore.hive.domain.model.CardKind;
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.workflow.application.CardCreateCommand;
 import me.golemcore.hive.workflow.application.CardQuery;
+import me.golemcore.hive.workflow.application.WorkflowActor;
 import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ObjectiveWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.TeamWorkflowUseCase;
@@ -303,6 +307,61 @@ class CardWorkflowApplicationServiceTest {
                 List.of()),
                 "operator-1",
                 "Hive Admin"));
+    }
+
+    @Test
+    void shouldAuditGolemCreatedCardsAsGolemActions() {
+        InMemoryCardRepository cardRepository = new InMemoryCardRepository();
+        ThreadRepository threadRepository = mock(ThreadRepository.class);
+        BoardWorkflowUseCase boardWorkflowUseCase = mock(BoardWorkflowUseCase.class);
+        WorkflowAssignmentPort workflowAssignmentPort = mock(WorkflowAssignmentPort.class);
+        GolemDirectoryUseCase golemDirectoryUseCase = mock(GolemDirectoryUseCase.class);
+        TeamWorkflowUseCase teamWorkflowUseCase = mock(TeamWorkflowUseCase.class);
+        ObjectiveWorkflowUseCase objectiveWorkflowUseCase = mock(ObjectiveWorkflowUseCase.class);
+        WorkflowAuditPort workflowAuditPort = mock(WorkflowAuditPort.class);
+
+        when(boardWorkflowUseCase.getBoard("service-1")).thenReturn(board());
+
+        CardWorkflowApplicationService service = new CardWorkflowApplicationService(
+                cardRepository,
+                threadRepository,
+                boardWorkflowUseCase,
+                workflowAssignmentPort,
+                golemDirectoryUseCase,
+                teamWorkflowUseCase,
+                objectiveWorkflowUseCase,
+                workflowAuditPort);
+
+        Card card = service.createCard(new CardCreateCommand(
+                "service-1",
+                "Machine follow-up",
+                "Created through SDLC API",
+                "Investigate the follow-up",
+                "inbox",
+                null,
+                null,
+                null,
+                CardAssignmentPolicy.MANUAL,
+                false,
+                CardKind.TASK,
+                null,
+                null,
+                null,
+                List.of()),
+                WorkflowActor.golem("golem-1", "Atlas"));
+
+        assertNull(card.getCreatedByOperatorId());
+        verify(workflowAuditPort).record(org.mockito.ArgumentMatchers.argThat(event -> isCardCreatedByGolem(event)));
+    }
+
+    private boolean isCardCreatedByGolem(AuditEvent.AuditEventBuilder builder) {
+        if (builder == null) {
+            return false;
+        }
+        AuditEvent event = builder.build();
+        return "card.created".equals(event.getEventType())
+                && "GOLEM".equals(event.getActorType())
+                && "golem-1".equals(event.getActorId());
     }
 
     private Board board() {

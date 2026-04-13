@@ -27,6 +27,7 @@ import me.golemcore.hive.domain.model.CardTransitionOrigin;
 import me.golemcore.hive.workflow.application.CardCreateCommand;
 import me.golemcore.hive.workflow.application.CardQuery;
 import me.golemcore.hive.workflow.application.CardUpdateCommand;
+import me.golemcore.hive.workflow.application.WorkflowActor;
 
 public interface CardWorkflowUseCase {
 
@@ -53,6 +54,8 @@ public interface CardWorkflowUseCase {
             String actorName);
 
     Card createCard(CardCreateCommand command, String actorId, String actorName);
+
+    Card createCard(CardCreateCommand command, WorkflowActor actor);
 
     Card updateCard(
             String cardId,

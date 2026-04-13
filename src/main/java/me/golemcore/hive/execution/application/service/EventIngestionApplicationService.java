@@ -23,10 +23,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import me.golemcore.hive.domain.model.CardLifecycleSignal;
+import me.golemcore.hive.domain.model.CommandRecord;
 import me.golemcore.hive.domain.model.EvidenceRef;
 import me.golemcore.hive.domain.model.InspectionResponseEvent;
 import me.golemcore.hive.domain.model.LifecycleSignalType;
 import me.golemcore.hive.domain.model.RuntimeEventType;
+import me.golemcore.hive.domain.model.RunProjection;
 import me.golemcore.hive.execution.application.EventIngestionResult;
 import me.golemcore.hive.execution.application.GolemEventBatchCommand;
 import me.golemcore.hive.execution.application.GolemEventCommand;
@@ -37,6 +39,8 @@ import me.golemcore.hive.execution.application.port.in.GolemInspectionResponseUs
 import me.golemcore.hive.execution.application.port.in.LifecycleSignalResolutionUseCase;
 import me.golemcore.hive.execution.application.port.out.CardLifecycleSignalRepository;
 import me.golemcore.hive.execution.application.port.out.SelfEvolvingEventProjectionPort;
+import me.golemcore.hive.workflow.application.port.in.ThreadWorkflowUseCase;
+import me.golemcore.hive.workflow.application.service.GolemCardAccessPolicy;
 
 public class EventIngestionApplicationService implements EventIngestionUseCase {
 
@@ -58,18 +62,24 @@ public class EventIngestionApplicationService implements EventIngestionUseCase {
     private final LifecycleSignalResolutionUseCase lifecycleSignalResolutionUseCase;
     private final GolemInspectionResponseUseCase golemInspectionResponseUseCase;
     private final SelfEvolvingEventProjectionPort selfEvolvingEventProjectionPort;
+    private final GolemCardAccessPolicy golemCardAccessPolicy;
+    private final ThreadWorkflowUseCase threadWorkflowUseCase;
 
     public EventIngestionApplicationService(
             CardLifecycleSignalRepository cardLifecycleSignalRepository,
             ExecutionOperationsUseCase executionOperationsUseCase,
             LifecycleSignalResolutionUseCase lifecycleSignalResolutionUseCase,
             GolemInspectionResponseUseCase golemInspectionResponseUseCase,
-            SelfEvolvingEventProjectionPort selfEvolvingEventProjectionPort) {
+            SelfEvolvingEventProjectionPort selfEvolvingEventProjectionPort,
+            GolemCardAccessPolicy golemCardAccessPolicy,
+            ThreadWorkflowUseCase threadWorkflowUseCase) {
         this.cardLifecycleSignalRepository = cardLifecycleSignalRepository;
         this.executionOperationsUseCase = executionOperationsUseCase;
         this.lifecycleSignalResolutionUseCase = lifecycleSignalResolutionUseCase;
         this.golemInspectionResponseUseCase = golemInspectionResponseUseCase;
         this.selfEvolvingEventProjectionPort = selfEvolvingEventProjectionPort;
+        this.golemCardAccessPolicy = golemCardAccessPolicy;
+        this.threadWorkflowUseCase = threadWorkflowUseCase;
     }
 
     @Override
@@ -100,6 +110,7 @@ public class EventIngestionApplicationService implements EventIngestionUseCase {
                 runtimeEvents++;
             } else if ("card_lifecycle_signal".equals(event.eventType())) {
                 CardLifecycleSignal signal = toSignal(golemId, event);
+                requireSignalAccess(golemId, signal);
                 cardLifecycleSignalRepository.save(signal);
                 executionOperationsUseCase.applyLifecycleSignal(signal);
                 lifecycleSignalResolutionUseCase.resolve(signal);
@@ -127,6 +138,67 @@ public class EventIngestionApplicationService implements EventIngestionUseCase {
                 lifecycleSignals,
                 autoAppliedTransitions,
                 suggestedTransitions);
+    }
+
+    private void requireSignalAccess(String golemId, CardLifecycleSignal signal) {
+        golemCardAccessPolicy.requireCanAccessCard(golemId, signal.getCardId());
+        requireThreadBelongsToCard(signal.getThreadId(), signal.getCardId());
+        CommandRecord command = findCommand(signal.getCommandId());
+        if (command != null) {
+            requireMatches("Command cardId", command.getCardId(), signal.getCardId());
+            requireMatches("Command golemId", command.getGolemId(), golemId);
+            if (signal.getThreadId() != null && !signal.getThreadId().isBlank()) {
+                requireMatches("Command threadId", command.getThreadId(), signal.getThreadId());
+            }
+            if (signal.getRunId() != null && !signal.getRunId().isBlank()) {
+                requireMatches("Command runId", command.getRunId(), signal.getRunId());
+            }
+        }
+        RunProjection run = findRun(signal.getRunId());
+        if (run != null) {
+            requireMatches("Run cardId", run.getCardId(), signal.getCardId());
+            requireMatches("Run golemId", run.getGolemId(), golemId);
+            if (signal.getThreadId() != null && !signal.getThreadId().isBlank()) {
+                requireMatches("Run threadId", run.getThreadId(), signal.getThreadId());
+            }
+            if (signal.getCommandId() != null && !signal.getCommandId().isBlank()) {
+                requireMatches("Run commandId", run.getCommandId(), signal.getCommandId());
+            }
+        }
+    }
+
+    private void requireThreadBelongsToCard(String threadId, String cardId) {
+        if (threadId == null || threadId.isBlank()) {
+            return;
+        }
+        requireMatches("Thread cardId", threadWorkflowUseCase.getThread(threadId).getCardId(), cardId);
+    }
+
+    private CommandRecord findCommand(String commandId) {
+        if (commandId == null || commandId.isBlank()) {
+            return null;
+        }
+        return executionOperationsUseCase.listAllCommands().stream()
+                .filter(command -> commandId.equals(command.getId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private RunProjection findRun(String runId) {
+        if (runId == null || runId.isBlank()) {
+            return null;
+        }
+        return executionOperationsUseCase.listAllRuns().stream()
+                .filter(run -> runId.equals(run.getId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void requireMatches(String fieldName, String actual, String expected) {
+        if (expected == null || expected.isBlank() || actual == null || actual.isBlank() || expected.equals(actual)) {
+            return;
+        }
+        throw new IllegalArgumentException(fieldName + " does not match lifecycle signal");
     }
 
     private CardLifecycleSignal toSignal(String golemId, GolemEventCommand event) {

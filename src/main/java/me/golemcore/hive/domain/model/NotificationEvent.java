@@ -19,6 +19,8 @@
 package me.golemcore.hive.domain.model;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -38,6 +40,11 @@ public class NotificationEvent {
     private NotificationSeverity severity;
     private String title;
     private String message;
+    private String senderDisplayName;
+
+    @Builder.Default
+    private List<String> tags = new ArrayList<>();
+
     private String boardId;
     private String cardId;
     private String threadId;

@@ -98,6 +98,8 @@ public class SystemController {
                 event.getSeverity().name(),
                 event.getTitle(),
                 event.getMessage(),
+                event.getSenderDisplayName(),
+                event.getTags(),
                 event.getBoardId(),
                 event.getCardId(),
                 event.getThreadId(),

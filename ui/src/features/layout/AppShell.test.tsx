@@ -29,6 +29,7 @@ describe('AppShell', () => {
     expect(screen.getAllByText('Services').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Teams').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Policies').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Mailbox').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Golems').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Roles').length).toBeGreaterThanOrEqual(1);
   });
@@ -52,6 +53,7 @@ function renderShell(initialEntry: string) {
           <Route path="/teams" element={<div>Teams page</div>} />
           <Route path="/services/:serviceId" element={<div>Board page</div>} />
           <Route path="/policies" element={<div>Policies page</div>} />
+          <Route path="/mailbox" element={<div>Mailbox page</div>} />
         </Route>
       </Routes>
     </MemoryRouter>,

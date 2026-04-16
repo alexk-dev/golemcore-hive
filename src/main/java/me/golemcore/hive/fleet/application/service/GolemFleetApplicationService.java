@@ -417,6 +417,8 @@ public class GolemFleetApplicationService
                                 .severity(NotificationSeverity.CRITICAL)
                                 .title("Golem offline")
                                 .message(golem.getDisplayName() + " is offline")
+                                .senderDisplayName(golem.getDisplayName())
+                                .tags(List.of("fleet", "offline"))
                                 .golemId(golem.getId())
                                 .build());
                     }

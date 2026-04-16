@@ -44,6 +44,8 @@ public class GovernanceFleetNotificationAdapter implements FleetNotificationPort
                 .severity(notificationEvent.getSeverity())
                 .title(notificationEvent.getTitle())
                 .message(notificationEvent.getMessage())
+                .senderDisplayName(notificationEvent.getSenderDisplayName())
+                .tags(notificationEvent.getTags())
                 .boardId(notificationEvent.getBoardId())
                 .cardId(notificationEvent.getCardId())
                 .threadId(notificationEvent.getThreadId())

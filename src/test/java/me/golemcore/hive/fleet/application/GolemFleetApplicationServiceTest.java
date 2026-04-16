@@ -156,7 +156,10 @@ class GolemFleetApplicationServiceTest {
         verify(golemRepository).save(argThat(saved -> saved.getState() == GolemState.OFFLINE
                 && saved.getMissedHeartbeatCount() >= settings.offlineAfterMisses()));
         verify(notificationPort).create(argThat(event -> "GOLEM_OFFLINE".equals(event.getType())
-                && "golem_1".equals(event.getGolemId())));
+                && "golem_1".equals(event.getGolemId())
+                && "Builder".equals(event.getSenderDisplayName())
+                && event.getTags().contains("fleet")
+                && event.getTags().contains("offline")));
         verify(auditPort).record(argThat(event -> "golem.state_changed".equals(event.getEventType())
                 && "golem_1".equals(event.getGolemId())));
     }

@@ -16,9 +16,9 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.adapter.inbound.web.dto.system;
+package me.golemcore.hive.adapter.inbound.web.dto.mailbox;
 
-import java.time.Instant;
 import java.util.List;
+import me.golemcore.hive.adapter.inbound.web.dto.system.NotificationEventResponse;
 
-public record NotificationEventResponse(String id,String type,String severity,String title,String message,String senderDisplayName,List<String>tags,String boardId,String cardId,String threadId,String golemId,String commandId,String approvalId,boolean acknowledged,Instant createdAt,Instant acknowledgedAt){}
+public record MailboxMessagesResponse(List<NotificationEventResponse>messages,boolean hasMore){}

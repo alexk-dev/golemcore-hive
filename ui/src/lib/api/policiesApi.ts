@@ -8,9 +8,19 @@ export interface PolicyProviderConfigResponse {
   legacyApi: boolean | null;
 }
 
+export interface PolicyTierFallbackResponse {
+  model: string | null;
+  reasoning: string | null;
+  temperature: number | null;
+  weight: number | null;
+}
+
 export interface PolicyTierBindingResponse {
   model: string | null;
   reasoning: string | null;
+  temperature: number | null;
+  fallbackMode: string | null;
+  fallbacks: PolicyTierFallbackResponse[];
 }
 
 export interface PolicyModelConfigResponse {
@@ -170,9 +180,19 @@ export interface PolicyDraftProviderConfig {
   legacyApi?: boolean | null;
 }
 
+export interface PolicyDraftTierFallback {
+  model?: string | null;
+  reasoning?: string | null;
+  temperature?: number | null;
+  weight?: number | null;
+}
+
 export interface PolicyDraftTierBinding {
   model?: string | null;
   reasoning?: string | null;
+  temperature?: number | null;
+  fallbackMode?: string | null;
+  fallbacks?: PolicyDraftTierFallback[];
 }
 
 export interface PolicyDraftModelConfig {

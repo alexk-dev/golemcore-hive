@@ -585,9 +585,29 @@ final class PolicyMappingSupport {
         if (request == null) {
             return null;
         }
+        List<PolicyGroupSpec.PolicyTierFallback> fallbacks = new ArrayList<>();
+        for (UpdatePolicyGroupDraftRequest.PolicyTierFallbackRequest fallback : request.fallbacks()) {
+            fallbacks.add(toPolicyTierFallback(fallback));
+        }
         return PolicyGroupSpec.PolicyTierBinding.builder()
                 .model(request.model())
                 .reasoning(request.reasoning())
+                .temperature(request.temperature())
+                .fallbackMode(request.fallbackMode())
+                .fallbacks(fallbacks)
+                .build();
+    }
+
+    private static PolicyGroupSpec.PolicyTierFallback toPolicyTierFallback(
+            UpdatePolicyGroupDraftRequest.PolicyTierFallbackRequest request) {
+        if (request == null) {
+            return null;
+        }
+        return PolicyGroupSpec.PolicyTierFallback.builder()
+                .model(request.model())
+                .reasoning(request.reasoning())
+                .temperature(request.temperature())
+                .weight(request.weight())
                 .build();
     }
 
@@ -596,7 +616,18 @@ final class PolicyMappingSupport {
         if (binding == null) {
             return null;
         }
-        return new PolicyGroupResponse.PolicyTierBindingResponse(binding.getModel(), binding.getReasoning());
+        List<PolicyGroupResponse.PolicyTierFallbackResponse> fallbacks = new ArrayList<>();
+        if (binding.getFallbacks() != null) {
+            for (PolicyGroupSpec.PolicyTierFallback fallback : binding.getFallbacks()) {
+                fallbacks.add(toTierFallbackResponse(fallback));
+            }
+        }
+        return new PolicyGroupResponse.PolicyTierBindingResponse(
+                binding.getModel(),
+                binding.getReasoning(),
+                binding.getTemperature(),
+                binding.getFallbackMode(),
+                fallbacks);
     }
 
     private static PolicyPackageResponse.PolicyTierBindingResponse toPackageTierBindingResponse(
@@ -604,7 +635,42 @@ final class PolicyMappingSupport {
         if (binding == null) {
             return null;
         }
-        return new PolicyPackageResponse.PolicyTierBindingResponse(binding.getModel(), binding.getReasoning());
+        List<PolicyPackageResponse.PolicyTierFallbackResponse> fallbacks = new ArrayList<>();
+        if (binding.getFallbacks() != null) {
+            for (PolicyGroupSpec.PolicyTierFallback fallback : binding.getFallbacks()) {
+                fallbacks.add(toPackageTierFallbackResponse(fallback));
+            }
+        }
+        return new PolicyPackageResponse.PolicyTierBindingResponse(
+                binding.getModel(),
+                binding.getReasoning(),
+                binding.getTemperature(),
+                binding.getFallbackMode(),
+                fallbacks);
+    }
+
+    private static PolicyGroupResponse.PolicyTierFallbackResponse toTierFallbackResponse(
+            PolicyGroupSpec.PolicyTierFallback fallback) {
+        if (fallback == null) {
+            return null;
+        }
+        return new PolicyGroupResponse.PolicyTierFallbackResponse(
+                fallback.getModel(),
+                fallback.getReasoning(),
+                fallback.getTemperature(),
+                fallback.getWeight());
+    }
+
+    private static PolicyPackageResponse.PolicyTierFallbackResponse toPackageTierFallbackResponse(
+            PolicyGroupSpec.PolicyTierFallback fallback) {
+        if (fallback == null) {
+            return null;
+        }
+        return new PolicyPackageResponse.PolicyTierFallbackResponse(
+                fallback.getModel(),
+                fallback.getReasoning(),
+                fallback.getTemperature(),
+                fallback.getWeight());
     }
 
     private static PolicyGroupResponse.PolicyMemoryDisclosureResponse toMemoryDisclosureResponse(

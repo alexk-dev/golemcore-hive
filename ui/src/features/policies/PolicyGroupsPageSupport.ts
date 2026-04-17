@@ -149,6 +149,14 @@ export function toEditableDraft(spec: PolicyGroupSpecResponse | null | undefined
             ? {
                 model: spec.modelRouter.routing.model,
                 reasoning: spec.modelRouter.routing.reasoning,
+                temperature: spec.modelRouter.routing.temperature,
+                fallbackMode: spec.modelRouter.routing.fallbackMode,
+                fallbacks: (spec.modelRouter.routing.fallbacks ?? []).map((fallback) => ({
+                  model: fallback.model,
+                  reasoning: fallback.reasoning,
+                  temperature: fallback.temperature,
+                  weight: fallback.weight,
+                })),
               }
             : null,
           tiers: Object.fromEntries(
@@ -157,6 +165,14 @@ export function toEditableDraft(spec: PolicyGroupSpecResponse | null | undefined
               {
                 model: tier.model,
                 reasoning: tier.reasoning,
+                temperature: tier.temperature,
+                fallbackMode: tier.fallbackMode,
+                fallbacks: (tier.fallbacks ?? []).map((fallback) => ({
+                  model: fallback.model,
+                  reasoning: fallback.reasoning,
+                  temperature: fallback.temperature,
+                  weight: fallback.weight,
+                })),
               },
             ]),
           ),

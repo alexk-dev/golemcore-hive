@@ -95,6 +95,22 @@ public class PolicyGroupSpec {
     public static class PolicyTierBinding {
         private String model;
         private String reasoning;
+        private Double temperature;
+        private String fallbackMode;
+
+        @Builder.Default
+        private List<PolicyTierFallback> fallbacks = new ArrayList<>();
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PolicyTierFallback {
+        private String model;
+        private String reasoning;
+        private Double temperature;
+        private Double weight;
     }
 
     @Data

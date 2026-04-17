@@ -39,6 +39,16 @@ const unbindGolemPolicyGroupMock = vi.mocked(unbindGolemPolicyGroup);
 const rollbackPolicyGroupMock = vi.mocked(rollbackPolicyGroup);
 const listGolemsMock = vi.mocked(listGolems);
 
+function createTierBinding(model: string, reasoning: string) {
+  return {
+    model,
+    reasoning,
+    temperature: null,
+    fallbackMode: null,
+    fallbacks: [],
+  };
+}
+
 function runtimeSpecResponse() {
   return {
     tools: {
@@ -135,15 +145,9 @@ describe('PolicyGroupsPage', () => {
           },
           modelRouter: {
             temperature: 0.7,
-            routing: {
-              model: 'openai/gpt-5.1',
-              reasoning: 'low',
-            },
+            routing: createTierBinding('openai/gpt-5.1', 'low'),
             tiers: {
-              balanced: {
-                model: 'openai/gpt-5.1',
-                reasoning: 'low',
-              },
+              balanced: createTierBinding('openai/gpt-5.1', 'low'),
             },
             dynamicTierEnabled: true,
           },
@@ -190,15 +194,9 @@ describe('PolicyGroupsPage', () => {
         },
         modelRouter: {
           temperature: 0.7,
-          routing: {
-            model: 'openai/gpt-5.1',
-            reasoning: 'low',
-          },
+          routing: createTierBinding('openai/gpt-5.1', 'low'),
           tiers: {
-            balanced: {
-              model: 'openai/gpt-5.1',
-              reasoning: 'low',
-            },
+            balanced: createTierBinding('openai/gpt-5.1', 'low'),
           },
           dynamicTierEnabled: true,
         },
@@ -240,15 +238,9 @@ describe('PolicyGroupsPage', () => {
           },
           modelRouter: {
             temperature: 0.7,
-            routing: {
-              model: 'openai/gpt-5.1',
-              reasoning: 'low',
-            },
+            routing: createTierBinding('openai/gpt-5.1', 'low'),
             tiers: {
-              balanced: {
-                model: 'openai/gpt-5.1',
-                reasoning: 'low',
-              },
+              balanced: createTierBinding('openai/gpt-5.1', 'low'),
             },
             dynamicTierEnabled: true,
           },
@@ -380,11 +372,31 @@ describe('PolicyGroupsPage', () => {
               routing: {
                 model: 'openai/gpt-5.1',
                 reasoning: 'medium',
+                temperature: 0.3,
+                fallbackMode: 'weighted',
+                fallbacks: [
+                  {
+                    model: 'openai/gpt-5.1-mini',
+                    reasoning: 'low',
+                    temperature: 0.2,
+                    weight: 0.75,
+                  },
+                ],
               },
               tiers: {
                 balanced: {
                   model: 'openai/gpt-5.1',
                   reasoning: 'medium',
+                  temperature: 0.2,
+                  fallbackMode: 'sequential',
+                  fallbacks: [
+                    {
+                      model: 'openai/gpt-4.1-mini',
+                      reasoning: 'low',
+                      temperature: 0.1,
+                      weight: 1,
+                    },
+                  ],
                 },
               },
               dynamicTierEnabled: true,
@@ -445,6 +457,29 @@ describe('PolicyGroupsPage', () => {
           llmProviders: expect.objectContaining({
             openai: expect.objectContaining({
               requestTimeoutSeconds: 45,
+            }),
+          }),
+          modelRouter: expect.objectContaining({
+            routing: expect.objectContaining({
+              temperature: 0.3,
+              fallbackMode: 'weighted',
+              fallbacks: [
+                expect.objectContaining({
+                  model: 'openai/gpt-5.1-mini',
+                  weight: 0.75,
+                }),
+              ],
+            }),
+            tiers: expect.objectContaining({
+              balanced: expect.objectContaining({
+                temperature: 0.2,
+                fallbackMode: 'sequential',
+                fallbacks: [
+                  expect.objectContaining({
+                    model: 'openai/gpt-4.1-mini',
+                  }),
+                ],
+              }),
             }),
           }),
           tools: expect.objectContaining({

@@ -33,7 +33,11 @@ public record PolicyModelRouterResponse(Double temperature,PolicyTierBindingResp
 
 public PolicyModelRouterResponse{tiers=tiers!=null?tiers:new LinkedHashMap<>();}}
 
-public record PolicyTierBindingResponse(String model,String reasoning){}
+public record PolicyTierBindingResponse(String model,String reasoning,Double temperature,String fallbackMode,List<PolicyTierFallbackResponse>fallbacks){
+
+public PolicyTierBindingResponse{fallbacks=fallbacks!=null?fallbacks:new ArrayList<>();}}
+
+public record PolicyTierFallbackResponse(String model,String reasoning,Double temperature,Double weight){}
 
 public record PolicyModelCatalogResponse(String defaultModel,Map<String,PolicyModelConfigResponse>models){
 

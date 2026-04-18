@@ -122,10 +122,37 @@ class PolicyGroupsControllerIntegrationTest {
                             }
                           },
                           "modelRouter":{
-                            "temperature":0.7,
                             "dynamicTierEnabled":true,
-                            "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
-                            "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
+                            "routing":{
+                              "model":"openai/gpt-5.1",
+                              "reasoning":"low",
+                              "temperature":0.4,
+                              "fallbackMode":"weighted",
+                              "fallbacks":[
+                                {
+                                  "model":"openai/gpt-5.1-mini",
+                                  "reasoning":"low",
+                                  "temperature":0.3,
+                                  "weight":0.75
+                                }
+                              ]
+                            },
+                            "tiers":{
+                              "balanced":{
+                                "model":"openai/gpt-5.1",
+                                "reasoning":"low",
+                                "temperature":0.5,
+                                "fallbackMode":"sequential",
+                                "fallbacks":[
+                                  {
+                                    "model":"openai/gpt-4.1-mini",
+                                    "reasoning":"low",
+                                    "temperature":0.2,
+                                    "weight":1.0
+                                  }
+                                ]
+                              }
+                            }
                           },
                           "modelCatalog":{
                             "defaultModel":"openai/gpt-5.1",
@@ -136,6 +163,20 @@ class PolicyGroupsControllerIntegrationTest {
                                 "supportsVision":true,
                                 "supportsTemperature":true,
                                 "maxInputTokens":200000
+                              },
+                              "openai/gpt-5.1-mini":{
+                                "provider":"openai",
+                                "displayName":"openai/gpt-5.1-mini",
+                                "supportsVision":true,
+                                "supportsTemperature":true,
+                                "maxInputTokens":128000
+                              },
+                              "openai/gpt-4.1-mini":{
+                                "provider":"openai",
+                                "displayName":"openai/gpt-4.1-mini",
+                                "supportsVision":true,
+                                "supportsTemperature":true,
+                                "maxInputTokens":128000
                               }
                             }
                           },
@@ -209,7 +250,10 @@ class PolicyGroupsControllerIntegrationTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.draftSpec.llmProviders.openai.apiType").isEqualTo("openai");
+                .jsonPath("$.draftSpec.llmProviders.openai.apiType").isEqualTo("openai")
+                .jsonPath("$.draftSpec.modelRouter.routing.fallbackMode").isEqualTo("weighted")
+                .jsonPath("$.draftSpec.modelRouter.routing.fallbacks[0].model").isEqualTo("openai/gpt-5.1-mini")
+                .jsonPath("$.draftSpec.modelRouter.tiers.balanced.fallbacks[0].model").isEqualTo("openai/gpt-4.1-mini");
 
         webTestClient.post()
                 .uri("/api/v1/policy-groups/{groupId}/publish", policyGroupId)
@@ -477,6 +521,11 @@ class PolicyGroupsControllerIntegrationTest {
                 .jsonPath("$.targetVersion").isEqualTo(1)
                 .jsonPath("$.checksum").isEqualTo(checksum)
                 .jsonPath("$.llmProviders.openai.apiKey").isEqualTo("secret-openai")
+                .jsonPath("$.modelRouter.routing.fallbackMode").isEqualTo("weighted")
+                .jsonPath("$.modelRouter.routing.fallbacks[0].model").isEqualTo("openai/gpt-5.1-mini")
+                .jsonPath("$.modelRouter.tiers.balanced.temperature").isEqualTo(0.5)
+                .jsonPath("$.modelRouter.tiers.balanced.fallbackMode").isEqualTo("sequential")
+                .jsonPath("$.modelRouter.tiers.balanced.fallbacks[0].model").isEqualTo("openai/gpt-4.1-mini")
                 .jsonPath("$.tools.shellEnvironmentVariables[0].value").isEqualTo("secret-shell-token")
                 .jsonPath("$.memory.disclosure.mode").isEqualTo("summary")
                 .jsonPath("$.mcp.catalog[0].env.GITHUB_TOKEN").isEqualTo("secret-mcp-token")
@@ -566,7 +615,6 @@ class PolicyGroupsControllerIntegrationTest {
                                 }
                               },
                               "modelRouter":{
-                                "temperature":0.7,
                                 "dynamicTierEnabled":true,
                                 "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
                                 "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
@@ -882,7 +930,6 @@ class PolicyGroupsControllerIntegrationTest {
                             }
                           },
                           "modelRouter":{
-                            "temperature":0.7,
                             "dynamicTierEnabled":true,
                             "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
                             "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
@@ -932,10 +979,37 @@ class PolicyGroupsControllerIntegrationTest {
                     }
                   },
                   "modelRouter":{
-                    "temperature":0.7,
                     "dynamicTierEnabled":true,
-                    "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
-                    "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
+                    "routing":{
+                      "model":"openai/gpt-5.1",
+                      "reasoning":"low",
+                      "temperature":0.4,
+                      "fallbackMode":"weighted",
+                      "fallbacks":[
+                        {
+                          "model":"openai/gpt-5.1-mini",
+                          "reasoning":"low",
+                          "temperature":0.3,
+                          "weight":0.75
+                        }
+                      ]
+                    },
+                    "tiers":{
+                      "balanced":{
+                        "model":"openai/gpt-5.1",
+                        "reasoning":"low",
+                        "temperature":0.5,
+                        "fallbackMode":"sequential",
+                        "fallbacks":[
+                          {
+                            "model":"openai/gpt-4.1-mini",
+                            "reasoning":"low",
+                            "temperature":0.2,
+                            "weight":1.0
+                          }
+                        ]
+                      }
+                    }
                   },
                   "modelCatalog":{
                     "defaultModel":"openai/gpt-5.1",
@@ -946,6 +1020,20 @@ class PolicyGroupsControllerIntegrationTest {
                         "supportsVision":true,
                         "supportsTemperature":true,
                         "maxInputTokens":200000
+                      },
+                      "openai/gpt-5.1-mini":{
+                        "provider":"openai",
+                        "displayName":"openai/gpt-5.1-mini",
+                        "supportsVision":true,
+                        "supportsTemperature":true,
+                        "maxInputTokens":128000
+                      },
+                      "openai/gpt-4.1-mini":{
+                        "provider":"openai",
+                        "displayName":"openai/gpt-4.1-mini",
+                        "supportsVision":true,
+                        "supportsTemperature":true,
+                        "maxInputTokens":128000
                       }
                     }
                   },

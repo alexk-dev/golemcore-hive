@@ -32,11 +32,15 @@ public PolicyGroupSpecResponse{llmProviders=llmProviders!=null?llmProviders:new 
 
 public record PolicyProviderConfigResponse(boolean apiKeyPresent,String baseUrl,Integer requestTimeoutSeconds,String apiType,Boolean legacyApi){}
 
-public record PolicyModelRouterResponse(Double temperature,PolicyTierBindingResponse routing,Map<String,PolicyTierBindingResponse>tiers,Boolean dynamicTierEnabled){
+public record PolicyModelRouterResponse(PolicyTierBindingResponse routing,Map<String,PolicyTierBindingResponse>tiers,Boolean dynamicTierEnabled){
 
 public PolicyModelRouterResponse{tiers=tiers!=null?tiers:new LinkedHashMap<>();}}
 
-public record PolicyTierBindingResponse(String model,String reasoning){}
+public record PolicyTierBindingResponse(String model,String reasoning,Double temperature,String fallbackMode,List<PolicyTierFallbackResponse>fallbacks){
+
+public PolicyTierBindingResponse{fallbacks=fallbacks!=null?fallbacks:new ArrayList<>();}}
+
+public record PolicyTierFallbackResponse(String model,String reasoning,Double temperature,Double weight){}
 
 public record PolicyModelCatalogResponse(String defaultModel,Map<String,PolicyModelConfigResponse>models){
 

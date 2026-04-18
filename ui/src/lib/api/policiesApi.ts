@@ -8,9 +8,19 @@ export interface PolicyProviderConfigResponse {
   legacyApi: boolean | null;
 }
 
+export interface PolicyTierFallbackResponse {
+  model: string | null;
+  reasoning: string | null;
+  temperature: number | null;
+  weight: number | null;
+}
+
 export interface PolicyTierBindingResponse {
   model: string | null;
   reasoning: string | null;
+  temperature: number | null;
+  fallbackMode: string | null;
+  fallbacks: PolicyTierFallbackResponse[];
 }
 
 export interface PolicyModelConfigResponse {
@@ -119,7 +129,6 @@ export interface PolicyGroupSpecResponse {
   schemaVersion: number;
   llmProviders: Record<string, PolicyProviderConfigResponse>;
   modelRouter: {
-    temperature: number | null;
     routing: PolicyTierBindingResponse | null;
     tiers: Record<string, PolicyTierBindingResponse>;
     dynamicTierEnabled: boolean | null;
@@ -170,9 +179,19 @@ export interface PolicyDraftProviderConfig {
   legacyApi?: boolean | null;
 }
 
+export interface PolicyDraftTierFallback {
+  model?: string | null;
+  reasoning?: string | null;
+  temperature?: number | null;
+  weight?: number | null;
+}
+
 export interface PolicyDraftTierBinding {
   model?: string | null;
   reasoning?: string | null;
+  temperature?: number | null;
+  fallbackMode?: string | null;
+  fallbacks?: PolicyDraftTierFallback[];
 }
 
 export interface PolicyDraftModelConfig {
@@ -281,7 +300,6 @@ export interface PolicyDraftSpec {
   schemaVersion: number;
   llmProviders: Record<string, PolicyDraftProviderConfig>;
   modelRouter: {
-    temperature?: number | null;
     routing?: PolicyDraftTierBinding | null;
     tiers?: Record<string, PolicyDraftTierBinding>;
     dynamicTierEnabled?: boolean | null;

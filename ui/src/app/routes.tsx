@@ -19,6 +19,7 @@ import { HomePage } from '../features/dashboard/HomePage';
 import { ObjectivesPage } from '../features/objectives/ObjectivesPage';
 import { ServicesPage } from '../features/services/ServicesPage';
 import { TeamsPage } from '../features/teams/TeamsPage';
+import { MailboxPage } from '../features/mailbox/MailboxPage';
 
 export const routes = createBrowserRouter([
   {
@@ -70,6 +71,10 @@ export const routes = createBrowserRouter([
           {
             path: '/approvals',
             element: <ApprovalsPage />,
+          },
+          {
+            path: '/mailbox',
+            element: <MailboxPage />,
           },
           {
             path: '/audit',

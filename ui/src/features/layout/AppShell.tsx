@@ -12,6 +12,7 @@ const navGroups = [
       { to: '/teams', label: 'Teams' },
       { to: '/policies', label: 'Policies' },
       { to: '/approvals', label: 'Approvals' },
+      { to: '/mailbox', label: 'Mailbox' },
     ],
   },
   {

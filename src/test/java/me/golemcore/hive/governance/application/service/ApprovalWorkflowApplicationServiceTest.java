@@ -21,8 +21,8 @@ package me.golemcore.hive.governance.application.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -174,6 +174,53 @@ class ApprovalWorkflowApplicationServiceTest {
                 approved.getUpdatedAt());
         inOrder.verify(approvedCommandDispatchPort).dispatchApprovedCommand("cmd-1");
         verify(auditLogUseCase).record(any(me.golemcore.hive.domain.model.AuditEvent.AuditEventBuilder.class));
+    }
+
+    @Test
+    void shouldCreateApprovalNotificationWithSenderAndTags() {
+        AuditLogUseCase auditLogUseCase = mock(AuditLogUseCase.class);
+        NotificationUseCase notificationUseCase = mock(NotificationUseCase.class);
+        OperatorUpdatePublisherPort operatorUpdatePublisherPort = mock(OperatorUpdatePublisherPort.class);
+        ApprovalRepositoryPort approvalRepositoryPort = mock(ApprovalRepositoryPort.class);
+        ApprovalCommandStatePort approvalCommandStatePort = mock(ApprovalCommandStatePort.class);
+        ApprovedCommandDispatchPort approvedCommandDispatchPort = mock(ApprovedCommandDispatchPort.class);
+        ApprovalThreadPort approvalThreadPort = mock(ApprovalThreadPort.class);
+        ApprovalGolemProfilePort approvalGolemProfilePort = mock(ApprovalGolemProfilePort.class);
+        when(notificationUseCase.isApprovalRequestedEnabled()).thenReturn(true);
+        when(approvalGolemProfilePort.resolveDisplayName("golem-1")).thenReturn("Release Bot");
+        ApprovalWorkflowApplicationService approvalWorkflowApplicationService = new ApprovalWorkflowApplicationService(
+                GOVERNANCE_SETTINGS,
+                auditLogUseCase,
+                notificationUseCase,
+                operatorUpdatePublisherPort,
+                approvalRepositoryPort,
+                approvalCommandStatePort,
+                approvedCommandDispatchPort,
+                approvalThreadPort,
+                approvalGolemProfilePort);
+
+        approvalWorkflowApplicationService.createApproval(
+                new me.golemcore.hive.governance.application.ApprovalCommandRequest(
+                        "cmd-1",
+                        "run-1",
+                        "thread-1",
+                        "board-1",
+                        "card-1",
+                        "golem-1",
+                        "rm -rf /tmp",
+                        ApprovalRiskLevel.DESTRUCTIVE,
+                        "Destructive operation",
+                        1000L),
+                "operator-1",
+                "Hive Admin");
+
+        verify(notificationUseCase).create(argThat(builder -> {
+            me.golemcore.hive.domain.model.NotificationEvent event = builder.build();
+            return "Release Bot".equals(event.getSenderDisplayName())
+                    && event.getTags().contains("approval")
+                    && event.getTags().contains("destructive")
+                    && event.getTags().contains("command");
+        }));
     }
 
     @Test

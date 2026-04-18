@@ -140,6 +140,11 @@ public class ApprovalWorkflowApplicationService implements ApprovalWorkflowUseCa
                     .title("Approval requested")
                     .message(approval.getRiskLevel() + " command for " + golemDisplayName
                             + " requires operator approval")
+                    .senderDisplayName(golemDisplayName)
+                    .tags(List.of(
+                            "approval",
+                            "command",
+                            approval.getRiskLevel().name().toLowerCase()))
                     .boardId(request.boardId())
                     .cardId(request.cardId())
                     .threadId(request.threadId())
@@ -216,6 +221,8 @@ public class ApprovalWorkflowApplicationService implements ApprovalWorkflowUseCa
                     .severity(NotificationSeverity.WARN)
                     .title("Promotion approval requested")
                     .message(request.artifactType() + " candidate requires operator approval")
+                    .senderDisplayName(actorName)
+                    .tags(List.of("approval", "promotion", request.artifactType().toLowerCase()))
                     .golemId(request.golemId())
                     .approvalId(approval.getId()));
         }

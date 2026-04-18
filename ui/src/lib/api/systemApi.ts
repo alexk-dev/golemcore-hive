@@ -6,6 +6,8 @@ export interface NotificationEvent {
   severity: string;
   title: string;
   message: string;
+  senderDisplayName: string | null;
+  tags: string[];
   boardId: string | null;
   cardId: string | null;
   threadId: string | null;

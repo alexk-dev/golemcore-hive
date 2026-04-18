@@ -79,7 +79,6 @@ public class PolicyGroupSpec {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PolicyModelRouter {
-        private Double temperature;
         private PolicyTierBinding routing;
 
         @Builder.Default

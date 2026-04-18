@@ -144,7 +144,6 @@ describe('PolicyGroupsPage', () => {
             },
           },
           modelRouter: {
-            temperature: 0.7,
             routing: createTierBinding('openai/gpt-5.1', 'low'),
             tiers: {
               balanced: createTierBinding('openai/gpt-5.1', 'low'),
@@ -193,7 +192,6 @@ describe('PolicyGroupsPage', () => {
           },
         },
         modelRouter: {
-          temperature: 0.7,
           routing: createTierBinding('openai/gpt-5.1', 'low'),
           tiers: {
             balanced: createTierBinding('openai/gpt-5.1', 'low'),
@@ -237,7 +235,6 @@ describe('PolicyGroupsPage', () => {
             },
           },
           modelRouter: {
-            temperature: 0.7,
             routing: createTierBinding('openai/gpt-5.1', 'low'),
             tiers: {
               balanced: createTierBinding('openai/gpt-5.1', 'low'),
@@ -271,7 +268,6 @@ describe('PolicyGroupsPage', () => {
           schemaVersion: 1,
           llmProviders: {},
           modelRouter: {
-            temperature: 0.4,
             routing: null,
             tiers: {},
             dynamicTierEnabled: false,
@@ -368,7 +364,6 @@ describe('PolicyGroupsPage', () => {
               },
             },
             modelRouter: {
-              temperature: 0.4,
               routing: {
                 model: 'openai/gpt-5.1',
                 reasoning: 'medium',

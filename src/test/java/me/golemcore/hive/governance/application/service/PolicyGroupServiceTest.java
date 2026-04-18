@@ -290,7 +290,6 @@ class PolicyGroupServiceTest {
                 .schemaVersion(1)
                 .llmProviders(providers)
                 .modelRouter(PolicyGroupSpec.PolicyModelRouter.builder()
-                        .temperature(0.7d)
                         .dynamicTierEnabled(true)
                         .routing(PolicyGroupSpec.PolicyTierBinding.builder()
                                 .model(routingModel)

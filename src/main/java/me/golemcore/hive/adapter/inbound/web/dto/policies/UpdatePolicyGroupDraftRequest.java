@@ -29,7 +29,7 @@ public UpdatePolicyGroupDraftRequest{llmProviders=llmProviders!=null?llmProvider
 
 public record PolicyProviderConfigRequest(String apiKey,String baseUrl,Integer requestTimeoutSeconds,String apiType,Boolean legacyApi){}
 
-public record PolicyModelRouterRequest(Double temperature,PolicyTierBindingRequest routing,Map<String,PolicyTierBindingRequest>tiers,Boolean dynamicTierEnabled){
+public record PolicyModelRouterRequest(PolicyTierBindingRequest routing,Map<String,PolicyTierBindingRequest>tiers,Boolean dynamicTierEnabled){
 
 public PolicyModelRouterRequest{tiers=tiers!=null?tiers:new LinkedHashMap<>();}}
 

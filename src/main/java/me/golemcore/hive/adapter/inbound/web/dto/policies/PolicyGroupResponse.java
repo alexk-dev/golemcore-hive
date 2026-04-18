@@ -32,7 +32,7 @@ public PolicyGroupSpecResponse{llmProviders=llmProviders!=null?llmProviders:new 
 
 public record PolicyProviderConfigResponse(boolean apiKeyPresent,String baseUrl,Integer requestTimeoutSeconds,String apiType,Boolean legacyApi){}
 
-public record PolicyModelRouterResponse(Double temperature,PolicyTierBindingResponse routing,Map<String,PolicyTierBindingResponse>tiers,Boolean dynamicTierEnabled){
+public record PolicyModelRouterResponse(PolicyTierBindingResponse routing,Map<String,PolicyTierBindingResponse>tiers,Boolean dynamicTierEnabled){
 
 public PolicyModelRouterResponse{tiers=tiers!=null?tiers:new LinkedHashMap<>();}}
 

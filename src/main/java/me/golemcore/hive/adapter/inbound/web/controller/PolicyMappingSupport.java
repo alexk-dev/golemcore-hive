@@ -154,7 +154,6 @@ final class PolicyMappingSupport {
                 spec.getSchemaVersion(),
                 providers,
                 spec.getModelRouter() != null ? new PolicyGroupResponse.PolicyModelRouterResponse(
-                        spec.getModelRouter().getTemperature(),
                         toTierBindingResponse(spec.getModelRouter().getRouting()),
                         tiers,
                         spec.getModelRouter().getDynamicTierEnabled()) : null,
@@ -199,7 +198,6 @@ final class PolicyMappingSupport {
             }
         }
         return new PolicyPackageResponse.PolicyModelRouterResponse(
-                modelRouter.getTemperature(),
                 toPackageTierBindingResponse(modelRouter.getRouting()),
                 tiers,
                 modelRouter.getDynamicTierEnabled());
@@ -438,7 +436,6 @@ final class PolicyMappingSupport {
             tiers.put(entry.getKey(), toPolicyTierBinding(entry.getValue()));
         }
         return PolicyGroupSpec.PolicyModelRouter.builder()
-                .temperature(request.temperature())
                 .routing(toPolicyTierBinding(request.routing()))
                 .tiers(tiers)
                 .dynamicTierEnabled(request.dynamicTierEnabled())

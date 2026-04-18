@@ -129,7 +129,6 @@ export interface PolicyGroupSpecResponse {
   schemaVersion: number;
   llmProviders: Record<string, PolicyProviderConfigResponse>;
   modelRouter: {
-    temperature: number | null;
     routing: PolicyTierBindingResponse | null;
     tiers: Record<string, PolicyTierBindingResponse>;
     dynamicTierEnabled: boolean | null;
@@ -301,7 +300,6 @@ export interface PolicyDraftSpec {
   schemaVersion: number;
   llmProviders: Record<string, PolicyDraftProviderConfig>;
   modelRouter: {
-    temperature?: number | null;
     routing?: PolicyDraftTierBinding | null;
     tiers?: Record<string, PolicyDraftTierBinding>;
     dynamicTierEnabled?: boolean | null;

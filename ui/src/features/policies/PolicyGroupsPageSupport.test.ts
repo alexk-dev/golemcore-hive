@@ -8,7 +8,6 @@ describe('PolicyGroupsPageSupport', () => {
       schemaVersion: 1,
       llmProviders: {},
       modelRouter: {
-        temperature: 0.7,
         routing: {
           model: 'openai/gpt-5.1',
           reasoning: 'low',

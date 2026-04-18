@@ -122,7 +122,6 @@ class PolicyGroupsControllerIntegrationTest {
                             }
                           },
                           "modelRouter":{
-                            "temperature":0.7,
                             "dynamicTierEnabled":true,
                             "routing":{
                               "model":"openai/gpt-5.1",
@@ -252,7 +251,6 @@ class PolicyGroupsControllerIntegrationTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.draftSpec.llmProviders.openai.apiType").isEqualTo("openai")
-                .jsonPath("$.draftSpec.modelRouter.routing.temperature").isEqualTo(0.4)
                 .jsonPath("$.draftSpec.modelRouter.routing.fallbackMode").isEqualTo("weighted")
                 .jsonPath("$.draftSpec.modelRouter.routing.fallbacks[0].model").isEqualTo("openai/gpt-5.1-mini")
                 .jsonPath("$.draftSpec.modelRouter.tiers.balanced.fallbacks[0].model").isEqualTo("openai/gpt-4.1-mini");
@@ -523,7 +521,6 @@ class PolicyGroupsControllerIntegrationTest {
                 .jsonPath("$.targetVersion").isEqualTo(1)
                 .jsonPath("$.checksum").isEqualTo(checksum)
                 .jsonPath("$.llmProviders.openai.apiKey").isEqualTo("secret-openai")
-                .jsonPath("$.modelRouter.routing.temperature").isEqualTo(0.4)
                 .jsonPath("$.modelRouter.routing.fallbackMode").isEqualTo("weighted")
                 .jsonPath("$.modelRouter.routing.fallbacks[0].model").isEqualTo("openai/gpt-5.1-mini")
                 .jsonPath("$.modelRouter.tiers.balanced.temperature").isEqualTo(0.5)
@@ -618,7 +615,6 @@ class PolicyGroupsControllerIntegrationTest {
                                 }
                               },
                               "modelRouter":{
-                                "temperature":0.7,
                                 "dynamicTierEnabled":true,
                                 "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
                                 "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
@@ -934,7 +930,6 @@ class PolicyGroupsControllerIntegrationTest {
                             }
                           },
                           "modelRouter":{
-                            "temperature":0.7,
                             "dynamicTierEnabled":true,
                             "routing":{"model":"openai/gpt-5.1","reasoning":"low"},
                             "tiers":{"balanced":{"model":"openai/gpt-5.1","reasoning":"low"}}
@@ -984,7 +979,6 @@ class PolicyGroupsControllerIntegrationTest {
                     }
                   },
                   "modelRouter":{
-                    "temperature":0.7,
                     "dynamicTierEnabled":true,
                     "routing":{
                       "model":"openai/gpt-5.1",

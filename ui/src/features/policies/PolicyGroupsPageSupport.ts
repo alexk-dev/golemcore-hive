@@ -17,7 +17,6 @@ export const EMPTY_DRAFT_SPEC: PolicyDraftSpec = {
   schemaVersion: 1,
   llmProviders: {},
   modelRouter: {
-    temperature: 0.7,
     routing: null,
     tiers: {},
     dynamicTierEnabled: true,
@@ -144,7 +143,6 @@ export function toEditableDraft(spec: PolicyGroupSpecResponse | null | undefined
     llmProviders,
     modelRouter: spec.modelRouter
       ? {
-          temperature: spec.modelRouter.temperature,
           routing: spec.modelRouter.routing
             ? {
                 model: spec.modelRouter.routing.model,

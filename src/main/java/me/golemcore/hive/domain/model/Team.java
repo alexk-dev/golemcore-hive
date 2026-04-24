@@ -33,7 +33,7 @@ import lombok.NoArgsConstructor;
 public class Team {
 
     @Builder.Default
-    private int schemaVersion = 1;
+    private int schemaVersion = 2;
 
     private String id;
     private String slug;
@@ -41,11 +41,15 @@ public class Team {
     private String description;
 
     @Builder.Default
+    private EntityLifecycleState lifecycleState = EntityLifecycleState.ACTIVE;
+
+    @Builder.Default
     private Set<String> golemIds = new LinkedHashSet<>();
 
     @Builder.Default
     private Set<String> ownedServiceIds = new LinkedHashSet<>();
 
+    private Instant archivedAt;
     private Instant createdAt;
     private Instant updatedAt;
 }

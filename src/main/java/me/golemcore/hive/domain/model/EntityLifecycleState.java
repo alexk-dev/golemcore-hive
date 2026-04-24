@@ -16,10 +16,8 @@
  * Contact: alex@kuleshov.tech
  */
 
-package me.golemcore.hive.adapter.inbound.web.dto.organization;
+package me.golemcore.hive.domain.model;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.Set;
-
-public record ObjectiveResponse(String id,String slug,String name,String description,String status,String lifecycleState,String ownerTeamId,Set<String>serviceIds,Set<String>participatingTeamIds,LocalDate targetDate,Instant archivedAt,Instant createdAt,Instant updatedAt){}
+public enum EntityLifecycleState {
+    ACTIVE, ARCHIVED
+}

@@ -82,26 +82,18 @@ class OrganizationControllerIntegrationTest {
         String teamId = createTeam(operatorToken, golemId, serviceId);
         String objectiveId = createObjective(operatorToken, teamId, serviceId);
 
-        webTestClient.get()
-                .uri("/api/v1/teams")
-                .header(HttpHeaders.AUTHORIZATION, operatorToken)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$[0].id").isEqualTo(teamId)
-                .jsonPath("$[0].golemIds[0]").isEqualTo(golemId)
-                .jsonPath("$[0].ownedServiceIds[0]").isEqualTo(serviceId);
+        JsonNode teamsPayload = getJson("/api/v1/teams", operatorToken);
+        JsonNode createdTeam = requireEntityById(teamsPayload, teamId);
+        Assertions.assertEquals("ACTIVE", createdTeam.path("lifecycleState").asText());
+        Assertions.assertEquals(golemId, createdTeam.path("golemIds").get(0).asText());
+        Assertions.assertEquals(serviceId, createdTeam.path("ownedServiceIds").get(0).asText());
 
-        webTestClient.get()
-                .uri("/api/v1/objectives")
-                .header(HttpHeaders.AUTHORIZATION, operatorToken)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$[0].id").isEqualTo(objectiveId)
-                .jsonPath("$[0].ownerTeamId").isEqualTo(teamId)
-                .jsonPath("$[0].serviceIds[0]").isEqualTo(serviceId)
-                .jsonPath("$[0].participatingTeamIds[0]").isEqualTo(teamId);
+        JsonNode objectivesPayload = getJson("/api/v1/objectives", operatorToken);
+        JsonNode createdObjective = requireEntityById(objectivesPayload, objectiveId);
+        Assertions.assertEquals("ACTIVE", createdObjective.path("lifecycleState").asText());
+        Assertions.assertEquals(teamId, createdObjective.path("ownerTeamId").asText());
+        Assertions.assertEquals(serviceId, createdObjective.path("serviceIds").get(0).asText());
+        Assertions.assertEquals(teamId, createdObjective.path("participatingTeamIds").get(0).asText());
 
         webTestClient.patch()
                 .uri("/api/v1/organization")
@@ -134,6 +126,128 @@ class OrganizationControllerIntegrationTest {
                 .expectBody()
                 .jsonPath("$.status").isEqualTo("AT_RISK")
                 .jsonPath("$.targetDate").isEmpty();
+    }
+
+    @Test
+    void shouldApplyLifecycleToTeamsAndObjectives() throws Exception {
+        String operatorToken = loginAsAdmin();
+        String serviceId = createService(operatorToken);
+        String golemId = registerOnlineGolem(operatorToken, "Atlas Lifecycle", "host-lifecycle");
+        String teamId = createTeam(operatorToken, golemId, serviceId);
+        String objectiveId = createObjective(operatorToken, teamId, serviceId);
+
+        webTestClient.post()
+                .uri("/api/v1/objectives/{objectiveId}:complete", objectiveId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo("COMPLETED")
+                .jsonPath("$.lifecycleState").isEqualTo("ACTIVE");
+
+        webTestClient.post()
+                .uri("/api/v1/objectives/{objectiveId}:reopen", objectiveId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo("ACTIVE")
+                .jsonPath("$.lifecycleState").isEqualTo("ACTIVE");
+
+        webTestClient.post()
+                .uri("/api/v1/objectives/{objectiveId}:archive", objectiveId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.lifecycleState").isEqualTo("ARCHIVED")
+                .jsonPath("$.archivedAt").isNotEmpty();
+
+        JsonNode activeObjectivesPayload = getJson("/api/v1/objectives", operatorToken);
+        assertEntityIdAbsent(activeObjectivesPayload, objectiveId);
+
+        JsonNode archivedObjectivesPayload = getJson("/api/v1/objectives?includeArchived=true", operatorToken);
+        JsonNode archivedObjective = requireEntityById(archivedObjectivesPayload, objectiveId);
+        Assertions.assertEquals("ARCHIVED", archivedObjective.path("lifecycleState").asText());
+
+        webTestClient.patch()
+                .uri("/api/v1/objectives/{objectiveId}", objectiveId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "description":"Should fail while archived"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isBadRequest();
+
+        webTestClient.post()
+                .uri("/api/v1/objectives/{objectiveId}:restore", objectiveId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.lifecycleState").isEqualTo("ACTIVE")
+                .jsonPath("$.archivedAt").isEmpty();
+
+        webTestClient.post()
+                .uri("/api/v1/teams/{teamId}:archive", teamId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.lifecycleState").isEqualTo("ARCHIVED")
+                .jsonPath("$.archivedAt").isNotEmpty();
+
+        JsonNode activeTeamsPayload = getJson("/api/v1/teams", operatorToken);
+        assertEntityIdAbsent(activeTeamsPayload, teamId);
+
+        JsonNode archivedTeamsPayload = getJson("/api/v1/teams?includeArchived=true", operatorToken);
+        JsonNode archivedTeam = requireEntityById(archivedTeamsPayload, teamId);
+        Assertions.assertEquals("ARCHIVED", archivedTeam.path("lifecycleState").asText());
+
+        webTestClient.patch()
+                .uri("/api/v1/teams/{teamId}", teamId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue("""
+                        {
+                          "description":"Should fail while archived"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isBadRequest();
+
+        webTestClient.post()
+                .uri("/api/v1/objectives/{objectiveId}:archive", objectiveId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk();
+
+        webTestClient.post()
+                .uri("/api/v1/objectives/{objectiveId}:restore", objectiveId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isBadRequest();
+
+        webTestClient.post()
+                .uri("/api/v1/teams/{teamId}:restore", teamId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.lifecycleState").isEqualTo("ACTIVE")
+                .jsonPath("$.archivedAt").isEmpty();
+
+        webTestClient.post()
+                .uri("/api/v1/objectives/{objectiveId}:restore", objectiveId)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.lifecycleState").isEqualTo("ACTIVE")
+                .jsonPath("$.archivedAt").isEmpty();
     }
 
     @Test
@@ -382,6 +496,40 @@ class OrganizationControllerIntegrationTest {
                 .jsonPath("$.epicCardId").isEqualTo(epicCardId);
     }
 
+    private JsonNode getJson(String uri, String operatorToken, Object... uriVariables) throws Exception {
+        EntityExchangeResult<String> result = webTestClient.get()
+                .uri(uri, uriVariables)
+                .header(HttpHeaders.AUTHORIZATION, operatorToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .returnResult();
+        return objectMapper.readTree(result.getResponseBody());
+    }
+
+    private JsonNode requireEntityById(JsonNode payload, String entityId) {
+        JsonNode entity = findEntityById(payload, entityId);
+        Assertions.assertNotNull(entity, () -> "Expected payload to contain entity " + entityId + ": " + payload);
+        return entity;
+    }
+
+    private void assertEntityIdAbsent(JsonNode payload, String entityId) {
+        JsonNode entity = findEntityById(payload, entityId);
+        Assertions.assertNull(entity, () -> "Expected payload to exclude entity " + entityId + ": " + payload);
+    }
+
+    private JsonNode findEntityById(JsonNode payload, String entityId) {
+        if (payload == null || !payload.isArray()) {
+            return null;
+        }
+        for (JsonNode node : payload) {
+            if (entityId.equals(node.path("id").asText())) {
+                return node;
+            }
+        }
+        return null;
+    }
+
     private String createService(String operatorToken) throws Exception {
         EntityExchangeResult<String> createServiceResult = webTestClient.post()
                 .uri("/api/v1/services")
@@ -533,9 +681,7 @@ class OrganizationControllerIntegrationTest {
                 .expectStatus().isOk()
                 .expectBody(String.class)
                 .returnResult();
-        JsonNode payload = objectMapper.readTree(loginResult.getResponseBody());
-        String accessToken = payload.get("accessToken").asText();
-        Assertions.assertNotNull(accessToken);
-        return "Bearer " + accessToken;
+        JsonNode loginPayload = objectMapper.readTree(loginResult.getResponseBody());
+        return "Bearer " + loginPayload.get("accessToken").asText();
     }
 }

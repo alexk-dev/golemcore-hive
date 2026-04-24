@@ -29,6 +29,8 @@ public interface ObjectiveWorkflowUseCase {
 
     List<Objective> listObjectives();
 
+    List<Objective> listObjectives(boolean includeArchived);
+
     Optional<Objective> findObjective(String objectiveId);
 
     Objective getObjective(String objectiveId);
@@ -56,4 +58,12 @@ public interface ObjectiveWorkflowUseCase {
             Boolean clearTargetDate,
             String actorId,
             String actorName);
+
+    Objective completeObjective(String objectiveId, String actorId, String actorName);
+
+    Objective reopenObjective(String objectiveId, String actorId, String actorName);
+
+    Objective archiveObjective(String objectiveId, String actorId, String actorName);
+
+    Objective restoreObjective(String objectiveId, String actorId, String actorName);
 }

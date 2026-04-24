@@ -28,7 +28,9 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import me.golemcore.hive.domain.model.AuditEvent;
+import me.golemcore.hive.domain.model.EntityLifecycleState;
 import me.golemcore.hive.domain.model.Team;
 import me.golemcore.hive.fleet.application.port.in.GolemDirectoryUseCase;
 import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
@@ -56,7 +58,19 @@ public class TeamService implements TeamWorkflowUseCase {
 
     @Override
     public List<Team> listTeams() {
-        List<Team> teams = new ArrayList<>(teamRepository.list());
+        return listTeams(false);
+    }
+
+    @Override
+    public List<Team> listTeams(boolean includeArchived) {
+        List<Team> teams = new ArrayList<>();
+        for (Team storedTeam : teamRepository.list()) {
+            Team team = normalizeTeam(storedTeam);
+            if (!includeArchived && team.getLifecycleState() == EntityLifecycleState.ARCHIVED) {
+                continue;
+            }
+            teams.add(team);
+        }
         teams.sort(Comparator.comparing(Team::getUpdatedAt).reversed()
                 .thenComparing(Team::getName, String.CASE_INSENSITIVE_ORDER));
         return teams;
@@ -64,7 +78,7 @@ public class TeamService implements TeamWorkflowUseCase {
 
     @Override
     public Optional<Team> findTeam(String teamId) {
-        return teamRepository.findById(teamId);
+        return teamRepository.findById(teamId).map(this::normalizeTeam);
     }
 
     @Override
@@ -90,9 +104,11 @@ public class TeamService implements TeamWorkflowUseCase {
                 .slug(buildUniqueSlug(name))
                 .name(name)
                 .description(description)
+                .lifecycleState(EntityLifecycleState.ACTIVE)
                 .golemIds(golemIds != null ? new LinkedHashSet<>(golemIds) : new LinkedHashSet<>())
                 .ownedServiceIds(
                         ownedServiceIds != null ? new LinkedHashSet<>(ownedServiceIds) : new LinkedHashSet<>())
+                .archivedAt(null)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -120,6 +136,9 @@ public class TeamService implements TeamWorkflowUseCase {
             String actorId,
             String actorName) {
         Team team = getTeam(teamId);
+        if (team.getLifecycleState() == EntityLifecycleState.ARCHIVED) {
+            throw new IllegalArgumentException("Archived team cannot be updated: " + teamId);
+        }
         if (name != null && !name.isBlank()) {
             team.setName(name);
         }
@@ -145,6 +164,52 @@ public class TeamService implements TeamWorkflowUseCase {
                 .targetType("TEAM")
                 .targetId(team.getId())
                 .summary("Team updated")
+                .details(team.getName()));
+        return team;
+    }
+
+    @Override
+    public Team archiveTeam(String teamId, String actorId, String actorName) {
+        Team team = getTeam(teamId);
+        if (team.getLifecycleState() == EntityLifecycleState.ARCHIVED) {
+            return team;
+        }
+        team.setLifecycleState(EntityLifecycleState.ARCHIVED);
+        team.setArchivedAt(Instant.now());
+        team.setUpdatedAt(team.getArchivedAt());
+        teamRepository.save(team);
+        workflowAuditPort.record(AuditEvent.builder()
+                .eventType("team.archived")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(actorId)
+                .actorName(actorName)
+                .targetType("TEAM")
+                .targetId(team.getId())
+                .summary("Team archived")
+                .details(team.getName()));
+        return team;
+    }
+
+    @Override
+    public Team restoreTeam(String teamId, String actorId, String actorName) {
+        Team team = getTeam(teamId);
+        if (team.getLifecycleState() == EntityLifecycleState.ACTIVE) {
+            return team;
+        }
+        team.setLifecycleState(EntityLifecycleState.ACTIVE);
+        team.setArchivedAt(null);
+        team.setUpdatedAt(Instant.now());
+        teamRepository.save(team);
+        workflowAuditPort.record(AuditEvent.builder()
+                .eventType("team.restored")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(actorId)
+                .actorName(actorName)
+                .targetType("TEAM")
+                .targetId(team.getId())
+                .summary("Team restored")
                 .details(team.getName()));
         return team;
     }
@@ -176,6 +241,23 @@ public class TeamService implements TeamWorkflowUseCase {
         }
     }
 
+    private Team normalizeTeam(Team team) {
+        if (team == null) {
+            return null;
+        }
+        team.setSchemaVersion(Math.max(team.getSchemaVersion(), 2));
+        if (team.getLifecycleState() == null) {
+            team.setLifecycleState(EntityLifecycleState.ACTIVE);
+        }
+        if (team.getGolemIds() == null) {
+            team.setGolemIds(new LinkedHashSet<>());
+        }
+        if (team.getOwnedServiceIds() == null) {
+            team.setOwnedServiceIds(new LinkedHashSet<>());
+        }
+        return team;
+    }
+
     private String buildUniqueSlug(String name) {
         String baseSlug = Normalizer.normalize(name, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")
@@ -185,8 +267,8 @@ public class TeamService implements TeamWorkflowUseCase {
         if (baseSlug.isBlank()) {
             baseSlug = "team";
         }
-        Set<String> existingSlugs = listTeams().stream().map(Team::getSlug)
-                .collect(java.util.stream.Collectors.toSet());
+        Set<String> existingSlugs = listTeams(true).stream().map(Team::getSlug)
+                .collect(Collectors.toSet());
         if (!existingSlugs.contains(baseSlug)) {
             return baseSlug;
         }

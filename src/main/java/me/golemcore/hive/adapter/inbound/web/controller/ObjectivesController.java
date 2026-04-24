@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -49,11 +50,14 @@ public class ObjectivesController {
     private final ObjectiveWorkflowUseCase objectiveWorkflowUseCase;
 
     @GetMapping
-    public Mono<ResponseEntity<List<ObjectiveResponse>>> listObjectives(Principal principal) {
+    public Mono<ResponseEntity<List<ObjectiveResponse>>> listObjectives(
+            Principal principal,
+            @RequestParam(defaultValue = "false") boolean includeArchived) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(
-                    objectiveWorkflowUseCase.listObjectives().stream().map(this::toObjectiveResponse).toList());
+            return ResponseEntity.ok(objectiveWorkflowUseCase.listObjectives(includeArchived).stream()
+                    .map(this::toObjectiveResponse)
+                    .toList());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -108,6 +112,62 @@ public class ObjectivesController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    @PostMapping("/{objectiveId}:complete")
+    public Mono<ResponseEntity<ObjectiveResponse>> completeObjective(
+            Principal principal,
+            @PathVariable String objectiveId) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Objective objective = objectiveWorkflowUseCase.completeObjective(
+                    objectiveId,
+                    actor.getSubjectId(),
+                    actor.getName());
+            return ResponseEntity.ok(toObjectiveResponse(objective));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PostMapping("/{objectiveId}:reopen")
+    public Mono<ResponseEntity<ObjectiveResponse>> reopenObjective(
+            Principal principal,
+            @PathVariable String objectiveId) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Objective objective = objectiveWorkflowUseCase.reopenObjective(
+                    objectiveId,
+                    actor.getSubjectId(),
+                    actor.getName());
+            return ResponseEntity.ok(toObjectiveResponse(objective));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PostMapping("/{objectiveId}:archive")
+    public Mono<ResponseEntity<ObjectiveResponse>> archiveObjective(
+            Principal principal,
+            @PathVariable String objectiveId) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Objective objective = objectiveWorkflowUseCase.archiveObjective(
+                    objectiveId,
+                    actor.getSubjectId(),
+                    actor.getName());
+            return ResponseEntity.ok(toObjectiveResponse(objective));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PostMapping("/{objectiveId}:restore")
+    public Mono<ResponseEntity<ObjectiveResponse>> restoreObjective(
+            Principal principal,
+            @PathVariable String objectiveId) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Objective objective = objectiveWorkflowUseCase.restoreObjective(
+                    objectiveId,
+                    actor.getSubjectId(),
+                    actor.getName());
+            return ResponseEntity.ok(toObjectiveResponse(objective));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
     private ObjectiveStatus parseStatus(String value) {
         return value != null && !value.isBlank()
                 ? ObjectiveStatus.valueOf(value.toUpperCase(java.util.Locale.ROOT))
@@ -121,10 +181,12 @@ public class ObjectivesController {
                 objective.getName(),
                 objective.getDescription(),
                 objective.getStatus().name(),
+                objective.getLifecycleState().name(),
                 objective.getOwnerTeamId(),
                 objective.getServiceIds(),
                 objective.getParticipatingTeamIds(),
                 objective.getTargetDate(),
+                objective.getArchivedAt(),
                 objective.getCreatedAt(),
                 objective.getUpdatedAt());
     }

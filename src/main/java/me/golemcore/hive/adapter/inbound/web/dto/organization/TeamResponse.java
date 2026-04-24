@@ -21,4 +21,4 @@ package me.golemcore.hive.adapter.inbound.web.dto.organization;
 import java.time.Instant;
 import java.util.Set;
 
-public record TeamResponse(String id,String slug,String name,String description,Set<String>golemIds,Set<String>ownedServiceIds,Instant createdAt,Instant updatedAt){}
+public record TeamResponse(String id,String slug,String name,String description,String lifecycleState,Set<String>golemIds,Set<String>ownedServiceIds,Instant archivedAt,Instant createdAt,Instant updatedAt){}

@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -48,10 +49,14 @@ public class TeamsController {
     private final TeamWorkflowUseCase teamWorkflowUseCase;
 
     @GetMapping
-    public Mono<ResponseEntity<List<TeamResponse>>> listTeams(Principal principal) {
+    public Mono<ResponseEntity<List<TeamResponse>>> listTeams(
+            Principal principal,
+            @RequestParam(defaultValue = "false") boolean includeArchived) {
         return Mono.fromCallable(() -> {
             ControllerActorSupport.requireOperatorActor(principal);
-            return ResponseEntity.ok(teamWorkflowUseCase.listTeams().stream().map(this::toTeamResponse).toList());
+            return ResponseEntity.ok(teamWorkflowUseCase.listTeams(includeArchived).stream()
+                    .map(this::toTeamResponse)
+                    .toList());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -99,14 +104,34 @@ public class TeamsController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    @PostMapping("/{teamId}:archive")
+    public Mono<ResponseEntity<TeamResponse>> archiveTeam(Principal principal, @PathVariable String teamId) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Team team = teamWorkflowUseCase.archiveTeam(teamId, actor.getSubjectId(), actor.getName());
+            return ResponseEntity.ok(toTeamResponse(team));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PostMapping("/{teamId}:restore")
+    public Mono<ResponseEntity<TeamResponse>> restoreTeam(Principal principal, @PathVariable String teamId) {
+        return Mono.fromCallable(() -> {
+            AuthenticatedActor actor = ControllerActorSupport.requirePrivilegedOperator(principal);
+            Team team = teamWorkflowUseCase.restoreTeam(teamId, actor.getSubjectId(), actor.getName());
+            return ResponseEntity.ok(toTeamResponse(team));
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
     private TeamResponse toTeamResponse(Team team) {
         return new TeamResponse(
                 team.getId(),
                 team.getSlug(),
                 team.getName(),
                 team.getDescription(),
+                team.getLifecycleState().name(),
                 team.getGolemIds(),
                 team.getOwnedServiceIds(),
+                team.getArchivedAt(),
                 team.getCreatedAt(),
                 team.getUpdatedAt());
     }

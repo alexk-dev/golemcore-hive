@@ -6,16 +6,27 @@ export interface ObjectiveDetail {
   name: string;
   description: string | null;
   status: string;
+  lifecycleState: string;
   ownerTeamId: string;
   serviceIds: string[];
   participatingTeamIds: string[];
   targetDate: string | null;
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export function listObjectives() {
-  return apiRequest<ObjectiveDetail[]>('/api/v1/objectives');
+function buildObjectivesPath(includeArchived?: boolean) {
+  const params = new URLSearchParams();
+  if (includeArchived) {
+    params.set('includeArchived', 'true');
+  }
+  const query = params.toString();
+  return query ? `/api/v1/objectives?${query}` : '/api/v1/objectives';
+}
+
+export function listObjectives(options: { includeArchived?: boolean } = {}) {
+  return apiRequest<ObjectiveDetail[]>(buildObjectivesPath(options.includeArchived));
 }
 
 export function getObjective(objectiveId: string) {
@@ -53,5 +64,29 @@ export function updateObjective(
   return apiRequest<ObjectiveDetail>(`/api/v1/objectives/${objectiveId}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
+  });
+}
+
+export function completeObjective(objectiveId: string) {
+  return apiRequest<ObjectiveDetail>(`/api/v1/objectives/${objectiveId}:complete`, {
+    method: 'POST',
+  });
+}
+
+export function reopenObjective(objectiveId: string) {
+  return apiRequest<ObjectiveDetail>(`/api/v1/objectives/${objectiveId}:reopen`, {
+    method: 'POST',
+  });
+}
+
+export function archiveObjective(objectiveId: string) {
+  return apiRequest<ObjectiveDetail>(`/api/v1/objectives/${objectiveId}:archive`, {
+    method: 'POST',
+  });
+}
+
+export function restoreObjective(objectiveId: string) {
+  return apiRequest<ObjectiveDetail>(`/api/v1/objectives/${objectiveId}:restore`, {
+    method: 'POST',
   });
 }

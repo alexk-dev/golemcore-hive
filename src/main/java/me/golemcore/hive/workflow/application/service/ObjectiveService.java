@@ -29,9 +29,12 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import me.golemcore.hive.domain.model.AuditEvent;
+import me.golemcore.hive.domain.model.EntityLifecycleState;
 import me.golemcore.hive.domain.model.Objective;
 import me.golemcore.hive.domain.model.ObjectiveStatus;
+import me.golemcore.hive.domain.model.Team;
 import me.golemcore.hive.workflow.application.port.in.BoardWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.ObjectiveWorkflowUseCase;
 import me.golemcore.hive.workflow.application.port.in.TeamWorkflowUseCase;
@@ -58,7 +61,19 @@ public class ObjectiveService implements ObjectiveWorkflowUseCase {
 
     @Override
     public List<Objective> listObjectives() {
-        List<Objective> objectives = new ArrayList<>(objectiveRepository.list());
+        return listObjectives(false);
+    }
+
+    @Override
+    public List<Objective> listObjectives(boolean includeArchived) {
+        List<Objective> objectives = new ArrayList<>();
+        for (Objective storedObjective : objectiveRepository.list()) {
+            Objective objective = normalizeObjective(storedObjective);
+            if (!includeArchived && objective.getLifecycleState() == EntityLifecycleState.ARCHIVED) {
+                continue;
+            }
+            objectives.add(objective);
+        }
         objectives.sort(Comparator.comparing(Objective::getUpdatedAt).reversed()
                 .thenComparing(Objective::getName, String.CASE_INSENSITIVE_ORDER));
         return objectives;
@@ -66,7 +81,7 @@ public class ObjectiveService implements ObjectiveWorkflowUseCase {
 
     @Override
     public Optional<Objective> findObjective(String objectiveId) {
-        return objectiveRepository.findById(objectiveId);
+        return objectiveRepository.findById(objectiveId).map(this::normalizeObjective);
     }
 
     @Override
@@ -89,7 +104,8 @@ public class ObjectiveService implements ObjectiveWorkflowUseCase {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Objective name is required");
         }
-        validateOwnerTeam(ownerTeamId);
+        Team ownerTeam = validateOwnerTeam(ownerTeamId);
+        validateOwnerTeamServiceScope(ownerTeam, serviceIds);
         validateServiceIds(serviceIds);
         validateTeamIds(participatingTeamIds);
         Instant now = Instant.now();
@@ -106,9 +122,11 @@ public class ObjectiveService implements ObjectiveWorkflowUseCase {
                 .description(description)
                 .status(status != null ? status : ObjectiveStatus.ACTIVE)
                 .ownerTeamId(ownerTeamId)
+                .lifecycleState(EntityLifecycleState.ACTIVE)
                 .serviceIds(serviceIds != null ? new LinkedHashSet<>(serviceIds) : new LinkedHashSet<>())
                 .participatingTeamIds(resolvedTeams)
                 .targetDate(targetDate)
+                .archivedAt(null)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -140,6 +158,9 @@ public class ObjectiveService implements ObjectiveWorkflowUseCase {
             String actorId,
             String actorName) {
         Objective objective = getObjective(objectiveId);
+        if (objective.getLifecycleState() == EntityLifecycleState.ARCHIVED) {
+            throw new IllegalArgumentException("Archived objective cannot be updated: " + objectiveId);
+        }
         if (name != null && !name.isBlank()) {
             objective.setName(name);
         }
@@ -150,11 +171,14 @@ public class ObjectiveService implements ObjectiveWorkflowUseCase {
             objective.setStatus(status);
         }
         if (ownerTeamId != null) {
-            validateOwnerTeam(ownerTeamId);
+            Team ownerTeam = validateOwnerTeam(ownerTeamId);
+            validateOwnerTeamServiceScope(ownerTeam, serviceIds != null ? serviceIds : objective.getServiceIds());
             objective.setOwnerTeamId(ownerTeamId);
         }
         if (serviceIds != null) {
             validateServiceIds(serviceIds);
+            Team currentOwnerTeam = validateOwnerTeam(objective.getOwnerTeamId());
+            validateOwnerTeamServiceScope(currentOwnerTeam, serviceIds);
             objective.setServiceIds(new LinkedHashSet<>(serviceIds));
         }
         if (participatingTeamIds != null) {
@@ -184,11 +208,125 @@ public class ObjectiveService implements ObjectiveWorkflowUseCase {
         return objective;
     }
 
-    private void validateOwnerTeam(String ownerTeamId) {
+    @Override
+    public Objective completeObjective(String objectiveId, String actorId, String actorName) {
+        Objective objective = getObjective(objectiveId);
+        if (objective.getLifecycleState() == EntityLifecycleState.ARCHIVED) {
+            throw new IllegalArgumentException("Archived objective cannot be completed: " + objectiveId);
+        }
+        objective.setStatus(ObjectiveStatus.COMPLETED);
+        objective.setUpdatedAt(Instant.now());
+        objectiveRepository.save(objective);
+        workflowAuditPort.record(AuditEvent.builder()
+                .eventType("objective.completed")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(actorId)
+                .actorName(actorName)
+                .targetType("OBJECTIVE")
+                .targetId(objective.getId())
+                .summary("Objective completed")
+                .details(objective.getName()));
+        return objective;
+    }
+
+    @Override
+    public Objective reopenObjective(String objectiveId, String actorId, String actorName) {
+        Objective objective = getObjective(objectiveId);
+        if (objective.getLifecycleState() == EntityLifecycleState.ARCHIVED) {
+            throw new IllegalArgumentException("Archived objective cannot be reopened: " + objectiveId);
+        }
+        if (objective.getStatus() == ObjectiveStatus.COMPLETED) {
+            objective.setStatus(ObjectiveStatus.ACTIVE);
+            objective.setUpdatedAt(Instant.now());
+            objectiveRepository.save(objective);
+            workflowAuditPort.record(AuditEvent.builder()
+                    .eventType("objective.reopened")
+                    .severity("INFO")
+                    .actorType("OPERATOR")
+                    .actorId(actorId)
+                    .actorName(actorName)
+                    .targetType("OBJECTIVE")
+                    .targetId(objective.getId())
+                    .summary("Objective reopened")
+                    .details(objective.getName()));
+        }
+        return objective;
+    }
+
+    @Override
+    public Objective archiveObjective(String objectiveId, String actorId, String actorName) {
+        Objective objective = getObjective(objectiveId);
+        if (objective.getLifecycleState() == EntityLifecycleState.ARCHIVED) {
+            return objective;
+        }
+        objective.setLifecycleState(EntityLifecycleState.ARCHIVED);
+        objective.setArchivedAt(Instant.now());
+        objective.setUpdatedAt(objective.getArchivedAt());
+        objectiveRepository.save(objective);
+        workflowAuditPort.record(AuditEvent.builder()
+                .eventType("objective.archived")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(actorId)
+                .actorName(actorName)
+                .targetType("OBJECTIVE")
+                .targetId(objective.getId())
+                .summary("Objective archived")
+                .details(objective.getName()));
+        return objective;
+    }
+
+    @Override
+    public Objective restoreObjective(String objectiveId, String actorId, String actorName) {
+        Objective objective = getObjective(objectiveId);
+        if (objective.getLifecycleState() == EntityLifecycleState.ACTIVE) {
+            return objective;
+        }
+        Team ownerTeam = validateOwnerTeam(objective.getOwnerTeamId());
+        validateOwnerTeamServiceScope(ownerTeam, objective.getServiceIds());
+        validateServiceIds(objective.getServiceIds());
+        validateTeamIds(objective.getParticipatingTeamIds());
+        objective.setLifecycleState(EntityLifecycleState.ACTIVE);
+        objective.setArchivedAt(null);
+        objective.setUpdatedAt(Instant.now());
+        objectiveRepository.save(objective);
+        workflowAuditPort.record(AuditEvent.builder()
+                .eventType("objective.restored")
+                .severity("INFO")
+                .actorType("OPERATOR")
+                .actorId(actorId)
+                .actorName(actorName)
+                .targetType("OBJECTIVE")
+                .targetId(objective.getId())
+                .summary("Objective restored")
+                .details(objective.getName()));
+        return objective;
+    }
+
+    private Team validateOwnerTeam(String ownerTeamId) {
         if (ownerTeamId == null || ownerTeamId.isBlank()) {
             throw new IllegalArgumentException("Objective owner team is required");
         }
-        teamWorkflowUseCase.getTeam(ownerTeamId);
+        Team team = teamWorkflowUseCase.getTeam(ownerTeamId);
+        if (team.getLifecycleState() == EntityLifecycleState.ARCHIVED) {
+            throw new IllegalArgumentException("Objective owner team is archived: " + ownerTeamId);
+        }
+        return team;
+    }
+
+    private void validateOwnerTeamServiceScope(Team ownerTeam, Set<String> serviceIds) {
+        if (ownerTeam == null || serviceIds == null || serviceIds.isEmpty()) {
+            return;
+        }
+        Set<String> ownedServiceIds = ownerTeam.getOwnedServiceIds() != null
+                ? ownerTeam.getOwnedServiceIds()
+                : new LinkedHashSet<>();
+        for (String serviceId : serviceIds) {
+            if (!ownedServiceIds.contains(serviceId)) {
+                throw new IllegalArgumentException("Objective owner team does not own service: " + serviceId);
+            }
+        }
     }
 
     private void validateServiceIds(Set<String> serviceIds) {
@@ -207,10 +345,34 @@ public class ObjectiveService implements ObjectiveWorkflowUseCase {
             return;
         }
         for (String teamId : teamIds) {
-            if (teamId == null || teamId.isBlank() || teamWorkflowUseCase.findTeam(teamId).isEmpty()) {
+            if (teamId == null || teamId.isBlank()) {
                 throw new IllegalArgumentException("Unknown team: " + teamId);
             }
+            Team team = teamWorkflowUseCase.getTeam(teamId);
+            if (team.getLifecycleState() == EntityLifecycleState.ARCHIVED) {
+                throw new IllegalArgumentException("Archived team cannot participate in objective: " + teamId);
+            }
         }
+    }
+
+    private Objective normalizeObjective(Objective objective) {
+        if (objective == null) {
+            return null;
+        }
+        objective.setSchemaVersion(Math.max(objective.getSchemaVersion(), 2));
+        if (objective.getLifecycleState() == null) {
+            objective.setLifecycleState(EntityLifecycleState.ACTIVE);
+        }
+        if (objective.getStatus() == null) {
+            objective.setStatus(ObjectiveStatus.ACTIVE);
+        }
+        if (objective.getServiceIds() == null) {
+            objective.setServiceIds(new LinkedHashSet<>());
+        }
+        if (objective.getParticipatingTeamIds() == null) {
+            objective.setParticipatingTeamIds(new LinkedHashSet<>());
+        }
+        return objective;
     }
 
     private String buildUniqueSlug(String name) {
@@ -222,8 +384,8 @@ public class ObjectiveService implements ObjectiveWorkflowUseCase {
         if (baseSlug.isBlank()) {
             baseSlug = "objective";
         }
-        Set<String> existingSlugs = listObjectives().stream().map(Objective::getSlug)
-                .collect(java.util.stream.Collectors.toSet());
+        Set<String> existingSlugs = listObjectives(true).stream().map(Objective::getSlug)
+                .collect(Collectors.toSet());
         if (!existingSlugs.contains(baseSlug)) {
             return baseSlug;
         }

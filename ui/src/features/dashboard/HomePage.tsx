@@ -24,11 +24,11 @@ export function HomePage() {
   });
   const teamsQuery = useQuery({
     queryKey: ['teams'],
-    queryFn: listTeams,
+    queryFn: () => listTeams(),
   });
   const objectivesQuery = useQuery({
     queryKey: ['objectives'],
-    queryFn: listObjectives,
+    queryFn: () => listObjectives(),
   });
   const golemsQuery = useQuery({
     queryKey: ['golems', '', '', ''],
@@ -69,7 +69,7 @@ export function HomePage() {
   const onlineGolems = golems.filter((golem) => golem.state === 'ONLINE').length;
   const activeObjectives = objectives.filter((objective) => objective.status === 'ACTIVE' || objective.status === 'AT_RISK').length;
   const totalCards = services.reduce((sum, service) => sum + service.cardCounts.reduce((inner, count) => inner + count.count, 0), 0);
-  const teamNameById = new Map(teams.map((team) => [team.id, team.name]));
+  const teamNameById = new Map<string, string>(teams.map((team) => [team.id, team.name]));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

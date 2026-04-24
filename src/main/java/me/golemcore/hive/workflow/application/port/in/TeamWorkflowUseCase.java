@@ -27,6 +27,8 @@ public interface TeamWorkflowUseCase {
 
     List<Team> listTeams();
 
+    List<Team> listTeams(boolean includeArchived);
+
     Optional<Team> findTeam(String teamId);
 
     Team getTeam(String teamId);
@@ -47,4 +49,8 @@ public interface TeamWorkflowUseCase {
             Set<String> ownedServiceIds,
             String actorId,
             String actorName);
+
+    Team archiveTeam(String teamId, String actorId, String actorName);
+
+    Team restoreTeam(String teamId, String actorId, String actorName);
 }

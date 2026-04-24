@@ -34,7 +34,7 @@ import lombok.NoArgsConstructor;
 public class Objective {
 
     @Builder.Default
-    private int schemaVersion = 1;
+    private int schemaVersion = 2;
 
     private String id;
     private String slug;
@@ -44,12 +44,16 @@ public class Objective {
     private String ownerTeamId;
 
     @Builder.Default
+    private EntityLifecycleState lifecycleState = EntityLifecycleState.ACTIVE;
+
+    @Builder.Default
     private Set<String> serviceIds = new LinkedHashSet<>();
 
     @Builder.Default
     private Set<String> participatingTeamIds = new LinkedHashSet<>();
 
     private LocalDate targetDate;
+    private Instant archivedAt;
     private Instant createdAt;
     private Instant updatedAt;
 }

@@ -79,14 +79,15 @@ describe('CardComposerDialog', () => {
     );
 
     fireEvent.change(screen.getByLabelText(/title/i), {
-      target: { value: 'Implement objective routing' },
+      target: { value: 'Ship scoped card' },
     });
     fireEvent.change(screen.getByLabelText(/prompt/i), {
-      target: { value: 'Keep invalid hidden team ids out of card payloads.' },
+      target: { value: 'Implement the scoped task' },
     });
     fireEvent.change(screen.getByLabelText(/objective/i), {
       target: { value: 'objective_1' },
     });
+
     fireEvent.click(screen.getByRole('button', { name: /create card/i }));
 
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
@@ -100,6 +101,8 @@ function createTeam(overrides: Partial<{
   id: string;
   name: string;
   ownedServiceIds: string[];
+  lifecycleState: string;
+  archivedAt: string | null;
 }> = {}) {
   const id = overrides.id ?? 'team_1';
   return {
@@ -107,8 +110,10 @@ function createTeam(overrides: Partial<{
     slug: id,
     name: overrides.name ?? 'Team',
     description: null,
+    lifecycleState: overrides.lifecycleState ?? 'ACTIVE',
     golemIds: [],
     ownedServiceIds: overrides.ownedServiceIds ?? [],
+    archivedAt: overrides.archivedAt ?? null,
     createdAt: '2026-03-19T18:00:00Z',
     updatedAt: '2026-03-19T18:00:00Z',
   };
@@ -118,6 +123,8 @@ function createObjective(overrides: Partial<{
   id: string;
   ownerTeamId: string;
   serviceIds: string[];
+  lifecycleState: string;
+  archivedAt: string | null;
 }> = {}) {
   const id = overrides.id ?? 'objective_1';
   return {
@@ -126,10 +133,12 @@ function createObjective(overrides: Partial<{
     name: 'Reduce onboarding latency',
     description: null,
     status: 'ACTIVE',
+    lifecycleState: overrides.lifecycleState ?? 'ACTIVE',
     ownerTeamId: overrides.ownerTeamId ?? 'team_1',
     serviceIds: overrides.serviceIds ?? ['board_123'],
     participatingTeamIds: [],
     targetDate: null,
+    archivedAt: overrides.archivedAt ?? null,
     createdAt: '2026-03-19T18:00:00Z',
     updatedAt: '2026-03-19T18:00:00Z',
   };
